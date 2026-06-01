@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Sign In</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg:#080B18; --card:#0E1120; --card2:#131626;
+      --border:#1C2240; --gold:#F0A500; --gold2:#FFD166;
+      --teal:#00C9A7; --red:#FF5757; --blue:#4169FF;
+      --text:#EEF2FF; --sub:#8896B8; --muted:#3D4A6A;
+      --ff:'Barlow',sans-serif; --fd:'Syne',sans-serif;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{
+      background:var(--bg);color:var(--text);font-family:var(--ff);
+      min-height:100vh;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:24px;
+      overflow-x:hidden;
+    }
+
+    /* Ambient */
+    body::before{
+      content:'';position:fixed;inset:0;pointer-events:none;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 20%,rgba(65,105,255,.08) 0%,transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%,rgba(240,165,0,.06) 0%,transparent 70%);
+    }
+
+    /* ── NAV ─────────────────────────────────── */
+    .top-nav{
+      position:fixed;top:0;left:0;right:0;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 32px;
+      background:rgba(8,11,24,.85);backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);z-index:10;
+    }
+
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+    .logo-mark{
+      width:32px;height:32px;
+      background:linear-gradient(135deg,var(--gold),#E8961A);
+      border-radius:8px;display:flex;align-items:center;justify-content:center;
+      font-family:var(--fd);font-weight:800;font-size:13px;color:#000;
+      overflow:hidden;flex-shrink:0;
+    }
+    .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;}
+    .logo-text span{color:var(--gold);}
+
+    .lang-toggle{
+      display:flex;gap:3px;background:var(--card2);
+      border:1px solid var(--border);border-radius:8px;padding:3px;
+    }
+    .lang-btn{
+      background:transparent;border:none;color:var(--sub);
+      padding:5px 10px;border-radius:6px;cursor:pointer;
+      font-family:var(--ff);font-size:11px;font-weight:600;
+      transition:all .2s;
+    }
+    .lang-btn.active{background:var(--border);color:var(--text);}
+
+    /* ── CARD ────────────────────────────────── */
+    .auth-card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:20px;padding:36px;width:100%;max-width:400px;
+      position:relative;z-index:1;
+      animation:fadeUp .5s ease both;margin-top:60px;
+    }
+
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(20px);}
+      to{opacity:1;transform:translateY(0);}
+    }
+
+    .auth-header{text-align:center;margin-bottom:28px;}
+    .auth-title{font-family:var(--fd);font-size:24px;font-weight:700;margin-bottom:6px;}
+    .auth-sub{font-size:13px;color:var(--sub);font-weight:300;}
+
+    /* ── FORM ────────────────────────────────── */
+    .field{margin-bottom:16px;}
+    .field:last-child{margin-bottom:0;}
+    label{
+      display:block;font-size:12px;font-weight:600;
+      color:var(--sub);margin-bottom:7px;letter-spacing:.3px;
+    }
+    input[type=email],input[type=password],input[type=text]{
+      width:100%;background:var(--bg);
+      border:1px solid var(--border);border-radius:10px;
+      padding:11px 14px;color:var(--text);
+      font-family:var(--ff);font-size:14px;outline:none;
+      transition:border-color .2s;
+    }
+    input:focus{border-color:var(--gold);}
+
+    .input-wrap{position:relative;}
+    .input-wrap input{padding-right:42px;}
+    .eye-btn{
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;
+      font-size:16px;color:var(--muted);padding:2px;
+    }
+
+    /* ── FORGOT ──────────────────────────────── */
+    .forgot-link{
+      display:block;text-align:right;font-size:12px;
+      color:var(--gold);text-decoration:none;margin-top:6px;
+    }
+    .forgot-link:hover{color:var(--gold2);}
+
+    /* ── ERROR ───────────────────────────────── */
+    .error-msg{
+      background:rgba(255,87,87,.1);border:1px solid rgba(255,87,87,.3);
+      border-radius:8px;padding:10px 14px;font-size:13px;
+      color:var(--red);margin-bottom:16px;display:none;
+    }
+    .error-msg.show{display:block;}
+
+    /* ── SUBMIT ──────────────────────────────── */
+    .submit-btn{
+      width:100%;padding:13px;border:none;border-radius:10px;
+      background:var(--gold);color:#000;
+      font-family:var(--ff);font-size:14px;font-weight:700;
+      cursor:pointer;transition:all .2s;margin-top:20px;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+    }
+    .submit-btn:hover{background:var(--gold2);transform:translateY(-1px);}
+    .submit-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+    .spinner-sm{
+      width:16px;height:16px;border:2px solid rgba(0,0,0,.2);
+      border-top-color:#000;border-radius:50%;
+      animation:spin .7s linear infinite;display:none;
+    }
+    .submit-btn.loading .spinner-sm{display:block;}
+    .submit-btn.loading .btn-text{display:none;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── DIVIDER ─────────────────────────────── */
+    .divider{
+      display:flex;align-items:center;gap:12px;
+      margin:20px 0;font-size:12px;color:var(--muted);
+    }
+    .divider::before,.divider::after{
+      content:'';flex:1;height:1px;background:var(--border);
+    }
+
+    /* ── SWITCH ──────────────────────────────── */
+    .auth-switch{
+      text-align:center;font-size:13px;
+      color:var(--sub);margin-top:20px;
+    }
+    .auth-switch a{color:var(--gold);text-decoration:none;font-weight:600;}
+    .auth-switch a:hover{color:var(--gold2);}
+
+    /* ── RESET MODAL ─────────────────────────── */
+    .modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.7);
+      z-index:100;display:none;align-items:center;
+      justify-content:center;padding:20px;
+    }
+    .modal-overlay.open{display:flex;}
+    .modal{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:16px;padding:28px;width:100%;max-width:380px;
+    }
+    .modal-title{font-family:var(--fd);font-size:18px;font-weight:700;margin-bottom:8px;}
+    .modal-sub{font-size:13px;color:var(--sub);margin-bottom:20px;}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+    .btn-sm{
+      padding:8px 18px;border-radius:8px;
+      font-family:var(--ff);font-size:13px;font-weight:600;cursor:pointer;
+    }
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub);}
+    .btn-primary{background:var(--gold);border:none;color:#000;}
+
+    /* ── SUCCESS STATE ───────────────────────── */
+    .success-msg{
+      background:rgba(0,201,167,.1);border:1px solid rgba(0,201,167,.3);
+      border-radius:8px;padding:10px 14px;font-size:13px;
+      color:var(--teal);margin-bottom:16px;display:none;
+    }
+    .success-msg.show{display:block;}
+  </style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="top-nav">
+  <a href="index.html" class="nav-logo">
+    <div class="logo-mark" id="logoMark">Sp</div>
+    <span class="logo-text">Speak<span>glish</span></span>
+  </a>
+  <div class="lang-toggle">
+    <button class="lang-btn" id="btnAr" onclick="setLang('ar')">AR</button>
+    <button class="lang-btn" id="btnFr" onclick="setLang('fr')">FR</button>
+    <button class="lang-btn active" id="btnEn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" id="btnTr" onclick="setLang('tr')">TR</button>
+  </div>
+</nav>
+
+<!-- Auth Card -->
+<div class="auth-card">
+  <div class="auth-header">
+    <div class="auth-title" id="pageTitle">Welcome back</div>
+    <div class="auth-sub" id="pageSub">Sign in to your Speaglish account</div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="success-msg" id="successMsg"></div>
+
+  <div class="field">
+    <label id="lblEmail">Email address</label>
+    <input type="email" id="email" placeholder="you@email.com" autocomplete="email">
+  </div>
+
+  <div class="field">
+    <label id="lblPassword">Password</label>
+    <div class="input-wrap">
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+      <button class="eye-btn" onclick="togglePass()" tabindex="-1">👁</button>
+    </div>
+    <a href="#" class="forgot-link" id="forgotLink" onclick="openReset()">Forgot password?</a>
+  </div>
+
+  <button class="submit-btn" id="submitBtn" onclick="handleLogin()">
+    <div class="spinner-sm"></div>
+    <span class="btn-text" id="btnText">Sign in →</span>
+  </button>
+
+  <div class="auth-switch">
+    <span id="switchText">Don't have an account?</span>
+    <a href="register.html" id="switchLink">Create one</a>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal-overlay" id="resetModal">
+  <div class="modal">
+    <div class="modal-title" id="resetTitle">Reset Password</div>
+    <div class="modal-sub" id="resetSub">Enter your email and we'll send you a reset link.</div>
+    <div class="field">
+      <label id="resetEmailLabel">Email address</label>
+      <input type="email" id="resetEmail" placeholder="you@email.com">
+    </div>
+    <div class="success-msg" id="resetSuccess" style="margin-top:10px;"></div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-ghost" onclick="closeReset()">Cancel</button>
+      <button class="btn-sm btn-primary" onclick="sendReset()">Send Link</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── SUPABASE ─────────────────────────────────────────────────
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  // ─── TRANSLATIONS ─────────────────────────────────────────────
+  const T = {
+    ar: {
+      pageTitle:'مرحباً بعودتك', pageSub:'تسجيل الدخول إلى حسابك في Speaglish',
+      lblEmail:'البريد الإلكتروني', lblPassword:'كلمة المرور',
+      forgotLink:'نسيت كلمة المرور؟', btnText:'تسجيل الدخول ←',
+      switchText:'ليس لديك حساب؟', switchLink:'إنشاء حساب',
+      resetTitle:'إعادة تعيين كلمة المرور',
+      resetSub:'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين.',
+      resetEmailLabel:'البريد الإلكتروني',
+      errInvalid:'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+      errEmpty:'يرجى إدخال البريد الإلكتروني وكلمة المرور.',
+      resetSent:'تم إرسال رابط إعادة التعيين! تحقق من بريدك الإلكتروني.',
+      dir:'rtl'
+    },
+    fr: {
+      pageTitle:'Bon retour', pageSub:'Connectez-vous à votre compte Speaglish',
+      lblEmail:'Adresse email', lblPassword:'Mot de passe',
+      forgotLink:'Mot de passe oublié ?', btnText:'Se connecter →',
+      switchText:'Pas encore de compte ?', switchLink:'Créer un compte',
+      resetTitle:'Réinitialiser le mot de passe',
+      resetSub:'Entrez votre email et nous vous enverrons un lien de réinitialisation.',
+      resetEmailLabel:'Adresse email',
+      errInvalid:'Email ou mot de passe incorrect.',
+      errEmpty:'Veuillez entrer votre email et votre mot de passe.',
+      resetSent:'Lien envoyé ! Vérifiez votre boîte email.',
+      dir:'ltr'
+    },
+    en: {
+      pageTitle:'Welcome back', pageSub:'Sign in to your Speaglish account',
+      lblEmail:'Email address', lblPassword:'Password',
+      forgotLink:'Forgot password?', btnText:'Sign in →',
+      switchText:"Don't have an account?", switchLink:'Create one',
+      resetTitle:'Reset Password',
+      resetSub:"Enter your email and we'll send you a reset link.",
+      resetEmailLabel:'Email address',
+      errInvalid:'Invalid email or password.',
+      errEmpty:'Please enter your email and password.',
+      resetSent:'Reset link sent! Check your inbox.',
+      dir:'ltr'
+    },
+    tr: {
+      pageTitle:'Tekrar hoşgeldiniz', pageSub:'Speaglish hesabınıza giriş yapın',
+      lblEmail:'E-posta adresi', lblPassword:'Şifre',
+      forgotLink:'Şifremi unuttum?', btnText:'Giriş yap →',
+      switchText:'Hesabınız yok mu?', switchLink:'Hesap oluştur',
+      resetTitle:'Şifre Sıfırla',
+      resetSub:'E-postanızı girin, size sıfırlama bağlantısı gönderelim.',
+      resetEmailLabel:'E-posta adresi',
+      errInvalid:'Geçersiz e-posta veya şifre.',
+      errEmpty:'Lütfen e-posta ve şifrenizi girin.',
+      resetSent:'Sıfırlama bağlantısı gönderildi! Gelen kutunuzu kontrol edin.',
+      dir:'ltr'
+    }
+  };
+
+  let lang = localStorage.getItem('sp_lang') || 'en';
+  let t = T[lang];
+
+  function setLang(l) {
+    lang = l; t = T[l];
+    localStorage.setItem('sp_lang', l);
+    applyLang();
+  }
+
+  function applyLang() {
+    document.documentElement.setAttribute('dir', t.dir);
+    document.documentElement.setAttribute('lang', lang);
+    document.getElementById('pageTitle').textContent    = t.pageTitle;
+    document.getElementById('pageSub').textContent      = t.pageSub;
+    document.getElementById('lblEmail').textContent     = t.lblEmail;
+    document.getElementById('lblPassword').textContent  = t.lblPassword;
+    document.getElementById('forgotLink').textContent   = t.forgotLink;
+    document.getElementById('btnText').textContent      = t.btnText;
+    document.getElementById('switchText').textContent   = t.switchText;
+    document.getElementById('switchLink').textContent   = t.switchLink;
+    document.getElementById('resetTitle').textContent   = t.resetTitle;
+    document.getElementById('resetSub').textContent     = t.resetSub;
+    document.getElementById('resetEmailLabel').textContent = t.resetEmailLabel;
+    ['ar','fr','en','tr'].forEach(code => {
+      const btn = document.getElementById('btn'+code.charAt(0).toUpperCase()+code.slice(1));
+      if(btn) btn.classList.toggle('active', code === lang);
+    });
+    document.title = `Speaglish — ${t.pageTitle}`;
+  }
+
+  // ─── PASSWORD TOGGLE ──────────────────────────────────────────
+  function togglePass() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  // ─── LOGIN ────────────────────────────────────────────────────
+  async function handleLogin() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errEl    = document.getElementById('errorMsg');
+    const btn      = document.getElementById('submitBtn');
+
+    errEl.classList.remove('show');
+
+    if (!email || !password) {
+      errEl.textContent = t.errEmpty;
+      errEl.classList.add('show');
+      return;
+    }
+
+    btn.classList.add('loading'); btn.disabled = true;
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      errEl.textContent = t.errInvalid;
+      errEl.classList.add('show');
+      btn.classList.remove('loading'); btn.disabled = false;
+      return;
+    }
+
+    // Get role and redirect
+    const { data: profile } = await sb.from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    const role = profile?.role || 'student';
+    const redirectMap = {
+      admin:   'admin-landing.html',
+      sales:   'sales.html',
+      teacher: 'teacher.html',
+      student: 'dashboard.html',
+    };
+
+    window.location.href = redirectMap[role] || 'dashboard.html';
+  }
+
+  // ─── RESET PASSWORD ───────────────────────────────────────────
+  function openReset()  { document.getElementById('resetModal').classList.add('open'); }
+  function closeReset() { document.getElementById('resetModal').classList.remove('open'); }
+
+  async function sendReset() {
+    const email  = document.getElementById('resetEmail').value.trim();
+    const succEl = document.getElementById('resetSuccess');
+    if (!email) return;
+
+    await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html'
+    });
+
+    succEl.textContent = t.resetSent;
+    succEl.classList.add('show');
+    setTimeout(closeReset, 3000);
+  }
+
+  // ─── ENTER KEY ────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleLogin();
+  });
+
+  // ─── LOAD LOGO ────────────────────────────────────────────────
+  async function loadLogo() {
+    try {
+      const market = localStorage.getItem('sp_market') || 'dz';
+      const { data } = await sb.from('landing_config').select('logo_url').eq('market', market).single();
+      if (data?.logo_url) {
+        document.getElementById('logoMark').innerHTML =
+          `<img src="${data.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+      }
+    } catch(e) {}
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  async function init() {
+    // Already logged in?
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const { data: profile } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+      const role = profile?.role || 'student';
+      const redirectMap = { admin:'admin-landing.html', sales:'sales.html', teacher:'teacher.html', student:'dashboard.html' };
+      window.location.href = redirectMap[role] || 'dashboard.html';
+      return;
+    }
+    applyLang();
+    loadLogo();
+  }
+
+  init();
+</script>
+</body>
+</html>

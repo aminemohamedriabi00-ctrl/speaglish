@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Create Account</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg:#080B18; --card:#0E1120; --card2:#131626;
+      --border:#1C2240; --gold:#F0A500; --gold2:#FFD166;
+      --teal:#00C9A7; --red:#FF5757; --blue:#4169FF;
+      --text:#EEF2FF; --sub:#8896B8; --muted:#3D4A6A;
+      --ff:'Barlow',sans-serif; --fd:'Syne',sans-serif;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      background:var(--bg);color:var(--text);font-family:var(--ff);
+      min-height:100vh;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      padding:24px;overflow-x:hidden;
+    }
+    body::before{
+      content:'';position:fixed;inset:0;pointer-events:none;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 20%,rgba(65,105,255,.08),transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%,rgba(240,165,0,.06),transparent 70%);
+    }
+
+    /* ── NAV ─────────────────────────────────── */
+    .top-nav{
+      position:fixed;top:0;left:0;right:0;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 32px;
+      background:rgba(8,11,24,.85);backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);z-index:10;
+    }
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+    .logo-mark{
+      width:32px;height:32px;
+      background:linear-gradient(135deg,var(--gold),#E8961A);
+      border-radius:8px;display:flex;align-items:center;justify-content:center;
+      font-family:var(--fd);font-weight:800;font-size:13px;color:#000;
+      overflow:hidden;flex-shrink:0;
+    }
+    .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;}
+    .logo-text span{color:var(--gold);}
+
+    .lang-toggle{
+      display:flex;gap:3px;background:var(--card2);
+      border:1px solid var(--border);border-radius:8px;padding:3px;
+    }
+    .lang-btn{
+      background:transparent;border:none;color:var(--sub);
+      padding:5px 10px;border-radius:6px;cursor:pointer;
+      font-family:var(--ff);font-size:11px;font-weight:600;transition:all .2s;
+    }
+    .lang-btn.active{background:var(--border);color:var(--text);}
+
+    /* ── FREE TRIAL BADGE ────────────────────── */
+    .trial-badge{
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(0,201,167,.1);border:1px solid rgba(0,201,167,.25);
+      color:var(--teal);padding:6px 18px;border-radius:30px;
+      font-size:12px;font-weight:600;letter-spacing:.3px;
+      margin-bottom:20px;
+    }
+    .trial-badge .dot{
+      width:6px;height:6px;background:var(--teal);
+      border-radius:50%;animation:blink 2s infinite;
+    }
+    @keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+    /* ── CARD ────────────────────────────────── */
+    .auth-card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:20px;padding:36px;width:100%;max-width:420px;
+      position:relative;z-index:1;animation:fadeUp .5s ease both;
+      margin-top:70px;
+    }
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+    .auth-header{text-align:center;margin-bottom:24px;}
+    .auth-title{font-family:var(--fd);font-size:24px;font-weight:700;margin-bottom:6px;}
+    .auth-sub{font-size:13px;color:var(--sub);font-weight:300;}
+
+    /* ── FORM ────────────────────────────────── */
+    .field{margin-bottom:14px;}
+    label{
+      display:block;font-size:12px;font-weight:600;
+      color:var(--sub);margin-bottom:7px;letter-spacing:.3px;
+    }
+    input[type=text],input[type=email],input[type=password],input[type=tel],select{
+      width:100%;background:var(--bg);
+      border:1px solid var(--border);border-radius:10px;
+      padding:11px 14px;color:var(--text);
+      font-family:var(--ff);font-size:14px;outline:none;
+      transition:border-color .2s;
+    }
+    input:focus,select:focus{border-color:var(--gold);}
+    select{cursor:pointer;}
+
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+    .input-wrap{position:relative;}
+    .input-wrap input{padding-right:42px;}
+    .eye-btn{
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;font-size:16px;
+      color:var(--muted);padding:2px;
+    }
+
+    /* Password strength */
+    .strength-bar{height:3px;background:var(--border);border-radius:3px;margin-top:6px;overflow:hidden;}
+    .strength-fill{height:100%;border-radius:3px;transition:all .3s;width:0;}
+    .strength-text{font-size:11px;color:var(--muted);margin-top:4px;}
+
+    /* ── WHAT YOU GET ────────────────────────── */
+    .trial-perks{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:10px;padding:14px;margin-bottom:18px;
+    }
+    .trial-perks-title{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:10px;letter-spacing:.5px;text-transform:uppercase;}
+    .perk{
+      display:flex;align-items:center;gap:8px;
+      font-size:12px;color:var(--sub);padding:3px 0;
+    }
+    .perk::before{content:'✓';color:var(--teal);font-weight:700;flex-shrink:0;}
+
+    /* ── ERRORS ──────────────────────────────── */
+    .error-msg{
+      background:rgba(255,87,87,.1);border:1px solid rgba(255,87,87,.3);
+      border-radius:8px;padding:10px 14px;font-size:13px;
+      color:var(--red);margin-bottom:14px;display:none;
+    }
+    .error-msg.show{display:block;}
+
+    /* ── SUCCESS STATE ───────────────────────── */
+    .success-state{
+      text-align:center;display:none;padding:20px 0;
+    }
+    .success-state.show{display:block;}
+    .success-icon{font-size:48px;margin-bottom:16px;}
+    .success-title{font-family:var(--fd);font-size:22px;font-weight:700;margin-bottom:8px;}
+    .success-sub{font-size:14px;color:var(--sub);line-height:1.6;}
+
+    /* ── SUBMIT ──────────────────────────────── */
+    .submit-btn{
+      width:100%;padding:13px;border:none;border-radius:10px;
+      background:var(--gold);color:#000;
+      font-family:var(--ff);font-size:14px;font-weight:700;
+      cursor:pointer;transition:all .2s;margin-top:18px;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+    }
+    .submit-btn:hover{background:var(--gold2);transform:translateY(-1px);}
+    .submit-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+    .spinner-sm{
+      width:16px;height:16px;border:2px solid rgba(0,0,0,.2);
+      border-top-color:#000;border-radius:50%;
+      animation:spin .7s linear infinite;display:none;
+    }
+    .submit-btn.loading .spinner-sm{display:block;}
+    .submit-btn.loading .btn-text{display:none;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── TERMS ───────────────────────────────── */
+    .terms-text{
+      text-align:center;font-size:11px;color:var(--muted);
+      margin-top:14px;line-height:1.5;
+    }
+    .terms-text a{color:var(--gold);text-decoration:none;}
+
+    /* ── SWITCH ──────────────────────────────── */
+    .auth-switch{
+      text-align:center;font-size:13px;color:var(--sub);margin-top:16px;
+    }
+    .auth-switch a{color:var(--gold);text-decoration:none;font-weight:600;}
+
+    @media(max-width:480px){
+      .field-row{grid-template-columns:1fr;}
+      .auth-card{padding:24px;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="top-nav">
+  <a href="index.html" class="nav-logo">
+    <div class="logo-mark" id="logoMark">Sp</div>
+    <span class="logo-text">Speak<span>glish</span></span>
+  </a>
+  <div class="lang-toggle">
+    <button class="lang-btn" id="btnAr" onclick="setLang('ar')">AR</button>
+    <button class="lang-btn" id="btnFr" onclick="setLang('fr')">FR</button>
+    <button class="lang-btn active" id="btnEn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" id="btnTr" onclick="setLang('tr')">TR</button>
+  </div>
+</nav>
+
+<!-- Auth Card -->
+<div class="auth-card">
+
+  <!-- Success State (shown after registration) -->
+  <div class="success-state" id="successState">
+    <div class="success-icon">🎉</div>
+    <div class="success-title" id="successTitle">Account created!</div>
+    <div class="success-sub" id="successSub">
+      Your free trial is active. You can take 3 exams for free right now.<br><br>
+      To unlock full access, go to your dashboard and follow the payment instructions.
+    </div>
+    <a href="dashboard.html" style="display:inline-block;margin-top:24px;background:var(--gold);color:#000;padding:12px 28px;border-radius:10px;font-weight:700;text-decoration:none;font-family:var(--ff);" id="dashBtn">Go to Dashboard →</a>
+  </div>
+
+  <!-- Register Form -->
+  <div id="registerForm">
+    <div class="auth-header">
+      <div class="trial-badge"><span class="dot"></span><span id="trialBadgeText">Free trial — no credit card required</span></div>
+      <div class="auth-title" id="pageTitle">Create your account</div>
+      <div class="auth-sub" id="pageSub">Start preparing for your exam today</div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- What you get -->
+    <div class="trial-perks">
+      <div class="trial-perks-title" id="perksTitle">Free trial includes</div>
+      <div class="perk" id="perk1">3 complete exam simulations</div>
+      <div class="perk" id="perk2">Instant score and skill breakdown</div>
+      <div class="perk" id="perk3">Question-by-question explanations</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label id="lblFirst">First name</label>
+        <input type="text" id="firstName" placeholder="Ahmed" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label id="lblLast">Last name</label>
+        <input type="text" id="lastName" placeholder="Bouzid" autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="field">
+      <label id="lblEmail">Email address</label>
+      <input type="email" id="email" placeholder="you@email.com" autocomplete="email">
+    </div>
+
+    <div class="field">
+      <label id="lblPhone">Phone number <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+      <input type="tel" id="phone" placeholder="+213 XXX XXX XXX">
+    </div>
+
+    <div class="field">
+      <label id="lblGoal">My main goal</label>
+      <select id="goal">
+        <option value="">Select your goal...</option>
+        <option value="tcf_canada">TCF — Immigration to Canada</option>
+        <option value="tcf_france">TCF — Immigration to France</option>
+        <option value="tef">TEF — Immigration</option>
+        <option value="ielts_study">IELTS — Study abroad</option>
+        <option value="ielts_work">IELTS — Work visa</option>
+        <option value="yds">YDS — Academic promotion (Turkey)</option>
+        <option value="yokdil">YÖKDİL — University (Turkey)</option>
+        <option value="toefl">TOEFL — University application</option>
+        <option value="general">General English improvement</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label id="lblPassword">Password</label>
+      <div class="input-wrap">
+        <input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" oninput="checkStrength()">
+        <button class="eye-btn" onclick="togglePass('password')" tabindex="-1">👁</button>
+      </div>
+      <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+      <div class="strength-text" id="strengthText"></div>
+    </div>
+
+    <div class="field">
+      <label id="lblConfirm">Confirm password</label>
+      <div class="input-wrap">
+        <input type="password" id="confirmPassword" placeholder="Repeat password" autocomplete="new-password">
+        <button class="eye-btn" onclick="togglePass('confirmPassword')" tabindex="-1">👁</button>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="handleRegister()">
+      <div class="spinner-sm"></div>
+      <span class="btn-text" id="btnText">Create Free Account →</span>
+    </button>
+
+    <div class="terms-text" id="termsText">
+      By creating an account you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+    </div>
+
+    <div class="auth-switch">
+      <span id="switchText">Already have an account?</span>
+      <a href="login.html" id="switchLink">Sign in</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ─── SUPABASE ─────────────────────────────────────────────────
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  // ─── TRANSLATIONS ─────────────────────────────────────────────
+  const T = {
+    ar:{
+      trialBadge:'تجربة مجانية — بدون بطاقة بنكية',
+      pageTitle:'إنشاء حسابك', pageSub:'ابدأ التحضير لامتحانك اليوم',
+      perksTitle:'التجربة المجانية تشمل',
+      perk1:'3 محاكاة كاملة للامتحان',perk2:'نتيجة فورية وتحليل المهارات',perk3:'شرح سؤال بسؤال',
+      lblFirst:'الاسم الأول',lblLast:'اسم العائلة',lblEmail:'البريد الإلكتروني',
+      lblPhone:'رقم الهاتف',lblGoal:'هدفي الرئيسي',lblPassword:'كلمة المرور',lblConfirm:'تأكيد كلمة المرور',
+      btnText:'إنشاء حساب مجاني ←',
+      switchText:'هل لديك حساب بالفعل؟',switchLink:'تسجيل الدخول',
+      errEmpty:'يرجى ملء جميع الحقول المطلوبة.',errPass:'كلمات المرور غير متطابقة.',
+      errShort:'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',errEmail:'البريد الإلكتروني مستخدم بالفعل.',
+      successTitle:'تم إنشاء الحساب!',
+      successSub:'تجربتك المجانية نشطة. يمكنك إجراء 3 امتحانات مجانية الآن.\n\nللحصول على الوصول الكامل، انتقل إلى لوحتك واتبع تعليمات الدفع.',
+      dashBtn:'الذهاب إلى اللوحة ←',dir:'rtl'
+    },
+    fr:{
+      trialBadge:'Essai gratuit — aucune carte bancaire requise',
+      pageTitle:'Créez votre compte', pageSub:'Commencez à préparer votre examen aujourd\'hui',
+      perksTitle:'L\'essai gratuit inclut',
+      perk1:'3 simulations complètes d\'examen',perk2:'Score instantané et analyse par compétence',perk3:'Explication question par question',
+      lblFirst:'Prénom',lblLast:'Nom',lblEmail:'Adresse email',
+      lblPhone:'Téléphone',lblGoal:'Mon objectif principal',lblPassword:'Mot de passe',lblConfirm:'Confirmer le mot de passe',
+      btnText:'Créer un compte gratuit →',
+      switchText:'Vous avez déjà un compte ?',switchLink:'Se connecter',
+      errEmpty:'Veuillez remplir tous les champs obligatoires.',errPass:'Les mots de passe ne correspondent pas.',
+      errShort:'Le mot de passe doit comporter au moins 8 caractères.',errEmail:'Cette adresse email est déjà utilisée.',
+      successTitle:'Compte créé !',
+      successSub:'Votre essai gratuit est actif. Vous pouvez passer 3 examens gratuitement maintenant.\n\nPour débloquer l\'accès complet, rendez-vous sur votre tableau de bord.',
+      dashBtn:'Aller au tableau de bord →',dir:'ltr'
+    },
+    en:{
+      trialBadge:'Free trial — no credit card required',
+      pageTitle:'Create your account', pageSub:'Start preparing for your exam today',
+      perksTitle:'Free trial includes',
+      perk1:'3 complete exam simulations',perk2:'Instant score and skill breakdown',perk3:'Question-by-question explanations',
+      lblFirst:'First name',lblLast:'Last name',lblEmail:'Email address',
+      lblPhone:'Phone number',lblGoal:'My main goal',lblPassword:'Password',lblConfirm:'Confirm password',
+      btnText:'Create Free Account →',
+      switchText:'Already have an account?',switchLink:'Sign in',
+      errEmpty:'Please fill in all required fields.',errPass:'Passwords do not match.',
+      errShort:'Password must be at least 8 characters.',errEmail:'This email is already in use.',
+      successTitle:'Account created!',
+      successSub:'Your free trial is active. You can take 3 exams for free right now.\n\nTo unlock full access, go to your dashboard and follow the payment instructions.',
+      dashBtn:'Go to Dashboard →',dir:'ltr'
+    },
+    tr:{
+      trialBadge:'Ücretsiz deneme — kredi kartı gerekmez',
+      pageTitle:'Hesap oluştur', pageSub:'Bugün sınavına hazırlanmaya başla',
+      perksTitle:'Ücretsiz deneme içerir',
+      perk1:'3 tam sınav simülasyonu',perk2:'Anında puan ve beceri analizi',perk3:'Soru bazında açıklamalar',
+      lblFirst:'Ad',lblLast:'Soyad',lblEmail:'E-posta adresi',
+      lblPhone:'Telefon numarası',lblGoal:'Ana hedefim',lblPassword:'Şifre',lblConfirm:'Şifreyi onayla',
+      btnText:'Ücretsiz Hesap Oluştur →',
+      switchText:'Zaten hesabınız var mı?',switchLink:'Giriş yap',
+      errEmpty:'Lütfen tüm gerekli alanları doldurun.',errPass:'Şifreler eşleşmiyor.',
+      errShort:'Şifre en az 8 karakter olmalıdır.',errEmail:'Bu e-posta adresi zaten kullanılıyor.',
+      successTitle:'Hesap oluşturuldu!',
+      successSub:'Ücretsiz denemeniz aktif. Şu anda 3 sınav ücretsiz girebilirsiniz.\n\nTam erişim için kontrol panelinize gidin.',
+      dashBtn:'Kontrol Paneline Git →',dir:'ltr'
+    }
+  };
+
+  let lang = localStorage.getItem('sp_lang') || 'en';
+  let t = T[lang];
+
+  function setLang(l) { lang=l; t=T[l]; localStorage.setItem('sp_lang',l); applyLang(); }
+
+  function applyLang() {
+    document.documentElement.setAttribute('dir',t.dir);
+    document.documentElement.setAttribute('lang',lang);
+    const ids = {
+      trialBadgeText:t.trialBadge, pageTitle:t.pageTitle, pageSub:t.pageSub,
+      perksTitle:t.perksTitle, perk1:t.perk1, perk2:t.perk2, perk3:t.perk3,
+      lblFirst:t.lblFirst, lblLast:t.lblLast, lblEmail:t.lblEmail,
+      lblPhone:t.lblPhone, lblGoal:t.lblGoal, lblPassword:t.lblPassword,
+      lblConfirm:t.lblConfirm, btnText:t.btnText, switchText:t.switchText,
+      switchLink:t.switchLink, successTitle:t.successTitle, dashBtn:t.dashBtn,
+    };
+    Object.entries(ids).forEach(([id,val]) => {
+      const el = document.getElementById(id); if(el) el.textContent = val;
+    });
+    document.getElementById('successSub').innerHTML = t.successSub.replace(/\n/g,'<br>');
+    ['ar','fr','en','tr'].forEach(code => {
+      const btn = document.getElementById('btn'+code.charAt(0).toUpperCase()+code.slice(1));
+      if(btn) btn.classList.toggle('active', code===lang);
+    });
+    document.title = `Speaglish — ${t.pageTitle}`;
+  }
+
+  // ─── PASSWORD TOGGLE ──────────────────────────────────────────
+  function togglePass(id) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  // ─── PASSWORD STRENGTH ────────────────────────────────────────
+  function checkStrength() {
+    const val = document.getElementById('password').value;
+    const fill = document.getElementById('strengthFill');
+    const text = document.getElementById('strengthText');
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    const levels = [
+      {w:'0%', color:'transparent', label:''},
+      {w:'25%', color:'var(--red)', label:'Weak'},
+      {w:'50%', color:'#FF9F43', label:'Fair'},
+      {w:'75%', color:'var(--gold)', label:'Good'},
+      {w:'100%', color:'var(--teal)', label:'Strong'},
+    ];
+    const l = levels[score];
+    fill.style.width = l.w;
+    fill.style.background = l.color;
+    text.textContent = l.label;
+    text.style.color = l.color;
+  }
+
+  // ─── REGISTER ─────────────────────────────────────────────────
+  async function handleRegister() {
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName  = document.getElementById('lastName').value.trim();
+    const email     = document.getElementById('email').value.trim();
+    const phone     = document.getElementById('phone').value.trim();
+    const goal      = document.getElementById('goal').value;
+    const password  = document.getElementById('password').value;
+    const confirm   = document.getElementById('confirmPassword').value;
+    const errEl     = document.getElementById('errorMsg');
+    const btn       = document.getElementById('submitBtn');
+
+    errEl.classList.remove('show');
+
+    if (!firstName || !lastName || !email || !password) {
+      errEl.textContent = t.errEmpty; errEl.classList.add('show'); return;
+    }
+    if (password.length < 8) {
+      errEl.textContent = t.errShort; errEl.classList.add('show'); return;
+    }
+    if (password !== confirm) {
+      errEl.textContent = t.errPass; errEl.classList.add('show'); return;
+    }
+
+    btn.classList.add('loading'); btn.disabled = true;
+
+    const fullName = `${firstName} ${lastName}`;
+    const market   = localStorage.getItem('sp_market') || 'dz';
+
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName } }
+    });
+
+    if (error) {
+      errEl.textContent = error.message.includes('already') ? t.errEmail : error.message;
+      errEl.classList.add('show');
+      btn.classList.remove('loading'); btn.disabled = false;
+      return;
+    }
+
+    // Update profile with extra info
+    if (data.user) {
+      await sb.from('profiles').update({
+        full_name: fullName,
+        phone:     phone || null,
+        market:    market,
+        role:      'student',
+        subscription_status: 'trial',
+        trial_tests_used: 0,
+      }).eq('id', data.user.id);
+    }
+
+    // Show success state
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('successState').classList.add('show');
+  }
+
+  // ─── LOAD LOGO ────────────────────────────────────────────────
+  async function loadLogo() {
+    try {
+      const market = localStorage.getItem('sp_market') || 'dz';
+      const { data } = await sb.from('landing_config').select('logo_url').eq('market',market).single();
+      if (data?.logo_url) {
+        document.getElementById('logoMark').innerHTML =
+          `<img src="${data.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+      }
+    } catch(e) {}
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) { window.location.href = 'dashboard.html'; return; }
+    applyLang();
+    loadLogo();
+  }
+
+  init();
+</script>
+</body>
+</html>

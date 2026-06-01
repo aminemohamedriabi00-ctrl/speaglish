@@ -106,21 +106,22 @@
       display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     }
 
-    .market-toggle {
+    .lang-toggle {
       display: flex; gap: 3px;
       background: var(--card2);
       border: 1px solid var(--border);
       border-radius: 8px; padding: 3px;
     }
 
-    .market-btn {
+    .lang-btn {
       background: transparent; border: none;
-      color: var(--sub); padding: 5px 12px;
+      color: var(--sub); padding: 5px 11px;
       border-radius: 6px; cursor: pointer;
       font-family: var(--ff); font-size: 12px;
-      font-weight: 500; transition: all .2s;
+      font-weight: 600; transition: all .2s;
+      letter-spacing: .3px;
     }
-    .market-btn.active { background: var(--border); color: var(--text); }
+    .lang-btn.active { background: var(--border); color: var(--text); }
 
     .btn {
       display: inline-flex; align-items: center;
@@ -598,10 +599,20 @@
       border-bottom: 1px solid var(--border);
     }
 
+    /* ── RTL — Arabic ──────────────────────── */
+    [dir="rtl"] .nav-right { flex-direction: row-reverse; }
+    [dir="rtl"] .hero-badge { flex-direction: row-reverse; }
+    [dir="rtl"] .hero-actions { flex-direction: row-reverse; }
+    [dir="rtl"] .t-author { flex-direction: row-reverse; }
+    [dir="rtl"] .plan-features li { flex-direction: row-reverse; }
+    [dir="rtl"] .step-card { text-align: right; }
+    [dir="rtl"] footer { flex-direction: row-reverse; }
+    [dir="rtl"] .offer-banner { flex-direction: row-reverse; }
+
     /* ── RESPONSIVE ────────────────────────── */
     @media (max-width: 768px) {
       nav { padding: 12px 16px; }
-      .market-toggle { display: none; }
+      .lang-toggle { display: none; }
       section { padding: 56px 16px; }
       .hero { min-height: 80vh; }
       .hero h1 { letter-spacing: -1px; }
@@ -633,9 +644,11 @@
       <span class="logo-text">Speak<span>glish</span></span>
     </a>
     <div class="nav-right">
-      <div class="market-toggle">
-        <button class="market-btn" id="btnDz" onclick="switchMarket('dz')">🇩🇿 Algeria</button>
-        <button class="market-btn" id="btnTr" onclick="switchMarket('tr')">🇹🇷 Turkey</button>
+      <div class="lang-toggle">
+        <button class="lang-btn" id="btnAr" onclick="switchLang('ar')">AR</button>
+        <button class="lang-btn" id="btnFr" onclick="switchLang('fr')">FR</button>
+        <button class="lang-btn" id="btnEn" onclick="switchLang('en')">EN</button>
+        <button class="lang-btn" id="btnTr" onclick="switchLang('tr')">TR</button>
       </div>
       <a href="login.html" class="btn btn-ghost">Sign in</a>
       <a href="register.html" class="btn btn-primary" id="navCta">Start Free</a>
@@ -781,64 +794,126 @@
     ]
   };
 
-  // ─── TRANSLATIONS ─────────────────────────────────────────────
+  // ─── TRANSLATIONS (4 languages) ──────────────────────────────
   const T = {
-    dz: {
+    ar: {
+      dir: 'rtl',
+      badge: 'منصة التحضير للامتحانات',
+      title: 'استعد لامتحانك<br><span class="gold">بكل ثقة</span>',
+      sub: 'محاكاة كاملة للامتحانات، تصحيح فوري بالذكاء الاصطناعي، وتوصيات شخصية لتحقيق أعلى درجة.',
+      cta: 'ابدأ مجاناً ←',
+      cta2: 'اكتشف الامتحانات',
+      navCta: 'ابدأ مجاناً',
+      steps: [
+        { icon:'📝', title:'قم بمحاكاة الامتحان', desc:'تجربة امتحان كاملة مع مؤقت وتنقل بين الأسئلة وإمكانية تعليم الأسئلة.' },
+        { icon:'📊', title:'تصحيح فوري', desc:'نتائج تفصيلية لكل مهارة مع تصحيح الكتابة بالذكاء الاصطناعي وشرح مفصل.' },
+        { icon:'🎯', title:'اتبع خطتك', desc:'تحديد نقاط الضعف مع دروس مستهدفة وتوصيات يوتيوب.' },
+        { icon:'📈', title:'تتبع تقدمك', desc:'شاهد تحسنك بين المحاولات واعرف متى أصبحت جاهزاً للامتحان.' },
+      ],
+      stepsTitle: 'كيف يعمل؟',
+      examsTag: 'الامتحانات', examsTitle: 'المحاكاة المتاحة',
+      examsSub: 'اختبار مجاني واحد مشمول — لا بطاقة بنكية مطلوبة',
+      stats: ['طالب تم تحضيره','نسبة النجاح','امتحان متاح','وصول غير محدود'],
+      planFeatures: ['الوصول لجميع الامتحانات','تصحيح الكتابة بالذكاء الاصطناعي','دروس حسب المهارة','توصيات يوتيوب','تتبع التقدم'],
+      planCta: 'ابدأ ←',
+      pricingSub: 'دفع عبر CCP · تفعيل خلال 24 ساعة',
+      paymentNote: '💳 الدفع عبر تحويل CCP · تفعيل الحساب خلال 24 ساعة',
+      reviewsTitle: 'ما يقوله طلابنا',
+      ctaTitle: 'هل أنت مستعد لاجتياز امتحانك؟',
+      ctaSub: 'ابدأ باختبار مجاني اليوم. لا بطاقة بنكية مطلوبة.',
+      ctaBtn: 'ابدأ مجاناً ←',
+      footerLinks: ['الامتحانات','الأسعار','تسجيل الدخول','إنشاء حساب'],
+    },
+    fr: {
+      dir: 'ltr',
       badge: 'Plateforme de Préparation aux Examens',
       title: 'Préparez votre examen<br><span class="gold">avec confiance</span>',
       sub: 'Simulations complètes, feedback IA instantané et recommandations personnalisées pour maximiser votre score.',
       cta: 'Essai gratuit →',
       cta2: 'Voir les examens',
       navCta: 'Commencer',
-      pills: ['TCF','TEF','IELTS','DELF','DALF'],
-      stats: ['Étudiants préparés','Taux de réussite','Examens disponibles','Accès illimité'],
-      examsTag: 'Examens', examsTitle: 'Simulations disponibles',
-      examsSub: '1 test gratuit inclus — aucune carte bancaire requise',
-      stepsTitle: 'Comment ça marche',
       steps: [
         { icon:'📝', title:'Passez une simulation', desc:'Expérience d\'examen complète avec minuterie, navigation et signalement des questions.' },
         { icon:'📊', title:'Feedback instantané', desc:'Résultats détaillés par compétence avec correction IA des rédactions et explications.' },
         { icon:'🎯', title:'Suivez votre plan', desc:'Identification des points faibles avec leçons ciblées et recommandations YouTube.' },
         { icon:'📈', title:'Suivez vos progrès', desc:'Visualisez votre amélioration entre les tentatives et sachez quand vous êtes prêt.' },
       ],
-      pricingSub: 'Paiement par virement CCP · Activation sous 24h',
-      paymentNote: '💳 Paiement par virement CCP · Compte activé sous 24 heures',
+      stepsTitle: 'Comment ça marche',
+      examsTag: 'Examens', examsTitle: 'Simulations disponibles',
+      examsSub: '1 test gratuit inclus — aucune carte bancaire requise',
+      stats: ['Étudiants préparés','Taux de réussite','Examens disponibles','Accès illimité'],
       planFeatures: ['Accès à tous les examens','Feedback IA sur l\'écrit','Leçons par compétence','Recommandations YouTube','Suivi de progression'],
       planCta: 'Commencer →',
+      pricingSub: 'Paiement par virement CCP · Activation sous 24h',
+      paymentNote: '💳 Paiement par virement CCP · Compte activé sous 24 heures',
       reviewsTitle: 'Ce que disent nos étudiants',
       ctaTitle: 'Prêt à réussir votre examen ?',
       ctaSub: 'Commencez avec un test gratuit aujourd\'hui. Aucune carte bancaire requise.',
       ctaBtn: 'Essai gratuit →',
       footerLinks: ['Examens','Tarifs','Connexion','Inscription'],
     },
+    en: {
+      dir: 'ltr',
+      badge: 'Exam Preparation Platform',
+      title: 'Prepare for your exam<br><span class="gold">with confidence</span>',
+      sub: 'Full exam simulations, instant AI feedback, and personalized recommendations to maximize your score.',
+      cta: 'Start Free Trial →',
+      cta2: 'View Exams',
+      navCta: 'Start Free',
+      steps: [
+        { icon:'📝', title:'Take a simulation', desc:'Full exam experience with real timer, question navigation, and flagging system.' },
+        { icon:'📊', title:'Get instant feedback', desc:'Detailed score breakdown by skill with AI-powered writing correction and explanations.' },
+        { icon:'🎯', title:'Follow your plan', desc:'Personalized weak area identification with targeted lessons and YouTube recommendations.' },
+        { icon:'📈', title:'Track your progress', desc:'See your improvement across attempts and know exactly when you are exam-ready.' },
+      ],
+      stepsTitle: 'How it works',
+      examsTag: 'Exams', examsTitle: 'Available simulations',
+      examsSub: '1 free test included — no credit card required',
+      stats: ['Students prepared','Pass rate','Exams available','Unlimited access'],
+      planFeatures: ['Access to all exams','AI writing feedback','Skill-based lessons','YouTube recommendations','Progress tracking'],
+      planCta: 'Start →',
+      pricingSub: 'Easy payment · Activated within 24h',
+      paymentNote: '💳 Payment by bank transfer · Account activated within 24 hours',
+      reviewsTitle: 'What our students say',
+      ctaTitle: 'Ready to pass your exam?',
+      ctaSub: 'Start with a free test today. No credit card required.',
+      ctaBtn: 'Start Free Trial →',
+      footerLinks: ['Exams','Pricing','Login','Register'],
+    },
     tr: {
+      dir: 'ltr',
       badge: 'Sınav Hazırlık Platformu',
       title: 'YDS ve IELTS\'e<br><span class="gold">güvenle hazırlan</span>',
       sub: 'Tam simülasyon, anında AI geri bildirimi ve maksimum puan için kişiselleştirilmiş öneriler.',
       cta: 'Ücretsiz Başla →',
       cta2: 'Sınavlara Bak',
       navCta: 'Ücretsiz Başla',
-      pills: ['YDS','YÖKDİL','e-YDS','IELTS','TOEFL','TOEIC'],
-      stats: ['Hazırlanan öğrenci','Başarı oranı','Mevcut sınav','Sınırsız erişim'],
-      examsTag: 'Sınavlar', examsTitle: 'Mevcut simülasyonlar',
-      examsSub: '1 ücretsiz test dahil — kredi kartı gerekmez',
-      stepsTitle: 'Nasıl çalışır',
       steps: [
         { icon:'📝', title:'Simülasyon yap', desc:'Gerçek zamanlı soru gezinme ve işaretleme ile tam sınav deneyimi.' },
         { icon:'📊', title:'Anında geri bildirim', desc:'AI destekli yazma düzeltmesi ve açıklamalar ile beceriye göre detaylı puanlama.' },
         { icon:'🎯', title:'Planını takip et', desc:'Zayıf alan tespiti, hedefli dersler ve YouTube önerileri.' },
         { icon:'📈', title:'İlerlemeyi takip et', desc:'Denemeler arasındaki gelişimini gör ve sınava ne zaman hazır olduğunu bil.' },
       ],
-      pricingSub: 'Kolay ödeme · 24 saat içinde aktivasyon',
-      paymentNote: '💳 Banka kartı veya Iyzico ile ödeme · 24 saat içinde aktivasyon',
+      stepsTitle: 'Nasıl çalışır',
+      examsTag: 'Sınavlar', examsTitle: 'Mevcut simülasyonlar',
+      examsSub: '1 ücretsiz test dahil — kredi kartı gerekmez',
+      stats: ['Hazırlanan öğrenci','Başarı oranı','Mevcut sınav','Sınırsız erişim'],
       planFeatures: ['Tüm sınavlara erişim','AI yazma geri bildirimi','Konu bazlı dersler','YouTube önerileri','İlerleme takibi'],
       planCta: 'Başla →',
+      pricingSub: 'Kolay ödeme · 24 saat içinde aktivasyon',
+      paymentNote: '💳 Banka kartı veya Iyzico ile ödeme · 24 saat içinde aktivasyon',
       reviewsTitle: 'Öğrencilerimiz ne diyor',
       ctaTitle: 'Sınavınızı geçmeye hazır mısınız?',
       ctaSub: 'Bugün ücretsiz testle başlayın. Kredi kartı gerekmez.',
       ctaBtn: 'Ücretsiz Başla →',
       footerLinks: ['Sınavlar','Fiyatlar','Giriş','Kayıt'],
     }
+  };
+
+  // Pills per market (not language)
+  const PILLS = {
+    dz: ['TCF','TEF','IELTS','DELF','DALF'],
+    tr: ['YDS','YÖKDİL','e-YDS','IELTS','TOEFL','TOEIC'],
   };
 
   // ─── DEFAULT TESTIMONIALS ─────────────────────────────────────
@@ -856,10 +931,11 @@
   };
 
   // ─── STATE ────────────────────────────────────────────────────
-  let market = 'dz';
+  let market = 'dz';   // auto-detected, drives prices & exam types
+  let lang   = 'fr';   // user-chosen, drives text language
   let globalConfig = null;
 
-  // ─── MARKET DETECTION ─────────────────────────────────────────
+  // ─── MARKET DETECTION (automatic, not shown to user) ──────────
   async function detectMarket() {
     const param = new URLSearchParams(window.location.search).get('market');
     if (param === 'dz' || param === 'tr') {
@@ -876,22 +952,36 @@
     return 'dz';
   }
 
-  function switchMarket(m) {
-    localStorage.setItem('sp_market', m);
-    market = m;
-    render(m, globalConfig);
-    updateToggle(m);
+  // ─── LANGUAGE DETECTION ───────────────────────────────────────
+  function detectLang(m) {
+    const saved = localStorage.getItem('sp_lang');
+    if (['ar','fr','en','tr'].includes(saved)) return saved;
+    // Smart default based on market
+    return m === 'tr' ? 'tr' : 'fr';
   }
 
-  function updateToggle(m) {
-    document.getElementById('btnDz').classList.toggle('active', m === 'dz');
-    document.getElementById('btnTr').classList.toggle('active', m === 'tr');
+  function switchLang(l) {
+    localStorage.setItem('sp_lang', l);
+    lang = l;
+    updateLangToggle(l);
+    render(market, lang, globalConfig);
+  }
+
+  function updateLangToggle(l) {
+    ['ar','fr','en','tr'].forEach(code => {
+      const btn = document.getElementById('btn' + code.charAt(0).toUpperCase() + code.slice(1));
+      if (btn) btn.classList.toggle('active', code === l);
+    });
   }
 
   // ─── RENDER ───────────────────────────────────────────────────
-  function render(m, cfg) {
-    const t = T[m];
-    const isTr = m === 'tr';
+  function render(m, l, cfg) {
+    const t   = T[l];           // text from chosen language
+    const isTr = m === 'tr';    // market drives prices & exam list
+
+    // RTL for Arabic
+    document.documentElement.setAttribute('dir', t.dir);
+    document.documentElement.setAttribute('lang', l);
 
     // Announcement
     const annBar = document.getElementById('announcementBar');
@@ -937,9 +1027,9 @@
     document.getElementById('heroSecondary').textContent = t.cta2;
     document.getElementById('navCta').textContent   = t.navCta;
 
-    // Exam pills
+    // Exam pills (driven by market, not language)
     document.getElementById('examPills').innerHTML =
-      t.pills.map(p => `<span class="exam-pill">${p}</span>`).join('');
+      PILLS[m].map(p => `<span class="exam-pill">${p}</span>`).join('');
 
     // Stats
     t.stats.forEach((l, i) => {
@@ -1010,11 +1100,20 @@
       cfg?.price_3months || (isTr ? 700  : 3500),
       cfg?.price_6months || (isTr ? 1200 : 5500),
     ];
+    const planNames = {
+      ar: ['شهر واحد','3 أشهر','6 أشهر'],
+      fr: ['1 Mois','3 Mois','6 Mois'],
+      en: ['1 Month','3 Months','6 Months'],
+      tr: ['1 Ay','3 Ay','6 Ay'],
+    };
+    const popularLabel = {
+      ar:'⭐ الأكثر شعبية', fr:'⭐ Le plus populaire',
+      en:'⭐ Most Popular', tr:'⭐ En Popüler'
+    };
     const plans = [
-      { name: isTr ? '1 Ay' : '1 Mois',  price: prices[0], featured: false },
-      { name: isTr ? '3 Ay' : '3 Mois',  price: prices[1], featured: true,
-        badge: isTr ? '⭐ En Popüler' : '⭐ Le plus populaire' },
-      { name: isTr ? '6 Ay' : '6 Mois',  price: prices[2], featured: false },
+      { name: planNames[l][0], price: prices[0], featured: false },
+      { name: planNames[l][1], price: prices[1], featured: true, badge: popularLabel[l] },
+      { name: planNames[l][2], price: prices[2], featured: false },
     ];
 
     document.getElementById('pricingGrid').innerHTML = plans.map(pl => {
@@ -1100,7 +1199,8 @@
   // ─── INIT ─────────────────────────────────────────────────────
   async function init() {
     market = await detectMarket();
-    updateToggle(market);
+    lang   = detectLang(market);
+    updateLangToggle(lang);
 
     // Load config from Supabase
     try {
@@ -1114,7 +1214,7 @@
       console.warn('Using default config:', e.message);
     }
 
-    render(market, globalConfig);
+    render(market, lang, globalConfig);
 
     // Hide loader
     const loader = document.getElementById('loaderOverlay');

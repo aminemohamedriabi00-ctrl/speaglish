@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Landing Page Editor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #080B18; --card: #0E1120; --card2: #131626;
+      --border: #1C2240; --gold: #F0A500; --gold2: #FFD166;
+      --teal: #00C9A7; --red: #FF5757; --blue: #4169FF;
+      --text: #EEF2FF; --sub: #8896B8; --muted: #3D4A6A;
+      --ff: 'Barlow',sans-serif; --fd: 'Syne',sans-serif;
+      --sidebar: 230px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);display:flex;min-height:100vh;overflow-x:hidden;}
+
+    /* ── SIDEBAR ─────────────────────────────── */
+    .sidebar{
+      width:var(--sidebar);min-height:100vh;background:var(--card);
+      border-right:1px solid var(--border);
+      display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:50;
+    }
+    .sidebar-logo{
+      padding:20px 16px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;gap:10px;
+    }
+    .logo-mark{
+      width:32px;height:32px;
+      background:linear-gradient(135deg,var(--gold),#E8961A);
+      border-radius:8px;display:flex;align-items:center;justify-content:center;
+      font-family:var(--fd);font-weight:800;font-size:13px;color:#000;flex-shrink:0;
+    }
+    .logo-text{font-family:var(--fd);font-size:16px;font-weight:700;}
+    .logo-text span{color:var(--gold);}
+
+    .sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto;}
+    .nav-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px;}
+
+    .nav-item{
+      display:flex;align-items:center;gap:10px;padding:9px 12px;
+      border-radius:8px;cursor:pointer;transition:all .15s;
+      font-size:13px;color:var(--sub);font-weight:500;
+      border:1px solid transparent;margin-bottom:2px;
+    }
+    .nav-item:hover{background:var(--card2);color:var(--text);}
+    .nav-item.active{background:rgba(240,165,0,.1);color:var(--gold);border-color:rgba(240,165,0,.2);}
+    .nav-item .icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+
+    .sidebar-footer{padding:12px 8px;border-top:1px solid var(--border);}
+
+    /* ── MAIN ────────────────────────────────── */
+    .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+    /* ── TOP BAR ─────────────────────────────── */
+    .topbar{
+      position:sticky;top:0;z-index:40;
+      background:rgba(8,11,24,.92);backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+      padding:12px 28px;display:flex;align-items:center;
+      justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+
+    .topbar-left{display:flex;align-items:center;gap:12px;}
+
+    .page-title{font-family:var(--fd);font-size:16px;font-weight:700;}
+    .page-sub{font-size:12px;color:var(--muted);}
+
+    .market-tabs{
+      display:flex;gap:3px;background:var(--card2);
+      border:1px solid var(--border);border-radius:8px;padding:3px;
+    }
+    .market-tab{
+      background:transparent;border:none;color:var(--sub);
+      padding:5px 14px;border-radius:6px;cursor:pointer;
+      font-family:var(--ff);font-size:12px;font-weight:600;transition:all .2s;
+    }
+    .market-tab.active{background:var(--border);color:var(--text);}
+
+    .topbar-right{display:flex;gap:8px;}
+
+    .btn{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 18px;
+      border-radius:8px;font-family:var(--ff);font-size:13px;
+      font-weight:600;cursor:pointer;transition:all .2s;border:none;
+      text-decoration:none;
+    }
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub);}
+    .btn-ghost:hover{border-color:var(--sub);color:var(--text);}
+    .btn-primary{background:var(--gold);color:#000;}
+    .btn-primary:hover{background:var(--gold2);}
+    .btn-danger{background:rgba(255,87,87,.15);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+    .btn-sm{padding:5px 12px;font-size:12px;}
+
+    /* ── CONTENT ─────────────────────────────── */
+    .content{flex:1;padding:28px;max-width:900px;width:100%;}
+
+    .section-panel{display:none;}
+    .section-panel.active{display:block;}
+
+    .panel-title{
+      font-family:var(--fd);font-size:22px;font-weight:700;
+      margin-bottom:6px;
+    }
+    .panel-desc{font-size:13px;color:var(--sub);margin-bottom:28px;font-weight:300;}
+
+    /* ── CARDS ───────────────────────────────── */
+    .card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:12px;padding:22px;margin-bottom:16px;
+    }
+    .card-title{
+      font-family:var(--fd);font-size:14px;font-weight:700;
+      margin-bottom:16px;display:flex;align-items:center;gap:8px;
+    }
+    .card-title .badge{
+      font-size:10px;background:rgba(240,165,0,.15);
+      color:var(--gold);padding:2px 8px;border-radius:10px;font-family:var(--ff);font-weight:600;
+    }
+
+    /* ── FORM FIELDS ─────────────────────────── */
+    .field{margin-bottom:16px;}
+    .field:last-child{margin-bottom:0;}
+
+    label{
+      display:block;font-size:12px;font-weight:600;
+      color:var(--sub);margin-bottom:6px;letter-spacing:.3px;
+    }
+
+    input[type=text],input[type=url],input[type=number],
+    input[type=date],input[type=email],textarea,select{
+      width:100%;background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:10px 13px;color:var(--text);
+      font-family:var(--ff);font-size:13px;outline:none;
+      transition:border-color .2s;
+    }
+    input:focus,textarea:focus,select:focus{border-color:var(--gold);}
+    textarea{resize:vertical;min-height:80px;line-height:1.6;}
+    select{cursor:pointer;}
+
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+    /* ── TOGGLE ──────────────────────────────── */
+    .toggle-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 0;border-bottom:1px solid var(--border);
+    }
+    .toggle-row:last-child{border-bottom:none;padding-bottom:0;}
+    .toggle-info{flex:1;}
+    .toggle-label{font-size:13px;font-weight:600;}
+    .toggle-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+
+    .toggle{
+      position:relative;width:42px;height:24px;flex-shrink:0;
+    }
+    .toggle input{opacity:0;width:0;height:0;}
+    .toggle-slider{
+      position:absolute;inset:0;background:var(--border);
+      border-radius:24px;cursor:pointer;transition:.3s;
+    }
+    .toggle-slider::before{
+      content:'';position:absolute;width:18px;height:18px;
+      left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;
+    }
+    .toggle input:checked + .toggle-slider{background:var(--teal);}
+    .toggle input:checked + .toggle-slider::before{transform:translateX(18px);}
+
+    /* ── IMAGE UPLOAD ────────────────────────── */
+    .img-upload{
+      border:2px dashed var(--border);border-radius:10px;
+      padding:20px;text-align:center;cursor:pointer;transition:all .2s;
+      position:relative;overflow:hidden;
+    }
+    .img-upload:hover{border-color:var(--gold);background:rgba(240,165,0,.03);}
+    .img-upload input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+    .img-upload-icon{font-size:28px;margin-bottom:8px;}
+    .img-upload-text{font-size:13px;color:var(--sub);}
+    .img-upload-hint{font-size:11px;color:var(--muted);margin-top:4px;}
+
+    .img-preview{
+      width:100%;max-height:140px;object-fit:cover;
+      border-radius:8px;margin-top:10px;display:none;
+    }
+    .img-preview.show{display:block;}
+    .img-url-display{
+      font-size:11px;color:var(--teal);margin-top:6px;
+      word-break:break-all;display:none;
+    }
+    .img-url-display.show{display:block;}
+
+    /* ── LANG TABS ───────────────────────────── */
+    .lang-tabs{
+      display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;
+    }
+    .lang-tab{
+      background:transparent;border:none;border-bottom:2px solid transparent;
+      color:var(--sub);padding:8px 16px;cursor:pointer;
+      font-family:var(--ff);font-size:13px;font-weight:600;
+      transition:all .2s;margin-bottom:-1px;
+    }
+    .lang-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+    .lang-panel{display:none;}
+    .lang-panel.active{display:block;}
+
+    /* ── RANGE SLIDER ────────────────────────── */
+    .range-wrap{display:flex;align-items:center;gap:12px;}
+    .range-wrap input[type=range]{
+      flex:1;background:transparent;height:4px;
+      border:none;padding:0;accent-color:var(--gold);cursor:pointer;
+    }
+    .range-val{
+      font-family:var(--fd);font-size:14px;font-weight:700;
+      color:var(--gold);min-width:36px;text-align:right;
+    }
+
+    /* ── LIST ITEMS (testimonials, faq, badges) ─ */
+    .list-item{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:14px;margin-bottom:10px;
+      display:flex;gap:12px;align-items:flex-start;
+    }
+    .list-item-content{flex:1;}
+    .list-item-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+    .list-item-sub{font-size:12px;color:var(--muted);}
+    .list-item-actions{display:flex;gap:6px;flex-shrink:0;}
+
+    .add-btn{
+      width:100%;padding:11px;border:2px dashed var(--border);
+      background:transparent;color:var(--sub);border-radius:8px;
+      cursor:pointer;font-family:var(--ff);font-size:13px;
+      font-weight:500;transition:all .2s;
+    }
+    .add-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+    /* ── MINI MODAL ──────────────────────────── */
+    .modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.7);
+      z-index:200;display:none;align-items:center;justify-content:center;
+      padding:20px;
+    }
+    .modal-overlay.open{display:flex;}
+    .modal{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:16px;padding:28px;width:100%;max-width:480px;
+      max-height:90vh;overflow-y:auto;
+    }
+    .modal-title{font-family:var(--fd);font-size:18px;font-weight:700;margin-bottom:20px;}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+
+    /* ── TOAST ───────────────────────────────── */
+    .toast-wrap{position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+    .toast{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:10px;padding:12px 18px;font-size:13px;
+      display:flex;align-items:center;gap:10px;min-width:240px;
+      animation:slideIn .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.3);
+    }
+    .toast.success{border-color:var(--teal);}
+    .toast.error{border-color:var(--red);}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+    /* ── LOADING ─────────────────────────────── */
+    .loader-overlay{
+      position:fixed;inset:0;background:var(--bg);
+      z-index:400;display:flex;align-items:center;justify-content:center;
+    }
+    .loader-overlay.out{display:none;}
+    .spinner{
+      width:36px;height:36px;border:2px solid var(--border);
+      border-top-color:var(--gold);border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── COLOR SWATCH ────────────────────────── */
+    input[type=color]{
+      width:44px;height:36px;border:1px solid var(--border);
+      border-radius:6px;cursor:pointer;background:none;padding:2px;
+    }
+
+    .hint{font-size:11px;color:var(--muted);margin-top:5px;}
+
+    /* ── STAT DISPLAY ────────────────────────── */
+    .stats-preview{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;
+    }
+    .stat-prev{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:12px;text-align:center;
+    }
+    .stat-prev-num{font-family:var(--fd);font-size:20px;font-weight:700;color:var(--gold);}
+    .stat-prev-label{font-size:11px;color:var(--muted);}
+
+    @media(max-width:768px){
+      .sidebar{display:none;}
+      .main{margin-left:0;}
+      .field-row,.field-row-3{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loader -->
+<div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">Sp</div>
+    <span class="logo-text">Speak<span>glish</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Content</div>
+    <div class="nav-item active" onclick="showSection('branding')"><span class="icon">🎨</span> Branding</div>
+    <div class="nav-item" onclick="showSection('hero')"><span class="icon">🖼️</span> Hero & Images</div>
+    <div class="nav-item" onclick="showSection('content')"><span class="icon">📝</span> Page Content</div>
+    <div class="nav-label">Marketing</div>
+    <div class="nav-item" onclick="showSection('promos')"><span class="icon">📢</span> Promotions</div>
+    <div class="nav-item" onclick="showSection('pricing')"><span class="icon">💰</span> Pricing</div>
+    <div class="nav-item" onclick="showSection('stats')"><span class="icon">📊</span> Stats & Trust</div>
+    <div class="nav-item" onclick="showSection('testimonials')"><span class="icon">💬</span> Testimonials</div>
+    <div class="nav-item" onclick="showSection('faq')"><span class="icon">❓</span> FAQ</div>
+    <div class="nav-item" onclick="showSection('popup')"><span class="icon">🔔</span> Popup / Modal</div>
+    <div class="nav-label">Technical</div>
+    <div class="nav-item" onclick="showSection('contact')"><span class="icon">📱</span> Contact & Social</div>
+    <div class="nav-item" onclick="showSection('seo')"><span class="icon">🔍</span> SEO</div>
+    <div class="nav-item" onclick="showSection('tracking')"><span class="icon">📈</span> Tracking</div>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="index.html" target="_blank" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;">👁 Preview Landing</a>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="page-title">Landing Page Editor</div>
+        <div class="page-sub" id="lastSaved">Not saved yet</div>
+      </div>
+      <div class="market-tabs">
+        <button class="market-tab active" id="tabDz" onclick="switchMarket('dz')">🇩🇿 Algeria</button>
+        <button class="market-tab" id="tabTr" onclick="switchMarket('tr')">🇹🇷 Turkey</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a href="index.html" target="_blank" class="btn btn-ghost">👁 Preview</a>
+      <button class="btn btn-primary" onclick="saveAll()" id="saveBtn">💾 Save All</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ── BRANDING ──────────────────────────── -->
+    <div class="section-panel active" id="sec-branding">
+      <div class="panel-title">🎨 Branding</div>
+      <div class="panel-desc">Upload your logo and set your brand visuals.</div>
+
+      <div class="card">
+        <div class="card-title">Logo</div>
+        <div class="img-upload" onclick="document.getElementById('logoInput').click()">
+          <input type="file" id="logoInput" accept="image/*" onchange="handleImageUpload(this,'logo_url','logoPreview','logoUrl')">
+          <div class="img-upload-icon">🏷️</div>
+          <div class="img-upload-text">Click to upload logo</div>
+          <div class="img-upload-hint">PNG, SVG or JPG · Recommended: 200×200px</div>
+        </div>
+        <img class="img-preview" id="logoPreview">
+        <div class="img-url-display" id="logoUrl"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Announcement Bar</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable Announcement Bar</div>
+            <div class="toggle-desc">Shows a banner at the very top of the page</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="announcement_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Announcement Text</label>
+          <input type="text" id="announcement_text" placeholder="🎉 Ramadan offer — 30% off all plans until April 5">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HERO & IMAGES ─────────────────────── -->
+    <div class="section-panel" id="sec-hero">
+      <div class="panel-title">🖼️ Hero & Images</div>
+      <div class="panel-desc">Set background images for desktop and mobile, and upload campaign banners.</div>
+
+      <div class="card">
+        <div class="card-title">Desktop Background <span class="badge">Landscape</span></div>
+        <div class="img-upload" onclick="document.getElementById('bgDesktopInput').click()">
+          <input type="file" id="bgDesktopInput" accept="image/*" onchange="handleImageUpload(this,'bg_desktop_url','bgDesktopPreview','bgDesktopUrl')">
+          <div class="img-upload-icon">🖥️</div>
+          <div class="img-upload-text">Upload desktop background</div>
+          <div class="img-upload-hint">Recommended: 1920×1080px · JPG or WebP</div>
+        </div>
+        <img class="img-preview" id="bgDesktopPreview">
+        <div class="img-url-display" id="bgDesktopUrl"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Mobile Background <span class="badge">Portrait</span></div>
+        <div class="img-upload" onclick="document.getElementById('bgMobileInput').click()">
+          <input type="file" id="bgMobileInput" accept="image/*" onchange="handleImageUpload(this,'bg_mobile_url','bgMobilePreview','bgMobileUrl')">
+          <div class="img-upload-icon">📱</div>
+          <div class="img-upload-text">Upload mobile background</div>
+          <div class="img-upload-hint">Recommended: 750×1334px · JPG or WebP</div>
+        </div>
+        <img class="img-preview" id="bgMobilePreview">
+        <div class="img-url-display" id="bgMobileUrl"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Background Overlay</div>
+        <div class="field">
+          <label>Darkness (0 = transparent, 1 = fully dark)</label>
+          <div class="range-wrap">
+            <input type="range" id="bg_overlay_opacity" min="0" max="1" step="0.05" value="0.6" oninput="document.getElementById('overlayVal').textContent=Math.round(this.value*100)+'%'">
+            <span class="range-val" id="overlayVal">60%</span>
+          </div>
+          <div class="hint">Set higher if your text is hard to read over the background image</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Campaign Banner</div>
+        <div class="img-upload" onclick="document.getElementById('bannerInput').click()">
+          <input type="file" id="bannerInput" accept="image/*" onchange="handleImageUpload(this,'campaign_banner_url','bannerPreview','bannerUrl')">
+          <div class="img-upload-icon">🎯</div>
+          <div class="img-upload-text">Upload campaign banner</div>
+          <div class="img-upload-hint">Shown below the hero section · Wide format</div>
+        </div>
+        <img class="img-preview" id="bannerPreview">
+        <div class="img-url-display" id="bannerUrl"></div>
+      </div>
+    </div>
+
+    <!-- ── PAGE CONTENT ──────────────────────── -->
+    <div class="section-panel" id="sec-content">
+      <div class="panel-title">📝 Page Content</div>
+      <div class="panel-desc">Edit hero text, subtitles, and CTA buttons per language.</div>
+
+      <div class="card">
+        <div class="card-title">Hero Content <span class="badge">Per Language</span></div>
+        <div class="lang-tabs">
+          <button class="lang-tab active" onclick="showLang('ar')">🇸🇦 Arabic</button>
+          <button class="lang-tab" onclick="showLang('fr')">🇫🇷 French</button>
+          <button class="lang-tab" onclick="showLang('en')">🇬🇧 English</button>
+          <button class="lang-tab" onclick="showLang('tr')">🇹🇷 Turkish</button>
+        </div>
+
+        <div id="langPanel-ar" class="lang-panel active">
+          <div class="field"><label>Badge Text (AR)</label><input type="text" id="badge_ar" placeholder="منصة التحضير للامتحانات"></div>
+          <div class="field"><label>Hero Title (AR)</label><input type="text" id="title_ar" placeholder="استعد لامتحانك بكل ثقة"></div>
+          <div class="field"><label>Subtitle (AR)</label><textarea id="sub_ar" placeholder="محاكاة كاملة للامتحانات..."></textarea></div>
+          <div class="field"><label>CTA Button Text (AR)</label><input type="text" id="cta_ar" placeholder="ابدأ مجاناً ←"></div>
+        </div>
+
+        <div id="langPanel-fr" class="lang-panel">
+          <div class="field"><label>Badge Text (FR)</label><input type="text" id="badge_fr" placeholder="Plateforme de Préparation aux Examens"></div>
+          <div class="field"><label>Hero Title (FR)</label><input type="text" id="title_fr" placeholder="Préparez votre examen avec confiance"></div>
+          <div class="field"><label>Subtitle (FR)</label><textarea id="sub_fr" placeholder="Simulations complètes..."></textarea></div>
+          <div class="field"><label>CTA Button Text (FR)</label><input type="text" id="cta_fr" placeholder="Essai gratuit →"></div>
+        </div>
+
+        <div id="langPanel-en" class="lang-panel">
+          <div class="field"><label>Badge Text (EN)</label><input type="text" id="badge_en" placeholder="Exam Preparation Platform"></div>
+          <div class="field"><label>Hero Title (EN)</label><input type="text" id="title_en" placeholder="Prepare for your exam with confidence"></div>
+          <div class="field"><label>Subtitle (EN)</label><textarea id="sub_en" placeholder="Full exam simulations..."></textarea></div>
+          <div class="field"><label>CTA Button Text (EN)</label><input type="text" id="cta_en" placeholder="Start Free Trial →"></div>
+        </div>
+
+        <div id="langPanel-tr" class="lang-panel">
+          <div class="field"><label>Badge Text (TR)</label><input type="text" id="badge_tr" placeholder="Sınav Hazırlık Platformu"></div>
+          <div class="field"><label>Hero Title (TR)</label><input type="text" id="title_tr" placeholder="YDS ve IELTS'e güvenle hazırlan"></div>
+          <div class="field"><label>Subtitle (TR)</label><textarea id="sub_tr" placeholder="Tam simülasyon..."></textarea></div>
+          <div class="field"><label>CTA Button Text (TR)</label><input type="text" id="cta_tr" placeholder="Ücretsiz Başla →"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Urgency Message</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Show Urgency Message</div>
+            <div class="toggle-desc">Displays near the CTA to create urgency</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="urgency_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Message</label>
+          <input type="text" id="urgency_text" placeholder="⚡ Only 8 spots left this month!">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Promo Video</div>
+        <div class="field">
+          <label>YouTube Video URL</label>
+          <input type="url" id="promo_video_url" placeholder="https://youtube.com/watch?v=...">
+          <div class="hint">Shown as an embedded video on the landing page</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PROMOTIONS ────────────────────────── -->
+    <div class="section-panel" id="sec-promos">
+      <div class="panel-title">📢 Promotions</div>
+      <div class="panel-desc">Manage active offers, countdown timers, and discounts.</div>
+
+      <div class="card">
+        <div class="card-title">Active Offer</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable Offer</div>
+            <div class="toggle-desc">Shows discount badge and updates pricing automatically</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="offer_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field-row" style="margin-top:16px;">
+          <div class="field">
+            <label>Offer Label</label>
+            <input type="text" id="offer_label" placeholder="🌙 Ramadan Offer">
+          </div>
+          <div class="field">
+            <label>Discount %</label>
+            <input type="number" id="offer_discount" min="0" max="100" placeholder="30">
+          </div>
+        </div>
+        <div class="field">
+          <label>Offer Deadline (Countdown Timer)</label>
+          <input type="date" id="offer_deadline">
+          <div class="hint">A live countdown timer will appear on the pricing section</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Trust Badges</div>
+        <div id="trustBadgesList"></div>
+        <button class="add-btn" onclick="openModal('badge')">+ Add Trust Badge</button>
+        <div class="hint" style="margin-top:8px;">Examples: "Secure Payment", "24h Support", "Money-back Guarantee"</div>
+      </div>
+    </div>
+
+    <!-- ── PRICING ────────────────────────────── -->
+    <div class="section-panel" id="sec-pricing">
+      <div class="panel-title">💰 Pricing</div>
+      <div class="panel-desc">Set plan prices per market. Discounts apply automatically when an offer is active.</div>
+
+      <div class="card">
+        <div class="card-title">Algeria 🇩🇿 <span class="badge">DZD</span></div>
+        <div class="field-row-3">
+          <div class="field"><label>1 Month (DZD)</label><input type="number" id="dz_price_1month" placeholder="1500"></div>
+          <div class="field"><label>3 Months (DZD)</label><input type="number" id="dz_price_3months" placeholder="3500"></div>
+          <div class="field"><label>6 Months (DZD)</label><input type="number" id="dz_price_6months" placeholder="5500"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Turkey 🇹🇷 <span class="badge">TRY</span></div>
+        <div class="field-row-3">
+          <div class="field"><label>1 Month (TRY)</label><input type="number" id="tr_price_1month" placeholder="300"></div>
+          <div class="field"><label>3 Months (TRY)</label><input type="number" id="tr_price_3months" placeholder="700"></div>
+          <div class="field"><label>6 Months (TRY)</label><input type="number" id="tr_price_6months" placeholder="1200"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Featured Exams <span class="badge">Per Market</span></div>
+        <p style="font-size:13px;color:var(--sub);margin-bottom:14px;">Choose which exams to highlight on the landing page</p>
+        <div id="examCheckboxes"></div>
+      </div>
+    </div>
+
+    <!-- ── STATS ─────────────────────────────── -->
+    <div class="section-panel" id="sec-stats">
+      <div class="panel-title">📊 Stats & Social Proof</div>
+      <div class="panel-desc">Edit the numbers shown in the stats bar to build trust.</div>
+
+      <div class="card">
+        <div class="card-title">Stats Bar Numbers</div>
+        <div class="field-row">
+          <div class="field"><label>Students Prepared</label><input type="text" id="stats_students" placeholder="12,400+"></div>
+          <div class="field"><label>Pass Rate</label><input type="text" id="stats_passrate" placeholder="94%"></div>
+        </div>
+        <div class="hint">These numbers appear in the stats bar below the hero section</div>
+        <div class="stats-preview">
+          <div class="stat-prev"><div class="stat-prev-num" id="prevStudents">12,400+</div><div class="stat-prev-label">Students prepared</div></div>
+          <div class="stat-prev"><div class="stat-prev-num" id="prevPassrate">94%</div><div class="stat-prev-label">Pass rate</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TESTIMONIALS ──────────────────────── -->
+    <div class="section-panel" id="sec-testimonials">
+      <div class="panel-title">💬 Testimonials</div>
+      <div class="panel-desc">Add real student reviews to build credibility. Separate for Algeria and Turkey markets.</div>
+
+      <div class="card">
+        <div class="card-title">Student Reviews</div>
+        <div id="testimonialsList"></div>
+        <button class="add-btn" onclick="openModal('testimonial')">+ Add Testimonial</button>
+      </div>
+    </div>
+
+    <!-- ── FAQ ───────────────────────────────── -->
+    <div class="section-panel" id="sec-faq">
+      <div class="panel-title">❓ FAQ</div>
+      <div class="panel-desc">Add frequently asked questions to reduce friction and answer objections.</div>
+
+      <div class="card">
+        <div class="card-title">Questions & Answers</div>
+        <div id="faqList"></div>
+        <button class="add-btn" onclick="openModal('faq')">+ Add Question</button>
+      </div>
+    </div>
+
+    <!-- ── POPUP ─────────────────────────────── -->
+    <div class="section-panel" id="sec-popup">
+      <div class="panel-title">🔔 Popup / Modal</div>
+      <div class="panel-desc">Show a popup after a delay to capture leads or promote an offer.</div>
+
+      <div class="card">
+        <div class="card-title">Popup Settings</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable Popup</div>
+            <div class="toggle-desc">Shows a popup after the visitor has been on the page for X seconds</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="popup_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:16px;">
+          <label>Delay (seconds)</label>
+          <input type="number" id="popup_delay" min="1" max="60" placeholder="5">
+        </div>
+        <div class="field">
+          <label>Popup Title</label>
+          <input type="text" id="popup_title" placeholder="🎁 Wait! Before you leave...">
+        </div>
+        <div class="field">
+          <label>Popup Text</label>
+          <textarea id="popup_text" placeholder="Try one free exam before you decide. No credit card required."></textarea>
+        </div>
+        <div class="field">
+          <label>CTA Button Text</label>
+          <input type="text" id="popup_cta" placeholder="Start Free Exam →">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CONTACT & SOCIAL ──────────────────── -->
+    <div class="section-panel" id="sec-contact">
+      <div class="panel-title">📱 Contact & Social</div>
+      <div class="panel-desc">Add WhatsApp and social media links.</div>
+
+      <div class="card">
+        <div class="card-title">WhatsApp Button</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Show WhatsApp Button</div>
+            <div class="toggle-desc">Floating WhatsApp button on every page</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="whatsapp_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>WhatsApp Number (with country code)</label>
+          <input type="text" id="whatsapp_number" placeholder="+213XXXXXXXXX">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Social Media Links</div>
+        <div class="field">
+          <label>Facebook Page URL</label>
+          <input type="url" id="social_facebook" placeholder="https://facebook.com/speaglish">
+        </div>
+        <div class="field">
+          <label>Instagram Profile URL</label>
+          <input type="url" id="social_instagram" placeholder="https://instagram.com/speaglish">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SEO ───────────────────────────────── -->
+    <div class="section-panel" id="sec-seo">
+      <div class="panel-title">🔍 SEO</div>
+      <div class="panel-desc">Optimize how your page appears in Google and when shared on social media.</div>
+
+      <div class="card">
+        <div class="card-title">Search Engine</div>
+        <div class="field">
+          <label>Page Title</label>
+          <input type="text" id="seo_title" placeholder="Speaglish — TCF, IELTS & YDS Exam Preparation">
+          <div class="hint">Appears in browser tab and Google results · Recommended: 50-60 characters</div>
+        </div>
+        <div class="field">
+          <label>Meta Description</label>
+          <textarea id="seo_description" placeholder="Prepare for TCF, IELTS, YDS with full exam simulations and instant AI feedback. Free trial available."></textarea>
+          <div class="hint">Shown in Google results under the title · Recommended: 150-160 characters</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Social Share Image (OG Image)</div>
+        <div class="img-upload" onclick="document.getElementById('ogImageInput').click()">
+          <input type="file" id="ogImageInput" accept="image/*" onchange="handleImageUpload(this,'seo_og_image_url','ogPreview','ogUrl')">
+          <div class="img-upload-icon">🖼️</div>
+          <div class="img-upload-text">Upload OG image</div>
+          <div class="img-upload-hint">Shown when shared on Facebook/WhatsApp · 1200×630px</div>
+        </div>
+        <img class="img-preview" id="ogPreview">
+        <div class="img-url-display" id="ogUrl"></div>
+      </div>
+    </div>
+
+    <!-- ── TRACKING ──────────────────────────── -->
+    <div class="section-panel" id="sec-tracking">
+      <div class="panel-title">📈 Tracking & Analytics</div>
+      <div class="panel-desc">Connect your analytics and advertising pixels.</div>
+
+      <div class="card">
+        <div class="card-title">Facebook Pixel</div>
+        <div class="field">
+          <label>Facebook Pixel ID</label>
+          <input type="text" id="fb_pixel_id" placeholder="123456789012345">
+          <div class="hint">Found in Facebook Ads Manager → Events Manager → Pixels</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Google Analytics</div>
+        <div class="field">
+          <label>Google Analytics ID</label>
+          <input type="text" id="ga_id" placeholder="G-XXXXXXXXXX">
+          <div class="hint">Found in Google Analytics → Admin → Data Streams</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .content -->
+</div><!-- end .main -->
+
+<!-- Toast Container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add Item</div>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── SUPABASE ─────────────────────────────────────────────────
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  // ─── STATE ────────────────────────────────────────────────────
+  let market = 'dz';
+  let cfg = {};
+  let modalType = '';
+  let editIndex = -1;
+
+  const EXAMS_DZ = ['TCF','TEF','IELTS','DELF','DALF'];
+  const EXAMS_TR = ['YDS','YÖKDİL','e-YDS','IELTS','TOEFL','TOEIC'];
+
+  // ─── AUTH CHECK ───────────────────────────────────────────────
+  async function checkAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'login.html'; return false; }
+    const { data: profile } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+    if (!profile || profile.role !== 'admin') { window.location.href = 'index.html'; return false; }
+    return true;
+  }
+
+  // ─── LOAD CONFIG ──────────────────────────────────────────────
+  async function loadConfig(m) {
+    const { data } = await sb.from('landing_config').select('*').eq('market', m).single();
+    cfg = data || {};
+    populateFields();
+  }
+
+  // ─── POPULATE FIELDS ──────────────────────────────────────────
+  function populateFields() {
+    // Branding
+    setVal('announcement_text', cfg.announcement_text);
+    setCheck('announcement_active', cfg.announcement_active);
+    showImgIfExists('logoPreview', 'logoUrl', cfg.logo_url);
+
+    // Hero images
+    showImgIfExists('bgDesktopPreview', 'bgDesktopUrl', cfg.bg_desktop_url);
+    showImgIfExists('bgMobilePreview', 'bgMobileUrl', cfg.bg_mobile_url);
+    showImgIfExists('bannerPreview', 'bannerUrl', cfg.campaign_banner_url);
+    const ov = cfg.bg_overlay_opacity ?? 0.6;
+    document.getElementById('bg_overlay_opacity').value = ov;
+    document.getElementById('overlayVal').textContent = Math.round(ov*100)+'%';
+
+    // Content — per language
+    const titles = cfg.hero_titles || {};
+    const subs   = cfg.hero_subtitles || {};
+    const ctas   = cfg.cta_texts || {};
+    ['ar','fr','en','tr'].forEach(l => {
+      setVal(`title_${l}`, titles[l]);
+      setVal(`sub_${l}`, subs[l]);
+      setVal(`cta_${l}`, ctas[l]);
+      setVal(`badge_${l}`, (cfg.hero_badge_texts||{})[l]);
+    });
+    setCheck('urgency_active', cfg.urgency_active);
+    setVal('urgency_text', cfg.urgency_text);
+    setVal('promo_video_url', cfg.promo_video_url);
+
+    // Promos
+    setCheck('offer_active', cfg.offer_active);
+    setVal('offer_label', cfg.offer_label);
+    setVal('offer_discount', cfg.offer_discount);
+    setVal('offer_deadline', cfg.offer_deadline ? cfg.offer_deadline.split('T')[0] : '');
+    renderTrustBadges();
+
+    // Pricing — load both markets
+    loadPricing();
+
+    // Stats
+    setVal('stats_students', cfg.stats_students || '12,400+');
+    setVal('stats_passrate',  cfg.stats_passrate  || '94%');
+    document.getElementById('prevStudents').textContent = cfg.stats_students || '12,400+';
+    document.getElementById('prevPassrate').textContent  = cfg.stats_passrate  || '94%';
+
+    // Testimonials
+    renderTestimonials();
+
+    // FAQ
+    renderFaq();
+
+    // Popup
+    setCheck('popup_active', cfg.popup_active);
+    setVal('popup_delay', cfg.popup_delay || 5);
+    setVal('popup_title', cfg.popup_title);
+    setVal('popup_text',  cfg.popup_text);
+    setVal('popup_cta',   cfg.popup_cta);
+
+    // Contact
+    setCheck('whatsapp_active', cfg.whatsapp_active);
+    setVal('whatsapp_number',  cfg.whatsapp_number);
+    setVal('social_facebook',  cfg.social_facebook);
+    setVal('social_instagram', cfg.social_instagram);
+
+    // SEO
+    setVal('seo_title',       cfg.seo_title);
+    setVal('seo_description', cfg.seo_description);
+    showImgIfExists('ogPreview','ogUrl', cfg.seo_og_image_url);
+
+    // Tracking
+    setVal('fb_pixel_id', cfg.fb_pixel_id);
+    setVal('ga_id',        cfg.ga_id);
+
+    // Exam checkboxes
+    renderExamCheckboxes();
+  }
+
+  async function loadPricing() {
+    // Load DZ pricing
+    const { data: dzCfg } = await sb.from('landing_config').select('price_1month,price_3months,price_6months,featured_exams').eq('market','dz').single();
+    if (dzCfg) {
+      setVal('dz_price_1month',  dzCfg.price_1month);
+      setVal('dz_price_3months', dzCfg.price_3months);
+      setVal('dz_price_6months', dzCfg.price_6months);
+    }
+    // Load TR pricing
+    const { data: trCfg } = await sb.from('landing_config').select('price_1month,price_3months,price_6months,featured_exams').eq('market','tr').single();
+    if (trCfg) {
+      setVal('tr_price_1month',  trCfg.price_1month);
+      setVal('tr_price_3months', trCfg.price_3months);
+      setVal('tr_price_6months', trCfg.price_6months);
+    }
+  }
+
+  // ─── EXAM CHECKBOXES ──────────────────────────────────────────
+  function renderExamCheckboxes() {
+    const exams = market === 'tr' ? EXAMS_TR : EXAMS_DZ;
+    const featured = cfg.featured_exams || [];
+    document.getElementById('examCheckboxes').innerHTML = exams.map(e => `
+      <label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">
+        <input type="checkbox" id="exam_${e}" ${featured.includes(e)?'checked':''} style="width:16px;height:16px;accent-color:var(--gold);">
+        <span style="font-size:13px;">${e}</span>
+      </label>
+    `).join('');
+  }
+
+  // ─── TESTIMONIALS ─────────────────────────────────────────────
+  function renderTestimonials() {
+    const list = cfg.testimonials || [];
+    const el = document.getElementById('testimonialsList');
+    if (!list.length) { el.innerHTML = '<p style="font-size:13px;color:var(--muted);padding:8px 0 16px;">No testimonials yet.</p>'; return; }
+    el.innerHTML = list.map((t,i) => `
+      <div class="list-item">
+        <div style="font-size:22px;">💬</div>
+        <div class="list-item-content">
+          <div class="list-item-title">${t.name} <span style="color:var(--gold);font-size:11px;">★★★★★</span></div>
+          <div class="list-item-sub">"${t.text.substring(0,80)}${t.text.length>80?'...':''}"</div>
+          <div class="list-item-sub" style="margin-top:3px;">${t.score||''} ${t.exam?'· '+t.exam:''}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editTestimonial(${i})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="removeTestimonial(${i})">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function removeTestimonial(i) {
+    cfg.testimonials = (cfg.testimonials||[]).filter((_,idx)=>idx!==i);
+    renderTestimonials();
+  }
+
+  function editTestimonial(i) {
+    editIndex = i;
+    openModal('testimonial', cfg.testimonials[i]);
+  }
+
+  // ─── FAQ ──────────────────────────────────────────────────────
+  function renderFaq() {
+    const list = cfg.faq || [];
+    const el = document.getElementById('faqList');
+    if (!list.length) { el.innerHTML = '<p style="font-size:13px;color:var(--muted);padding:8px 0 16px;">No FAQ items yet.</p>'; return; }
+    el.innerHTML = list.map((f,i) => `
+      <div class="list-item">
+        <div style="font-size:22px;">❓</div>
+        <div class="list-item-content">
+          <div class="list-item-title">${f.question}</div>
+          <div class="list-item-sub">${f.answer.substring(0,80)}${f.answer.length>80?'...':''}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editFaq(${i})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="removeFaq(${i})">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function removeFaq(i) { cfg.faq = (cfg.faq||[]).filter((_,idx)=>idx!==i); renderFaq(); }
+  function editFaq(i) { editIndex = i; openModal('faq', cfg.faq[i]); }
+
+  // ─── TRUST BADGES ─────────────────────────────────────────────
+  function renderTrustBadges() {
+    const list = cfg.trust_badges || [];
+    const el = document.getElementById('trustBadgesList');
+    if (!list.length) { el.innerHTML = '<p style="font-size:13px;color:var(--muted);padding:8px 0 12px;">No badges yet.</p>'; return; }
+    el.innerHTML = list.map((b,i) => `
+      <div class="list-item" style="align-items:center;">
+        <div style="font-size:22px;">${b.icon||'🛡️'}</div>
+        <div class="list-item-content">
+          <div class="list-item-title">${b.text}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="removeBadge(${i})">🗑</button>
+      </div>
+    `).join('');
+  }
+  function removeBadge(i) { cfg.trust_badges = (cfg.trust_badges||[]).filter((_,idx)=>idx!==i); renderTrustBadges(); }
+
+  // ─── MODAL ────────────────────────────────────────────────────
+  function openModal(type, existing = null) {
+    modalType = type; editIndex = existing ? editIndex : -1;
+    const titles = { testimonial:'Add Testimonial', faq:'Add FAQ', badge:'Add Trust Badge' };
+    document.getElementById('modalTitle').textContent = existing ? 'Edit' : titles[type];
+
+    const bodies = {
+      testimonial: `
+        <div class="field"><label>Student Name</label><input type="text" id="m_name" value="${existing?.name||''}"></div>
+        <div class="field"><label>Review Text</label><textarea id="m_text">${existing?.text||''}</textarea></div>
+        <div class="field-row">
+          <div class="field"><label>Score / Level</label><input type="text" id="m_score" value="${existing?.score||''}" placeholder="B2 or 87.5"></div>
+          <div class="field"><label>Exam</label><input type="text" id="m_exam" value="${existing?.exam||''}" placeholder="TCF"></div>
+        </div>`,
+      faq: `
+        <div class="field"><label>Question</label><input type="text" id="m_question" value="${existing?.question||''}"></div>
+        <div class="field"><label>Answer</label><textarea id="m_answer">${existing?.answer||''}</textarea></div>`,
+      badge: `
+        <div class="field"><label>Icon (emoji)</label><input type="text" id="m_icon" value="${existing?.icon||'🛡️'}" style="width:80px;"></div>
+        <div class="field"><label>Badge Text</label><input type="text" id="m_text2" value="${existing?.text||''}" placeholder="Secure Payment"></div>`,
+    };
+    document.getElementById('modalBody').innerHTML = bodies[type];
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editIndex = -1;
+  }
+
+  function saveModal() {
+    if (modalType === 'testimonial') {
+      const item = {
+        name:  document.getElementById('m_name').value,
+        text:  document.getElementById('m_text').value,
+        score: document.getElementById('m_score').value,
+        exam:  document.getElementById('m_exam').value,
+      };
+      if (!item.name || !item.text) return toast('Name and review required','error');
+      if (!cfg.testimonials) cfg.testimonials = [];
+      if (editIndex >= 0) cfg.testimonials[editIndex] = item; else cfg.testimonials.push(item);
+      renderTestimonials();
+    } else if (modalType === 'faq') {
+      const item = {
+        question: document.getElementById('m_question').value,
+        answer:   document.getElementById('m_answer').value,
+      };
+      if (!item.question || !item.answer) return toast('Question and answer required','error');
+      if (!cfg.faq) cfg.faq = [];
+      if (editIndex >= 0) cfg.faq[editIndex] = item; else cfg.faq.push(item);
+      renderFaq();
+    } else if (modalType === 'badge') {
+      const item = {
+        icon: document.getElementById('m_icon').value,
+        text: document.getElementById('m_text2').value,
+      };
+      if (!item.text) return toast('Badge text required','error');
+      if (!cfg.trust_badges) cfg.trust_badges = [];
+      cfg.trust_badges.push(item);
+      renderTrustBadges();
+    }
+    closeModal();
+  }
+
+  // ─── IMAGE UPLOAD ─────────────────────────────────────────────
+  async function handleImageUpload(input, field, previewId, urlId) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const ext  = file.name.split('.').pop();
+    const path = `${market}/${field}.${ext}`;
+    toast('Uploading...','info');
+
+    const { error } = await sb.storage.from('landing-assets').upload(path, file, { upsert: true });
+    if (error) { toast('Upload failed: ' + error.message, 'error'); return; }
+
+    const { data: { publicUrl } } = sb.storage.from('landing-assets').getPublicUrl(path);
+    cfg[field] = publicUrl;
+
+    const preview = document.getElementById(previewId);
+    preview.src = publicUrl; preview.classList.add('show');
+
+    const urlEl = document.getElementById(urlId);
+    urlEl.textContent = '✅ ' + publicUrl; urlEl.classList.add('show');
+
+    toast('Image uploaded ✅','success');
+  }
+
+  // ─── SAVE ALL ─────────────────────────────────────────────────
+  async function saveAll() {
+    const btn = document.getElementById('saveBtn');
+    btn.textContent = '⏳ Saving...'; btn.disabled = true;
+
+    // Collect all field values
+    const exams = market === 'tr' ? EXAMS_TR : EXAMS_DZ;
+    const featuredExams = exams.filter(e => {
+      const el = document.getElementById(`exam_${e}`);
+      return el && el.checked;
+    });
+
+    const heroTitles = {}, heroSubs = {}, ctaTexts = {}, badgeTexts = {};
+    ['ar','fr','en','tr'].forEach(l => {
+      heroTitles[l] = getVal(`title_${l}`);
+      heroSubs[l]   = getVal(`sub_${l}`);
+      ctaTexts[l]   = getVal(`cta_${l}`);
+      badgeTexts[l] = getVal(`badge_${l}`);
+    });
+
+    const updateData = {
+      // Branding
+      announcement_text:    getVal('announcement_text'),
+      announcement_active:  getCheck('announcement_active'),
+      logo_url:             cfg.logo_url || null,
+      // Hero
+      bg_desktop_url:       cfg.bg_desktop_url || null,
+      bg_mobile_url:        cfg.bg_mobile_url || null,
+      campaign_banner_url:  cfg.campaign_banner_url || null,
+      bg_overlay_opacity:   parseFloat(document.getElementById('bg_overlay_opacity').value),
+      // Content
+      hero_titles:          heroTitles,
+      hero_subtitles:       heroSubs,
+      cta_texts:            ctaTexts,
+      hero_badge_texts:     badgeTexts,
+      urgency_active:       getCheck('urgency_active'),
+      urgency_text:         getVal('urgency_text'),
+      promo_video_url:      getVal('promo_video_url'),
+      // Promos
+      offer_active:         getCheck('offer_active'),
+      offer_label:          getVal('offer_label'),
+      offer_discount:       parseInt(getVal('offer_discount')) || 0,
+      offer_deadline:       getVal('offer_deadline') || null,
+      trust_badges:         cfg.trust_badges || [],
+      // Pricing (current market)
+      price_1month:         parseInt(getVal(`${market}_price_1month`)) || null,
+      price_3months:        parseInt(getVal(`${market}_price_3months`)) || null,
+      price_6months:        parseInt(getVal(`${market}_price_6months`)) || null,
+      featured_exams:       featuredExams,
+      // Stats
+      stats_students:       getVal('stats_students'),
+      stats_passrate:       getVal('stats_passrate'),
+      // Testimonials
+      testimonials:         cfg.testimonials || [],
+      // FAQ
+      faq:                  cfg.faq || [],
+      // Popup
+      popup_active:         getCheck('popup_active'),
+      popup_delay:          parseInt(getVal('popup_delay')) || 5,
+      popup_title:          getVal('popup_title'),
+      popup_text:           getVal('popup_text'),
+      popup_cta:            getVal('popup_cta'),
+      // Contact
+      whatsapp_active:      getCheck('whatsapp_active'),
+      whatsapp_number:      getVal('whatsapp_number'),
+      social_facebook:      getVal('social_facebook'),
+      social_instagram:     getVal('social_instagram'),
+      // SEO
+      seo_title:            getVal('seo_title'),
+      seo_description:      getVal('seo_description'),
+      seo_og_image_url:     cfg.seo_og_image_url || null,
+      // Tracking
+      fb_pixel_id:          getVal('fb_pixel_id'),
+      ga_id:                getVal('ga_id'),
+      // Timestamp
+      updated_at:           new Date().toISOString(),
+    };
+
+    // Save other market pricing separately
+    const otherMarket = market === 'dz' ? 'tr' : 'dz';
+    await sb.from('landing_config').update({
+      price_1month:  parseInt(getVal(`${otherMarket}_price_1month`)) || null,
+      price_3months: parseInt(getVal(`${otherMarket}_price_3months`)) || null,
+      price_6months: parseInt(getVal(`${otherMarket}_price_6months`)) || null,
+      updated_at: new Date().toISOString(),
+    }).eq('market', otherMarket);
+
+    // Save current market
+    const { error } = await sb.from('landing_config').update(updateData).eq('market', market);
+
+    btn.textContent = '💾 Save All'; btn.disabled = false;
+
+    if (error) {
+      toast('Error: ' + error.message, 'error');
+    } else {
+      toast('Saved successfully ✅', 'success');
+      document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
+    }
+  }
+
+  // ─── MARKET SWITCH ────────────────────────────────────────────
+  async function switchMarket(m) {
+    market = m;
+    document.getElementById('tabDz').classList.toggle('active', m==='dz');
+    document.getElementById('tabTr').classList.toggle('active', m==='tr');
+    await loadConfig(m);
+  }
+
+  // ─── SECTION NAV ──────────────────────────────────────────────
+  function showSection(id) {
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.getElementById('sec-'+id).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // ─── LANG TABS ────────────────────────────────────────────────
+  function showLang(l) {
+    document.querySelectorAll('.lang-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('langPanel-'+l).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // ─── HELPERS ──────────────────────────────────────────────────
+  const getVal   = id => { const el=document.getElementById(id); return el?el.value.trim():''; };
+  const setVal   = (id,v) => { const el=document.getElementById(id); if(el&&v!=null) el.value=v; };
+  const getCheck = id => { const el=document.getElementById(id); return el?el.checked:false; };
+  const setCheck = (id,v) => { const el=document.getElementById(id); if(el) el.checked=!!v; };
+
+  function showImgIfExists(previewId, urlId, url) {
+    if (!url) return;
+    const p = document.getElementById(previewId);
+    const u = document.getElementById(urlId);
+    if (p) { p.src=url; p.classList.add('show'); }
+    if (u) { u.textContent='✅ '+url; u.classList.add('show'); }
+  }
+
+  // ─── TOAST ────────────────────────────────────────────────────
+  function toast(msg, type='success') {
+    const icons = { success:'✅', error:'❌', info:'⏳' };
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  // ─── LIVE STAT PREVIEW ────────────────────────────────────────
+  document.addEventListener('input', e => {
+    if (e.target.id === 'stats_students') document.getElementById('prevStudents').textContent = e.target.value || '...';
+    if (e.target.id === 'stats_passrate')  document.getElementById('prevPassrate').textContent  = e.target.value || '...';
+  });
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  async function init() {
+    const ok = await checkAuth();
+    if (!ok) return;
+    await loadConfig(market);
+    document.getElementById('loaderOverlay').classList.add('out');
+  }
+
+  init();
+</script>
+</body>
+</html>
