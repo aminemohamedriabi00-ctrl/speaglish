@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Admin Setup</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg:#080B18; --card:#0E1120; --border:#1C2240;
+      --gold:#F0A500; --teal:#00C9A7; --red:#FF5757;
+      --text:#EEF2FF; --sub:#8896B8; --muted:#3D4A6A;
+      --ff:'system-ui',sans-serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      background:var(--bg);color:var(--text);font-family:var(--ff);
+      min-height:100vh;display:flex;align-items:center;
+      justify-content:center;padding:24px;
+    }
+    .card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:16px;padding:36px;width:100%;max-width:460px;
+    }
+    .title{font-size:22px;font-weight:700;margin-bottom:6px;}
+    .sub{font-size:13px;color:var(--sub);margin-bottom:28px;line-height:1.5;}
+    label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:7px;}
+    input{
+      width:100%;background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:10px 13px;color:var(--text);
+      font-family:var(--ff);font-size:13px;outline:none;margin-bottom:16px;
+    }
+    input:focus{border-color:var(--gold);}
+    .hint{font-size:11px;color:var(--muted);margin-top:-12px;margin-bottom:16px;}
+    button{
+      width:100%;padding:12px;border:none;border-radius:8px;
+      background:var(--gold);color:#000;font-size:14px;
+      font-weight:700;cursor:pointer;
+    }
+    button:hover{opacity:.9;}
+    button:disabled{opacity:.5;cursor:not-allowed;}
+    .result{
+      margin-top:16px;padding:12px 16px;border-radius:8px;
+      font-size:13px;display:none;
+    }
+    .result.success{background:rgba(0,201,167,.1);border:1px solid rgba(0,201,167,.3);color:var(--teal);}
+    .result.error{background:rgba(255,87,87,.1);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+    .warning{
+      background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);
+      border-radius:8px;padding:12px 16px;font-size:12px;
+      color:var(--sub);margin-bottom:24px;line-height:1.6;
+    }
+    .warning strong{color:var(--gold);}
+    .step{
+      display:flex;align-items:flex-start;gap:10px;
+      font-size:12px;color:var(--muted);margin-bottom:8px;
+    }
+    .step-num{
+      width:20px;height:20px;border-radius:50%;
+      background:var(--border);display:flex;align-items:center;
+      justify-content:center;font-size:10px;font-weight:700;
+      color:var(--gold);flex-shrink:0;margin-top:1px;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="title">🔐 Admin Account Setup</div>
+  <div class="sub">One-time setup — sets your admin password correctly using Supabase's API.</div>
+
+  <div class="warning">
+    <strong>Where to find your Service Role Key:</strong><br>
+    Supabase Dashboard → Settings → API → <strong>service_role</strong> (the secret key, not the anon key)
+  </div>
+
+  <div class="step"><div class="step-num">1</div><span>Paste your <strong>service_role</strong> key below</span></div>
+  <div class="step"><div class="step-num">2</div><span>Set a new password for your admin account</span></div>
+  <div class="step" style="margin-bottom:24px;"><div class="step-num">3</div><span>Click Set Password — then delete this file from GitHub</span></div>
+
+  <label>Service Role Key</label>
+  <input type="password" id="serviceKey" placeholder="eyJhbGci...">
+  <div class="hint">⚠️ Never share this key publicly — delete this page after use</div>
+
+  <label>New Password</label>
+  <input type="password" id="newPass" placeholder="Min. 8 characters">
+
+  <label>Confirm Password</label>
+  <input type="password" id="confirmPass" placeholder="Repeat password">
+
+  <button onclick="setPassword()" id="btn">Set Admin Password</button>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+  async function setPassword() {
+    const serviceKey  = document.getElementById('serviceKey').value.trim();
+    const newPass     = document.getElementById('newPass').value;
+    const confirmPass = document.getElementById('confirmPass').value;
+    const resultEl    = document.getElementById('result');
+    const btn         = document.getElementById('btn');
+
+    resultEl.style.display = 'none';
+
+    if (!serviceKey) {
+      show('error', '❌ Please enter your service role key.');
+      return;
+    }
+    if (!newPass || newPass.length < 8) {
+      show('error', '❌ Password must be at least 8 characters.');
+      return;
+    }
+    if (newPass !== confirmPass) {
+      show('error', '❌ Passwords do not match.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Setting password...';
+
+    try {
+      // Use service role key to access admin API
+      const adminSb = supabase.createClient(
+        'https://iugggbzgrucopvxkgzry.supabase.co',
+        serviceKey
+      );
+
+      const { data, error } = await adminSb.auth.admin.updateUserById(
+        'cbd14353-7eb0-4e48-bd21-f19dbb5892df',
+        { password: newPass }
+      );
+
+      if (error) {
+        show('error', '❌ Error: ' + error.message);
+      } else {
+        show('success',
+          '✅ Password set successfully!\n\n' +
+          'You can now login at login.html with:\n' +
+          'Email: riabimn@gmail.com\n' +
+          'Password: the one you just set\n\n' +
+          '⚠️ Delete this file from GitHub now.'
+        );
+        btn.textContent = '✅ Done — delete this file';
+      }
+    } catch(e) {
+      show('error', '❌ ' + e.message);
+    }
+
+    btn.disabled = false;
+  }
+
+  function show(type, msg) {
+    const el = document.getElementById('result');
+    el.className = 'result ' + type;
+    el.textContent = msg;
+    el.style.display = 'block';
+    if (type !== 'success') document.getElementById('btn').disabled = false;
+  }
+</script>
+</body>
+</html>
