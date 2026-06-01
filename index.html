@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Exam Preparation Platform</title>
+  <meta name="description" content="Prepare for TCF, IELTS, YDS and more with full exam simulations and instant AI feedback.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #080B18;
+      --card: #0E1120;
+      --card2: #131626;
+      --border: #1C2240;
+      --gold: #F0A500;
+      --gold2: #FFD166;
+      --blue: #4169FF;
+      --teal: #00C9A7;
+      --red: #FF5757;
+      --purple: #9B6DFF;
+      --text: #EEF2FF;
+      --sub: #8896B8;
+      --muted: #3D4A6A;
+      --ff: 'Barlow', sans-serif;
+      --fd: 'Syne', sans-serif;
+      --radius: 12px;
+      --radius-lg: 20px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--ff);
+      font-weight: 400;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Ambient glow */
+    .ambient {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 15% 15%, rgba(65,105,255,0.09) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 85% 85%, rgba(240,165,0,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(0,201,167,0.04) 0%, transparent 70%);
+    }
+
+    .page-content { position: relative; z-index: 2; }
+
+    /* ── ANNOUNCEMENT BAR ──────────────────── */
+    .announcement-bar {
+      background: linear-gradient(90deg, var(--gold), #E8961A, var(--gold));
+      background-size: 200% 100%;
+      animation: shimmer 3s infinite;
+      color: #000; text-align: center;
+      padding: 10px 16px; font-size: 13px;
+      font-weight: 600; display: none;
+    }
+    .announcement-bar.active { display: block; }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── NAV ───────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(8,11,24,0.88);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      gap: 16px; flex-wrap: wrap;
+    }
+
+    .nav-logo {
+      display: flex; align-items: center;
+      gap: 10px; text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--gold), #E8961A);
+      border-radius: 8px; display: flex;
+      align-items: center; justify-content: center;
+      font-family: var(--fd); font-weight: 800;
+      font-size: 15px; color: #000; flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .logo-text {
+      font-family: var(--fd); font-size: 20px;
+      font-weight: 700; color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .logo-text span { color: var(--gold); }
+
+    .nav-right {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+
+    .market-toggle {
+      display: flex; gap: 3px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px;
+    }
+
+    .market-btn {
+      background: transparent; border: none;
+      color: var(--sub); padding: 5px 12px;
+      border-radius: 6px; cursor: pointer;
+      font-family: var(--ff); font-size: 12px;
+      font-weight: 500; transition: all .2s;
+    }
+    .market-btn.active { background: var(--border); color: var(--text); }
+
+    .btn {
+      display: inline-flex; align-items: center;
+      gap: 6px; padding: 9px 20px;
+      border-radius: var(--radius);
+      font-family: var(--ff); font-size: 13px;
+      font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: all .2s;
+      border: none; white-space: nowrap;
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--sub);
+    }
+    .btn-ghost:hover { border-color: var(--sub); color: var(--text); }
+    .btn-primary { background: var(--gold); color: #000; }
+    .btn-primary:hover { background: var(--gold2); transform: translateY(-1px); }
+    .btn-lg { padding: 14px 32px; font-size: 15px; border-radius: 14px; }
+
+    /* ── HERO ──────────────────────────────── */
+    .hero {
+      position: relative; min-height: 88vh;
+      display: flex; align-items: center;
+      justify-content: center;
+      padding: 80px 24px; text-align: center;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute; inset: 0;
+      background-size: cover;
+      background-position: center;
+      z-index: 0; transition: opacity .6s;
+    }
+
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: rgba(8,11,24,0.62);
+      z-index: 1;
+    }
+
+    .hero-content {
+      position: relative; z-index: 2;
+      max-width: 800px; margin: 0 auto;
+      animation: fadeUp .8s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center;
+      gap: 8px; margin-bottom: 28px;
+      background: rgba(240,165,0,0.12);
+      border: 1px solid rgba(240,165,0,0.3);
+      color: var(--gold); padding: 6px 18px;
+      border-radius: 30px; font-size: 12px;
+      font-weight: 600; letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      background: var(--gold); border-radius: 50%;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity:1; } 50% { opacity:.4; }
+    }
+
+    .hero h1 {
+      font-family: var(--fd);
+      font-size: clamp(34px, 6vw, 66px);
+      font-weight: 800; line-height: 1.08;
+      letter-spacing: -2px; margin-bottom: 22px;
+    }
+    .hero h1 .gold { color: var(--gold); }
+
+    .hero p {
+      font-size: clamp(15px, 2vw, 18px);
+      color: var(--sub); max-width: 520px;
+      margin: 0 auto 38px;
+      font-weight: 300; line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex; gap: 12px;
+      justify-content: center; flex-wrap: wrap;
+    }
+
+    .exam-pills {
+      display: flex; gap: 8px;
+      justify-content: center; flex-wrap: wrap;
+      margin-top: 40px;
+    }
+
+    .exam-pill {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--sub); padding: 5px 14px;
+      border-radius: 20px; font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* ── STATS ─────────────────────────────── */
+    .stats-bar {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 24px;
+    }
+
+    .stats-inner {
+      max-width: 840px; margin: 0 auto;
+      display: flex; justify-content: space-around;
+      gap: 20px; flex-wrap: wrap;
+    }
+
+    .stat { text-align: center; }
+    .stat-num {
+      font-family: var(--fd); font-size: 30px;
+      font-weight: 700; color: var(--gold);
+      display: block;
+    }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── SECTION BASE ──────────────────────── */
+    section { padding: 80px 24px; }
+
+    .section-inner { max-width: 1040px; margin: 0 auto; }
+
+    .section-header { text-align: center; margin-bottom: 48px; }
+
+    .section-tag {
+      display: inline-block; font-size: 11px;
+      font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--gold);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-family: var(--fd);
+      font-size: clamp(24px, 4vw, 38px);
+      font-weight: 700; letter-spacing: -.5px;
+      margin-bottom: 10px;
+    }
+
+    .section-sub { font-size: 15px; color: var(--sub); font-weight: 300; }
+
+    /* ── EXAMS ─────────────────────────────── */
+    .exams-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 14px;
+    }
+
+    .exam-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px; cursor: pointer;
+      transition: all .25s; position: relative;
+      overflow: hidden;
+    }
+    .exam-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent, var(--gold));
+      transform: scaleX(0); transition: transform .3s;
+    }
+    .exam-card:hover { transform: translateY(-3px); border-color: var(--accent, var(--gold)); }
+    .exam-card:hover::before { transform: scaleX(1); }
+
+    .exam-card-top {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 14px;
+    }
+
+    .exam-type-tag {
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+    }
+
+    .exam-free-tag {
+      background: rgba(0,201,167,.15);
+      color: var(--teal); font-size: 10px;
+      font-weight: 700; padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(0,201,167,.3);
+    }
+
+    .exam-lock { color: var(--muted); font-size: 14px; }
+
+    .exam-title {
+      font-size: 14px; font-weight: 600;
+      line-height: 1.35; margin-bottom: 6px;
+    }
+
+    .exam-meta { font-size: 12px; color: var(--muted); }
+
+    .exam-bar {
+      height: 2px; background: var(--border);
+      border-radius: 2px; margin-top: 14px;
+      overflow: hidden;
+    }
+    .exam-bar-fill { height: 100%; border-radius: 2px; }
+
+    /* ── HOW IT WORKS ──────────────────────── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .step-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px 20px;
+    }
+
+    .step-icon { font-size: 30px; margin-bottom: 14px; }
+
+    .step-title {
+      font-family: var(--fd); font-size: 16px;
+      font-weight: 700; margin-bottom: 8px;
+    }
+
+    .step-desc { font-size: 13px; color: var(--sub); line-height: 1.65; }
+
+    /* ── PRICING ───────────────────────────── */
+    .offer-banner {
+      display: none; align-items: center;
+      gap: 16px; flex-wrap: wrap;
+      background: rgba(240,165,0,.08);
+      border: 1px solid rgba(240,165,0,.25);
+      border-radius: var(--radius);
+      padding: 16px 24px; margin-bottom: 32px;
+    }
+    .offer-banner.active { display: flex; }
+
+    .offer-tag {
+      display: inline-flex; align-items: center;
+      gap: 6px; background: var(--gold);
+      color: #000; font-size: 11px; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase;
+      padding: 4px 14px; border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .offer-desc { font-size: 14px; font-weight: 500; flex: 1; }
+
+    /* Countdown */
+    .countdown {
+      display: none; justify-content: center;
+      gap: 12px; margin-bottom: 36px; flex-wrap: wrap;
+    }
+    .countdown.active { display: flex; }
+
+    .cd-unit {
+      text-align: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 18px; min-width: 68px;
+    }
+
+    .cd-num {
+      font-family: var(--fd); font-size: 30px;
+      font-weight: 700; color: var(--gold);
+      display: block; line-height: 1;
+    }
+
+    .cd-label {
+      font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px; max-width: 740px; margin: 0 auto;
+    }
+
+    .price-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px; text-align: center;
+      position: relative; transition: all .25s;
+    }
+    .price-card.featured {
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+    .price-card.featured * { color: #000 !important; }
+
+    .popular-badge {
+      position: absolute; top: -12px;
+      left: 50%; transform: translateX(-50%);
+      background: #111; color: var(--gold) !important;
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase;
+      padding: 4px 14px; border-radius: 20px;
+      white-space: nowrap; border: 1px solid var(--border);
+    }
+
+    .plan-name { font-size: 13px; color: var(--sub); margin-bottom: 8px; }
+    .plan-original {
+      font-size: 13px; color: var(--muted);
+      text-decoration: line-through; margin-bottom: 2px; min-height: 20px;
+    }
+    .plan-price {
+      font-family: var(--fd); font-size: 38px;
+      font-weight: 800; line-height: 1;
+      margin-bottom: 4px;
+    }
+    .plan-currency { font-size: 13px; color: var(--sub); margin-bottom: 22px; }
+
+    .plan-features { list-style: none; margin-bottom: 24px; text-align: left; }
+    .plan-features li {
+      font-size: 13px; color: var(--sub);
+      padding: 5px 0; display: flex;
+      align-items: center; gap: 8px;
+    }
+    .plan-features li::before {
+      content: '✓'; color: var(--teal);
+      font-weight: 700; flex-shrink: 0;
+    }
+    .price-card.featured .plan-features li::before { color: #000; }
+
+    .plan-btn {
+      width: 100%; padding: 12px;
+      border-radius: var(--radius); border: none;
+      font-family: var(--ff); font-size: 14px;
+      font-weight: 600; cursor: pointer;
+      transition: all .2s; display: block;
+      text-decoration: none; text-align: center;
+    }
+    .plan-btn-primary { background: var(--gold); color: #000; }
+    .plan-btn-primary:hover { background: var(--gold2); }
+    .plan-btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .plan-btn-outline:hover { border-color: var(--sub); }
+    .price-card.featured .plan-btn-outline {
+      background: rgba(0,0,0,.15);
+      border-color: rgba(0,0,0,.2);
+      color: #000;
+    }
+
+    .payment-note {
+      text-align: center; font-size: 13px;
+      color: var(--muted); margin-top: 24px;
+    }
+
+    /* ── TESTIMONIALS ──────────────────────── */
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .testimonial-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+
+    .t-stars { color: var(--gold); font-size: 14px; letter-spacing: 2px; margin-bottom: 12px; }
+    .t-text { font-size: 14px; color: var(--sub); line-height: 1.65; margin-bottom: 16px; font-style: italic; }
+
+    .t-author { display: flex; align-items: center; gap: 10px; }
+
+    .t-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--fd); font-weight: 700;
+      font-size: 14px; color: #000; flex-shrink: 0;
+    }
+
+    .t-name { font-size: 13px; font-weight: 600; }
+    .t-meta { font-size: 11px; color: var(--muted); }
+
+    /* ── CTA ───────────────────────────────── */
+    .cta-wrap { max-width: 700px; margin: 0 auto; }
+
+    .cta-box {
+      background: linear-gradient(135deg, rgba(65,105,255,.1), rgba(240,165,0,.08));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 64px 40px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+
+    .cta-box::before {
+      content: ''; position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(240,165,0,.05), transparent 60%);
+      pointer-events: none;
+    }
+
+    .cta-box h2 {
+      font-family: var(--fd);
+      font-size: clamp(24px, 4vw, 38px);
+      font-weight: 700; margin-bottom: 14px;
+      letter-spacing: -.5px;
+    }
+
+    .cta-box p {
+      color: var(--sub); font-size: 16px;
+      margin-bottom: 34px; font-weight: 300;
+    }
+
+    /* ── FOOTER ────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      display: flex; justify-content: space-between;
+      align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+
+    .footer-brand {
+      font-family: var(--fd); font-size: 18px;
+      font-weight: 700;
+    }
+    .footer-brand span { color: var(--gold); }
+
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a {
+      font-size: 13px; color: var(--muted);
+      text-decoration: none; transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    .footer-copy { font-size: 12px; color: var(--muted); }
+
+    /* ── LOADING ───────────────────────────── */
+    .loader-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg); z-index: 999;
+      display: flex; align-items: center;
+      justify-content: center;
+      transition: opacity .4s;
+    }
+    .loader-overlay.out { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 38px; height: 38px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SCROLL FADE ───────────────────────── */
+    .fade-up {
+      opacity: 0; transform: translateY(20px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .fade-up.in { opacity: 1; transform: translateY(0); }
+
+    /* ── DIVIDER ───────────────────────────── */
+    .alt-section {
+      background: rgba(255,255,255,.012);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── RESPONSIVE ────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 12px 16px; }
+      .market-toggle { display: none; }
+      section { padding: 56px 16px; }
+      .hero { min-height: 80vh; }
+      .hero h1 { letter-spacing: -1px; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .btn-lg { width: 100%; max-width: 300px; justify-content: center; }
+      footer { padding: 24px 16px; flex-direction: column; text-align: center; }
+      .footer-links { justify-content: center; }
+      .cta-box { padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loader-overlay" id="loaderOverlay">
+  <div class="spinner"></div>
+</div>
+
+<div class="ambient"></div>
+<div class="page-content">
+
+  <!-- Announcement Bar -->
+  <div class="announcement-bar" id="announcementBar"></div>
+
+  <!-- Nav -->
+  <nav>
+    <a href="#" class="nav-logo">
+      <div class="logo-mark" id="logoMark">Sp</div>
+      <span class="logo-text">Speak<span>glish</span></span>
+    </a>
+    <div class="nav-right">
+      <div class="market-toggle">
+        <button class="market-btn" id="btnDz" onclick="switchMarket('dz')">🇩🇿 Algeria</button>
+        <button class="market-btn" id="btnTr" onclick="switchMarket('tr')">🇹🇷 Turkey</button>
+      </div>
+      <a href="login.html" class="btn btn-ghost">Sign in</a>
+      <a href="register.html" class="btn btn-primary" id="navCta">Start Free</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="hero">
+    <div class="hero-bg" id="heroBg"></div>
+    <div class="hero-overlay" id="heroOverlay"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span id="badgeText">Exam Preparation Platform</span>
+      </div>
+      <h1 id="heroTitle">Prepare for your exam<br><span class="gold">with confidence</span></h1>
+      <p id="heroSubtitle">Full exam simulations, instant AI feedback, and personalized recommendations to maximize your score.</p>
+      <div class="hero-actions">
+        <a href="register.html" class="btn btn-primary btn-lg" id="heroCta">Start Free Trial →</a>
+        <a href="#exams" class="btn btn-ghost btn-lg" id="heroSecondary">View Exams</a>
+      </div>
+      <div class="exam-pills" id="examPills"></div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat"><span class="stat-num">12,400+</span><span class="stat-label" id="statStudents">Students prepared</span></div>
+      <div class="stat"><span class="stat-num">94%</span><span class="stat-label" id="statRate">Pass rate</span></div>
+      <div class="stat"><span class="stat-num" id="statExamCount">8</span><span class="stat-label" id="statExams">Exams available</span></div>
+      <div class="stat"><span class="stat-num">24/7</span><span class="stat-label" id="statAccess">Unlimited access</span></div>
+    </div>
+  </div>
+
+  <!-- Exams -->
+  <section id="exams">
+    <div class="section-inner">
+      <div class="section-header fade-up">
+        <span class="section-tag" id="examsTag">Exams</span>
+        <h2 class="section-title" id="examsTitle">Available simulations</h2>
+        <p class="section-sub" id="examsSub">1 free test included — no credit card required</p>
+      </div>
+      <div class="exams-grid" id="examsGrid"></div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="alt-section">
+    <div class="section-inner">
+      <div class="section-header fade-up">
+        <span class="section-tag">Process</span>
+        <h2 class="section-title" id="stepsTitle">How it works</h2>
+      </div>
+      <div class="steps-grid" id="stepsGrid"></div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing">
+    <div class="section-inner">
+      <div class="section-header fade-up">
+        <span class="section-tag">Pricing</span>
+        <h2 class="section-title">Simple pricing</h2>
+        <p class="section-sub" id="pricingSub">Payment by CCP · Activated within 24h</p>
+      </div>
+      <div class="offer-banner" id="offerBanner">
+        <span class="offer-tag">🎁 <span id="offerLabel">Special Offer</span></span>
+        <span class="offer-desc" id="offerDesc"></span>
+      </div>
+      <div class="countdown" id="countdown">
+        <div class="cd-unit"><span class="cd-num" id="cdD">00</span><span class="cd-label" id="cdDLabel">Days</span></div>
+        <div class="cd-unit"><span class="cd-num" id="cdH">00</span><span class="cd-label" id="cdHLabel">Hours</span></div>
+        <div class="cd-unit"><span class="cd-num" id="cdM">00</span><span class="cd-label" id="cdMLabel">Min</span></div>
+        <div class="cd-unit"><span class="cd-num" id="cdS">00</span><span class="cd-label" id="cdSLabel">Sec</span></div>
+      </div>
+      <div class="pricing-grid" id="pricingGrid"></div>
+      <p class="payment-note" id="paymentNote">💳 Payment by CCP bank transfer · Account activated within 24 hours</p>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="alt-section">
+    <div class="section-inner">
+      <div class="section-header fade-up">
+        <span class="section-tag">Reviews</span>
+        <h2 class="section-title" id="reviewsTitle">What students say</h2>
+      </div>
+      <div class="testimonials-grid" id="testimonialsGrid"></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section>
+    <div class="section-inner">
+      <div class="cta-wrap">
+        <div class="cta-box fade-up">
+          <h2 id="ctaTitle">Ready to pass your exam?</h2>
+          <p id="ctaSub">Start with a free test today. No credit card required.</p>
+          <a href="register.html" class="btn btn-primary btn-lg" id="ctaBtn">Start Free Trial →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-brand">Speak<span>glish</span></div>
+    <div class="footer-links">
+      <a href="#exams" id="fExams">Exams</a>
+      <a href="#pricing" id="fPricing">Pricing</a>
+      <a href="login.html" id="fLogin">Login</a>
+      <a href="register.html" id="fRegister">Register</a>
+    </div>
+    <div class="footer-copy">© 2026 Speaglish. All rights reserved.</div>
+  </footer>
+
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────
+  const SUPABASE_URL = 'https://iugggbzgrucopvxkgzry.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ─── EXAM DATA ────────────────────────────────────────────────
+  const EXAMS = {
+    dz: [
+      { title:'TCF — Compréhension Écrite', type:'TCF',   skill:'Lecture',    dur:60,  count:45, color:'#4169FF', free:true  },
+      { title:'TCF — Compréhension Orale',  type:'TCF',   skill:'Écoute',     dur:40,  count:39, color:'#00C9A7', free:false },
+      { title:'TEF — Compréhension Écrite', type:'TEF',   skill:'Lecture',    dur:60,  count:50, color:'#9B6DFF', free:false },
+      { title:'IELTS Academic — Reading',   type:'IELTS', skill:'Reading',    dur:60,  count:40, color:'#F0A500', free:false },
+      { title:'DELF B2 — Compréhension',    type:'DELF',  skill:'Lecture',    dur:60,  count:35, color:'#FF5757', free:false },
+      { title:'IELTS — Writing Task 2',     type:'IELTS', skill:'Écriture',   dur:40,  count:1,  color:'#F0A500', free:false },
+    ],
+    tr: [
+      { title:'YDS — Yabancı Dil Sınavı',  type:'YDS',      skill:'İngilizce', dur:180, count:80, color:'#4169FF', free:true  },
+      { title:'YÖKDİL — Academic English', type:'YÖKDİL',   skill:'İngilizce', dur:180, count:80, color:'#00C9A7', free:false },
+      { title:'e-YDS — Online Format',     type:'e-YDS',    skill:'İngilizce', dur:180, count:80, color:'#9B6DFF', free:false },
+      { title:'IELTS Academic — Reading',  type:'IELTS',    skill:'Reading',   dur:60,  count:40, color:'#F0A500', free:false },
+      { title:'TOEFL iBT — Reading',       type:'TOEFL',    skill:'Reading',   dur:54,  count:30, color:'#FF5757', free:false },
+      { title:'TOEIC — Reading & Listening',type:'TOEIC',   skill:'Mixed',     dur:120, count:100,color:'#F0A500', free:false },
+    ]
+  };
+
+  // ─── TRANSLATIONS ─────────────────────────────────────────────
+  const T = {
+    dz: {
+      badge: 'Plateforme de Préparation aux Examens',
+      title: 'Préparez votre examen<br><span class="gold">avec confiance</span>',
+      sub: 'Simulations complètes, feedback IA instantané et recommandations personnalisées pour maximiser votre score.',
+      cta: 'Essai gratuit →',
+      cta2: 'Voir les examens',
+      navCta: 'Commencer',
+      pills: ['TCF','TEF','IELTS','DELF','DALF'],
+      stats: ['Étudiants préparés','Taux de réussite','Examens disponibles','Accès illimité'],
+      examsTag: 'Examens', examsTitle: 'Simulations disponibles',
+      examsSub: '1 test gratuit inclus — aucune carte bancaire requise',
+      stepsTitle: 'Comment ça marche',
+      steps: [
+        { icon:'📝', title:'Passez une simulation', desc:'Expérience d\'examen complète avec minuterie, navigation et signalement des questions.' },
+        { icon:'📊', title:'Feedback instantané', desc:'Résultats détaillés par compétence avec correction IA des rédactions et explications.' },
+        { icon:'🎯', title:'Suivez votre plan', desc:'Identification des points faibles avec leçons ciblées et recommandations YouTube.' },
+        { icon:'📈', title:'Suivez vos progrès', desc:'Visualisez votre amélioration entre les tentatives et sachez quand vous êtes prêt.' },
+      ],
+      pricingSub: 'Paiement par virement CCP · Activation sous 24h',
+      paymentNote: '💳 Paiement par virement CCP · Compte activé sous 24 heures',
+      planFeatures: ['Accès à tous les examens','Feedback IA sur l\'écrit','Leçons par compétence','Recommandations YouTube','Suivi de progression'],
+      planCta: 'Commencer →',
+      reviewsTitle: 'Ce que disent nos étudiants',
+      ctaTitle: 'Prêt à réussir votre examen ?',
+      ctaSub: 'Commencez avec un test gratuit aujourd\'hui. Aucune carte bancaire requise.',
+      ctaBtn: 'Essai gratuit →',
+      footerLinks: ['Examens','Tarifs','Connexion','Inscription'],
+    },
+    tr: {
+      badge: 'Sınav Hazırlık Platformu',
+      title: 'YDS ve IELTS\'e<br><span class="gold">güvenle hazırlan</span>',
+      sub: 'Tam simülasyon, anında AI geri bildirimi ve maksimum puan için kişiselleştirilmiş öneriler.',
+      cta: 'Ücretsiz Başla →',
+      cta2: 'Sınavlara Bak',
+      navCta: 'Ücretsiz Başla',
+      pills: ['YDS','YÖKDİL','e-YDS','IELTS','TOEFL','TOEIC'],
+      stats: ['Hazırlanan öğrenci','Başarı oranı','Mevcut sınav','Sınırsız erişim'],
+      examsTag: 'Sınavlar', examsTitle: 'Mevcut simülasyonlar',
+      examsSub: '1 ücretsiz test dahil — kredi kartı gerekmez',
+      stepsTitle: 'Nasıl çalışır',
+      steps: [
+        { icon:'📝', title:'Simülasyon yap', desc:'Gerçek zamanlı soru gezinme ve işaretleme ile tam sınav deneyimi.' },
+        { icon:'📊', title:'Anında geri bildirim', desc:'AI destekli yazma düzeltmesi ve açıklamalar ile beceriye göre detaylı puanlama.' },
+        { icon:'🎯', title:'Planını takip et', desc:'Zayıf alan tespiti, hedefli dersler ve YouTube önerileri.' },
+        { icon:'📈', title:'İlerlemeyi takip et', desc:'Denemeler arasındaki gelişimini gör ve sınava ne zaman hazır olduğunu bil.' },
+      ],
+      pricingSub: 'Kolay ödeme · 24 saat içinde aktivasyon',
+      paymentNote: '💳 Banka kartı veya Iyzico ile ödeme · 24 saat içinde aktivasyon',
+      planFeatures: ['Tüm sınavlara erişim','AI yazma geri bildirimi','Konu bazlı dersler','YouTube önerileri','İlerleme takibi'],
+      planCta: 'Başla →',
+      reviewsTitle: 'Öğrencilerimiz ne diyor',
+      ctaTitle: 'Sınavınızı geçmeye hazır mısınız?',
+      ctaSub: 'Bugün ücretsiz testle başlayın. Kredi kartı gerekmez.',
+      ctaBtn: 'Ücretsiz Başla →',
+      footerLinks: ['Sınavlar','Fiyatlar','Giriş','Kayıt'],
+    }
+  };
+
+  // ─── DEFAULT TESTIMONIALS ─────────────────────────────────────
+  const DEFAULT_REVIEWS = {
+    dz: [
+      { name:'Ahmed B.', text:'Grâce aux simulations TCF, j\'ai obtenu mon niveau B2 du premier coup. Les explications sont vraiment claires.', score:'B2', exam:'TCF' },
+      { name:'Sara M.', text:'La plateforme m\'a aidée à identifier mes points faibles rapidement. Je recommande vivement.', score:'B1+', exam:'TEF' },
+      { name:'Yacine K.', text:'Le feedback de l\'IA sur mes rédactions était très précis. J\'ai beaucoup progressé en un mois.', score:'B2', exam:'IELTS' },
+    ],
+    tr: [
+      { name:'Mehmet Y.', text:'YDS\'ye hazırlanırken bu platform çok yardımcı oldu. Gerçek sınav hissini veriyor.', score:'87.5', exam:'YDS' },
+      { name:'Ayşe K.', text:'YÖKDİL simülasyonları sayesinde sınava çok daha güvenle girdim.', score:'82.5', exam:'YÖKDİL' },
+      { name:'Ali D.', text:'Açıklamalar çok detaylı. Her yanlış cevabın neden yanlış olduğunu öğrendim.', score:'7.0', exam:'IELTS' },
+    ]
+  };
+
+  // ─── STATE ────────────────────────────────────────────────────
+  let market = 'dz';
+  let globalConfig = null;
+
+  // ─── MARKET DETECTION ─────────────────────────────────────────
+  async function detectMarket() {
+    const param = new URLSearchParams(window.location.search).get('market');
+    if (param === 'dz' || param === 'tr') {
+      localStorage.setItem('sp_market', param);
+      return param;
+    }
+    const saved = localStorage.getItem('sp_market');
+    if (saved === 'dz' || saved === 'tr') return saved;
+    try {
+      const r = await fetch('https://ipapi.co/json/');
+      const d = await r.json();
+      if (d.country_code === 'TR') return 'tr';
+    } catch(e) {}
+    return 'dz';
+  }
+
+  function switchMarket(m) {
+    localStorage.setItem('sp_market', m);
+    market = m;
+    render(m, globalConfig);
+    updateToggle(m);
+  }
+
+  function updateToggle(m) {
+    document.getElementById('btnDz').classList.toggle('active', m === 'dz');
+    document.getElementById('btnTr').classList.toggle('active', m === 'tr');
+  }
+
+  // ─── RENDER ───────────────────────────────────────────────────
+  function render(m, cfg) {
+    const t = T[m];
+    const isTr = m === 'tr';
+
+    // Announcement
+    const annBar = document.getElementById('announcementBar');
+    if (cfg?.announcement_active && cfg?.announcement_text) {
+      annBar.textContent = cfg.announcement_text;
+      annBar.classList.add('active');
+    } else {
+      annBar.classList.remove('active');
+    }
+
+    // Logo
+    if (cfg?.logo_url) {
+      document.getElementById('logoMark').innerHTML =
+        `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+    }
+
+    // Hero background
+    const isMobile = window.innerWidth < 768;
+    const bgUrl = isMobile ? (cfg?.bg_mobile_url || cfg?.bg_desktop_url) : cfg?.bg_desktop_url;
+    if (bgUrl) {
+      document.getElementById('heroBg').style.backgroundImage = `url(${bgUrl})`;
+      document.getElementById('heroOverlay').style.background =
+        `rgba(8,11,24,${cfg?.bg_overlay_opacity ?? 0.62})`;
+    }
+
+    // Campaign banner image (below hero)
+    if (cfg?.campaign_banner_url) {
+      let banner = document.getElementById('campaignBanner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'campaignBanner';
+        banner.style.cssText = 'width:100%;max-height:260px;overflow:hidden;';
+        banner.innerHTML = `<img src="${cfg.campaign_banner_url}" style="width:100%;object-fit:cover;">`;
+        document.getElementById('hero').after(banner);
+      }
+    }
+
+    // Hero content
+    document.getElementById('badgeText').textContent = cfg?.hero_badge || t.badge;
+    document.getElementById('heroTitle').innerHTML   = cfg?.hero_title || t.title;
+    document.getElementById('heroSubtitle').textContent = cfg?.hero_subtitle || t.sub;
+    document.getElementById('heroCta').textContent  = cfg?.cta_text || t.cta;
+    document.getElementById('heroSecondary').textContent = t.cta2;
+    document.getElementById('navCta').textContent   = t.navCta;
+
+    // Exam pills
+    document.getElementById('examPills').innerHTML =
+      t.pills.map(p => `<span class="exam-pill">${p}</span>`).join('');
+
+    // Stats
+    t.stats.forEach((l, i) => {
+      const el = document.getElementById(['statStudents','statRate','statExams','statAccess'][i]);
+      if (el) el.textContent = l;
+    });
+
+    // Exams grid
+    const exams = cfg?.featured_exams?.length
+      ? EXAMS[m].filter(e => cfg.featured_exams.includes(e.type))
+      : EXAMS[m];
+
+    document.getElementById('examsTag').textContent   = t.examsTag;
+    document.getElementById('examsTitle').textContent = t.examsTitle;
+    document.getElementById('examsSub').textContent   = t.examsSub;
+    document.getElementById('statExamCount').textContent = exams.length;
+
+    document.getElementById('examsGrid').innerHTML = exams.map(e => `
+      <div class="exam-card" style="--accent:${e.color};" onclick="location.href='register.html'">
+        <div class="exam-card-top">
+          <span class="exam-type-tag"
+            style="background:${e.color}20;color:${e.color};border:1px solid ${e.color}30;">
+            ${e.type}
+          </span>
+          ${e.free
+            ? '<span class="exam-free-tag">FREE</span>'
+            : '<span class="exam-lock">🔒</span>'}
+        </div>
+        <div class="exam-title">${e.title}</div>
+        <div class="exam-meta">${e.skill} · ${e.dur} min · ${e.count} Q</div>
+        <div class="exam-bar">
+          <div class="exam-bar-fill"
+            style="width:${Math.min(100,e.count/80*100)}%;background:${e.color};"></div>
+        </div>
+      </div>
+    `).join('');
+
+    // Steps
+    document.getElementById('stepsTitle').textContent = t.stepsTitle;
+    document.getElementById('stepsGrid').innerHTML = t.steps.map(s => `
+      <div class="step-card fade-up">
+        <div class="step-icon">${s.icon}</div>
+        <div class="step-title">${s.title}</div>
+        <div class="step-desc">${s.desc}</div>
+      </div>
+    `).join('');
+
+    // Offer
+    const disc = cfg?.offer_active ? (cfg.offer_discount || 0) : 0;
+    const offerBanner = document.getElementById('offerBanner');
+    if (cfg?.offer_active) {
+      offerBanner.classList.add('active');
+      document.getElementById('offerLabel').textContent = cfg.offer_label || 'Special Offer';
+      const dlText = cfg.offer_deadline
+        ? ' — ends ' + new Date(cfg.offer_deadline).toLocaleDateString()
+        : '';
+      document.getElementById('offerDesc').textContent = `${disc}% off all plans${dlText}`;
+      if (cfg.offer_deadline) startCountdown(cfg.offer_deadline);
+    }
+
+    // Pricing
+    document.getElementById('pricingSub').textContent  = t.pricingSub;
+    document.getElementById('paymentNote').textContent = t.paymentNote;
+
+    const currency = cfg?.currency || (isTr ? 'TRY' : 'DZD');
+    const prices = [
+      cfg?.price_1month  || (isTr ? 300  : 1500),
+      cfg?.price_3months || (isTr ? 700  : 3500),
+      cfg?.price_6months || (isTr ? 1200 : 5500),
+    ];
+    const plans = [
+      { name: isTr ? '1 Ay' : '1 Mois',  price: prices[0], featured: false },
+      { name: isTr ? '3 Ay' : '3 Mois',  price: prices[1], featured: true,
+        badge: isTr ? '⭐ En Popüler' : '⭐ Le plus populaire' },
+      { name: isTr ? '6 Ay' : '6 Mois',  price: prices[2], featured: false },
+    ];
+
+    document.getElementById('pricingGrid').innerHTML = plans.map(pl => {
+      const discPrice = disc ? Math.round(pl.price * (1 - disc/100)) : null;
+      return `
+        <div class="price-card ${pl.featured ? 'featured' : ''}">
+          ${pl.badge ? `<div class="popular-badge">${pl.badge}</div>` : ''}
+          <div class="plan-name">${pl.name}</div>
+          <div class="plan-original">${discPrice ? pl.price.toLocaleString()+' '+currency : ''}</div>
+          <div class="plan-price">${(discPrice||pl.price).toLocaleString()}</div>
+          <div class="plan-currency">${currency}</div>
+          <ul class="plan-features">
+            ${t.planFeatures.map(f=>`<li>${f}</li>`).join('')}
+          </ul>
+          <a href="register.html"
+            class="${pl.featured ? 'plan-btn plan-btn-primary' : 'plan-btn plan-btn-outline'}">
+            ${t.planCta}
+          </a>
+        </div>
+      `;
+    }).join('');
+
+    // Testimonials
+    document.getElementById('reviewsTitle').textContent = t.reviewsTitle;
+    const reviews = cfg?.testimonials?.length
+      ? cfg.testimonials
+      : DEFAULT_REVIEWS[m];
+
+    document.getElementById('testimonialsGrid').innerHTML = reviews.map(r => `
+      <div class="testimonial-card">
+        <div class="t-stars">★★★★★</div>
+        <div class="t-text">"${r.text}"</div>
+        <div class="t-author">
+          <div class="t-avatar">${r.name.charAt(0)}</div>
+          <div>
+            <div class="t-name">${r.name}</div>
+            <div class="t-meta">${r.score || ''} ${r.exam ? '· '+r.exam : ''}</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    // CTA
+    document.getElementById('ctaTitle').textContent = t.ctaTitle;
+    document.getElementById('ctaSub').textContent   = t.ctaSub;
+    document.getElementById('ctaBtn').textContent   = t.ctaBtn;
+
+    // Footer
+    const fl = t.footerLinks;
+    document.getElementById('fExams').textContent    = fl[0];
+    document.getElementById('fPricing').textContent  = fl[1];
+    document.getElementById('fLogin').textContent    = fl[2];
+    document.getElementById('fRegister').textContent = fl[3];
+
+    // Re-init scroll animations for new elements
+    initScrollAnim();
+  }
+
+  // ─── COUNTDOWN ────────────────────────────────────────────────
+  function startCountdown(deadline) {
+    const el = document.getElementById('countdown');
+    el.classList.add('active');
+    const end = new Date(deadline).getTime();
+    function tick() {
+      const diff = end - Date.now();
+      if (diff <= 0) { el.classList.remove('active'); return; }
+      document.getElementById('cdD').textContent = String(Math.floor(diff/86400000)).padStart(2,'0');
+      document.getElementById('cdH').textContent = String(Math.floor(diff%86400000/3600000)).padStart(2,'0');
+      document.getElementById('cdM').textContent = String(Math.floor(diff%3600000/60000)).padStart(2,'0');
+      document.getElementById('cdS').textContent = String(Math.floor(diff%60000/1000)).padStart(2,'0');
+    }
+    tick(); setInterval(tick, 1000);
+  }
+
+  // ─── SCROLL ANIMATIONS ────────────────────────────────────────
+  function initScrollAnim() {
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  async function init() {
+    market = await detectMarket();
+    updateToggle(market);
+
+    // Load config from Supabase
+    try {
+      const { data } = await sb
+        .from('landing_config')
+        .select('*')
+        .eq('market', market)
+        .single();
+      globalConfig = data;
+    } catch(e) {
+      console.warn('Using default config:', e.message);
+    }
+
+    render(market, globalConfig);
+
+    // Hide loader
+    const loader = document.getElementById('loaderOverlay');
+    loader.classList.add('out');
+    setTimeout(() => loader.remove(), 500);
+
+    initScrollAnim();
+  }
+
+  init();
+</script>
+</body>
+</html>
