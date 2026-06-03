@@ -470,7 +470,7 @@
             ? `<a href="${s.receipt_url}" target="_blank" class="btn btn-ghost btn-sm">📎</a>`
             : '<span style="font-size:11px;color:var(--muted);">No receipt</span>'}
           <span class="amount-badge">${s.amount?.toLocaleString()} ${s.currency}</span>
-          <button class="btn btn-success btn-sm" onclick="openActivation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+          <button class="btn btn-success btn-sm" onclick="openActivation('${s.id}')">
             Activate
           </button>
         </div>`;
@@ -542,7 +542,13 @@
   }
 
   // ─── ACTIVATION MODAL ─────────────────────────────────────────
-  function openActivation(sub) {
+  async function openActivation(subId) {
+    const { data: sub } = await sb
+      .from('subscriptions')
+      .select('*, profiles(full_name, market)')
+      .eq('id', subId)
+      .single();
+    if (!sub) return;
     currentSub = sub;
 
     // Pre-fill expiry based on plan
