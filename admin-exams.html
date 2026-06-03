@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Exam Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#080B18;--card:#0E1120;--card2:#131626;
+      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
+      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
+      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;--sidebar:230px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);display:flex;min-height:100vh;}
+
+    /* ── SIDEBAR ─────────────────────────────── */
+    .sidebar{width:var(--sidebar);min-height:100vh;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:50;}
+    .sidebar-logo{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+    .logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#E8961A);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:13px;color:#000;flex-shrink:0;overflow:hidden;}
+    .logo-text{font-family:var(--fd);font-size:16px;font-weight:700;}
+    .logo-text span{color:var(--gold);}
+    .sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto;}
+    .nav-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;transition:all .15s;font-size:13px;color:var(--sub);font-weight:500;border:1px solid transparent;margin-bottom:2px;text-decoration:none;}
+    .nav-item:hover{background:var(--card2);color:var(--text);}
+    .nav-item.active{background:rgba(240,165,0,.1);color:var(--gold);border-color:rgba(240,165,0,.2);}
+    .nav-item .icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+
+    /* ── MAIN ────────────────────────────────── */
+    .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+    .topbar{position:sticky;top:0;z-index:40;background:rgba(8,11,24,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+    .topbar-title{font-family:var(--fd);font-size:18px;font-weight:700;}
+
+    /* ── BUTTONS ─────────────────────────────── */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;font-family:var(--ff);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;text-decoration:none;}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub);}
+    .btn-ghost:hover{border-color:var(--sub);color:var(--text);}
+    .btn-primary{background:var(--gold);color:#000;}
+    .btn-primary:hover{background:var(--gold2);}
+    .btn-sm{padding:5px 12px;font-size:12px;}
+    .btn-teal{background:rgba(0,201,167,.15);border:1px solid rgba(0,201,167,.3);color:var(--teal);}
+    .btn-danger{background:rgba(255,87,87,.15);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+
+    /* ── CONTENT ─────────────────────────────── */
+    .content{padding:28px;flex:1;}
+    .view{display:none;}
+    .view.active{display:block;}
+
+    /* ── EXAM GRID ───────────────────────────── */
+    .exam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:20px;}
+    .exam-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .2s;}
+    .exam-card:hover{border-color:var(--gold);}
+    .exam-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .exam-type-tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+    .exam-active-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;}
+    .toggle-mini{width:32px;height:18px;background:var(--border);border-radius:18px;position:relative;transition:.3s;cursor:pointer;}
+    .toggle-mini.on{background:var(--teal);}
+    .toggle-mini::before{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.3s;}
+    .toggle-mini.on::before{transform:translateX(14px);}
+    .exam-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+    .exam-meta{font-size:12px;color:var(--muted);margin-bottom:14px;}
+    .exam-stats{display:flex;gap:14px;margin-bottom:14px;}
+    .exam-stat{text-align:center;}
+    .exam-stat-num{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--gold);}
+    .exam-stat-label{font-size:10px;color:var(--muted);}
+    .exam-actions{display:flex;gap:8px;}
+
+    /* ── SECTION ─────────────────────────────── */
+    .section-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+    .section-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+    .section-title{font-family:var(--fd);font-size:14px;font-weight:700;}
+
+    /* ── IMPORT AREA ─────────────────────────── */
+    .import-zone{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;margin:16px;}
+    .import-zone:hover{border-color:var(--gold);background:rgba(240,165,0,.03);}
+    .import-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+    .import-icon{font-size:36px;margin-bottom:12px;}
+    .import-text{font-size:14px;font-weight:600;margin-bottom:4px;}
+    .import-hint{font-size:12px;color:var(--muted);}
+
+    /* ── PREVIEW TABLE ───────────────────────── */
+    .preview-wrap{overflow-x:auto;padding:0 16px 16px;}
+    .preview-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .preview-table th{background:var(--card2);padding:8px 10px;text-align:left;font-weight:700;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+    .preview-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--sub);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .preview-table tr:last-child td{border-bottom:none;}
+    .preview-table tr:hover td{background:rgba(255,255,255,.01);}
+    .correct-badge{background:rgba(0,201,167,.15);color:var(--teal);padding:2px 8px;border-radius:10px;font-weight:700;}
+
+    /* ── QUESTION LIST ───────────────────────── */
+    .q-row{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+    .q-row:last-child{border-bottom:none;}
+    .q-num{width:28px;height:28px;background:var(--card2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0;}
+    .q-text{flex:1;font-size:13px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .q-cat{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(65,105,255,.12);color:var(--blue);flex-shrink:0;}
+
+    /* ── EMPTY ───────────────────────────────── */
+    .empty{padding:40px;text-align:center;color:var(--muted);}
+    .empty-icon{font-size:36px;margin-bottom:12px;}
+
+    /* ── MODALS ──────────────────────────────── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
+    .modal-title{font-family:var(--fd);font-size:18px;font-weight:700;margin-bottom:20px;}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+
+    label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:6px;}
+    input[type=text],input[type=number],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:var(--ff);font-size:13px;outline:none;margin-bottom:14px;}
+    input:focus,select:focus,textarea:focus{border-color:var(--gold);}
+    textarea{resize:vertical;min-height:70px;margin-bottom:14px;}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+    /* ── TOAST ───────────────────────────────── */
+    .toast-wrap{position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+    .toast{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;min-width:200px;animation:slideIn .3s ease;}
+    .toast.success{border-color:var(--teal);}
+    .toast.error{border-color:var(--red);}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+    /* ── LOADER ──────────────────────────────── */
+    .loader-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;align-items:center;justify-content:center;}
+    .loader-overlay.out{display:none;}
+    .spinner{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    @media(max-width:768px){
+      .sidebar{display:none;}
+      .main{margin-left:0;}
+      .content{padding:16px;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark" id="logoMark">Sp</div>
+    <span class="logo-text">Speak<span>glish</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Admin</div>
+    <a href="admin.html" class="nav-item"><span class="icon">📊</span> Dashboard</a>
+    <a href="admin-students.html" class="nav-item"><span class="icon">👥</span> Students</a>
+    <a href="admin-exams.html" class="nav-item active"><span class="icon">📝</span> Exam Builder</a>
+    <a href="admin-landing.html" class="nav-item"><span class="icon">🎨</span> Landing Page</a>
+    <div class="nav-label">Account</div>
+    <a href="index.html" target="_blank" class="nav-item"><span class="icon">👁</span> View Site</a>
+    <div class="nav-item" onclick="signOut()"><span class="icon">🚪</span> Sign Out</div>
+  </nav>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Exam Builder</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" id="backBtn" style="display:none;" onclick="showExamsList()">← Back</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadTemplate()">📥 Excel Template</button>
+      <button class="btn btn-primary" onclick="openCreateExam()">+ New Exam</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── VIEW 1: EXAMS LIST ──────────────── -->
+    <div class="view active" id="viewList">
+      <div class="exam-grid" id="examGrid">
+        <div style="grid-column:1/-1;padding:40px;text-align:center;">
+          <div class="spinner" style="margin:0 auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW 2: EXAM DETAIL ────────────── -->
+    <div class="view" id="viewDetail">
+
+      <!-- Exam info bar -->
+      <div class="section-card" style="margin-bottom:16px;">
+        <div class="section-header">
+          <div>
+            <div class="section-title" id="detailTitle">—</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="detailMeta">—</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="openEditExam()">✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteExam()">🗑 Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Excel Import -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">📥 Import Questions from Excel</div>
+          <button class="btn btn-ghost btn-sm" onclick="downloadTemplate()">📥 Download Template</button>
+        </div>
+
+        <div class="import-zone" onclick="document.getElementById('excelInput').click()">
+          <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(this)">
+          <div class="import-icon">📊</div>
+          <div class="import-text">Click to upload Excel file</div>
+          <div class="import-hint">Columns: Question · Option A · Option B · Option C · Option D · Correct · Explanation · Audio · Category · Difficulty</div>
+        </div>
+
+        <!-- Preview -->
+        <div id="previewSection" style="display:none;">
+          <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div style="font-size:13px;color:var(--sub);">
+              Preview: <strong id="previewCount" style="color:var(--text);">0</strong> questions found
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost btn-sm" onclick="clearPreview()">Clear</button>
+              <button class="btn btn-primary btn-sm" onclick="importQuestions()">✅ Import All</button>
+            </div>
+          </div>
+          <div class="preview-wrap">
+            <table class="preview-table" id="previewTable"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Single Question -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">➕ Add Single Question</div>
+          <button class="btn btn-teal btn-sm" onclick="openAddQuestion()">+ Add Question</button>
+        </div>
+      </div>
+
+      <!-- Questions List -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">📋 Questions <span id="questionCount" style="font-size:12px;color:var(--muted);font-weight:400;">(0)</span></div>
+          <button class="btn btn-danger btn-sm" onclick="deleteAllQuestions()">🗑 Clear All</button>
+        </div>
+        <div id="questionsList">
+          <div class="empty"><div class="empty-icon">📝</div>No questions yet — import from Excel or add manually</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Exam Modal -->
+<div class="modal-overlay" id="examModal">
+  <div class="modal">
+    <div class="modal-title" id="examModalTitle">New Exam</div>
+    <div>
+      <label>Exam Title</label>
+      <input type="text" id="examTitle" placeholder="TCF — Compréhension Écrite">
+    </div>
+    <div class="field-row">
+      <div>
+        <label>Type</label>
+        <select id="examType">
+          <option>TCF</option><option>TEF</option><option>IELTS</option>
+          <option>TOEFL</option><option>TOEIC</option><option>DELF</option>
+          <option>YDS</option><option>YÖKDİL</option><option>e-YDS</option>
+        </select>
+      </div>
+      <div>
+        <label>Market</label>
+        <select id="examMarket">
+          <option value="dz">🇩🇿 Algeria</option>
+          <option value="tr">🇹🇷 Turkey</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div>
+        <label>Skill</label>
+        <select id="examSkill">
+          <option value="reading">Reading / Lecture</option>
+          <option value="listening">Listening / Écoute</option>
+          <option value="writing">Writing / Écriture</option>
+        </select>
+      </div>
+      <div>
+        <label>Duration (minutes)</label>
+        <input type="number" id="examDuration" value="60" min="1" max="300">
+      </div>
+    </div>
+    <div class="field-row">
+      <div>
+        <label>Difficulty Level</label>
+        <select id="examDifficulty">
+          <option>A1-A2</option><option>A2-B1</option>
+          <option selected>B1-B2</option><option>B2-C1</option><option>C1-C2</option>
+        </select>
+      </div>
+      <div>
+        <label>Access</label>
+        <select id="examFree">
+          <option value="false">🔒 Paid only</option>
+          <option value="true">✅ Free (trial)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeExamModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveExam()">Save Exam</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Question Modal -->
+<div class="modal-overlay" id="questionModal">
+  <div class="modal">
+    <div class="modal-title">Add Question</div>
+    <div>
+      <label>Question Type</label>
+      <select id="qType" onchange="toggleQType()">
+        <option value="mcq">Multiple Choice (MCQ)</option>
+        <option value="writing">Writing Task</option>
+      </select>
+    </div>
+    <div>
+      <label>Question Text</label>
+      <textarea id="qText" placeholder="Enter the question or passage..."></textarea>
+    </div>
+    <div id="mcqFields">
+      <div class="field-row">
+        <div><label>Option A</label><input type="text" id="qA"></div>
+        <div><label>Option B</label><input type="text" id="qB"></div>
+      </div>
+      <div class="field-row">
+        <div><label>Option C</label><input type="text" id="qC"></div>
+        <div><label>Option D</label><input type="text" id="qD"></div>
+      </div>
+      <div>
+        <label>Correct Answer</label>
+        <select id="qCorrect" style="margin-bottom:14px;">
+          <option value="A">A</option><option value="B">B</option>
+          <option value="C">C</option><option value="D">D</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>Explanation</label>
+      <textarea id="qExplanation" placeholder="Why is this the correct answer?"></textarea>
+    </div>
+    <div class="field-row">
+      <div>
+        <label>Category</label>
+        <input type="text" id="qCategory" placeholder="Compréhension">
+      </div>
+      <div>
+        <label>Difficulty</label>
+        <select id="qDifficulty" style="margin-bottom:0;">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>Audio File Name (optional)</label>
+      <input type="text" id="qAudio" placeholder="audio_01" style="margin-bottom:0;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeQuestionModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuestion()">Add Question</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  let currentExam   = null;
+  let previewData   = [];
+  let editingExamId = null;
+  const CF_BASE     = 'https://pub-xxxx.r2.dev'; // Update with your R2 public URL
+
+  // ─── AUTH ─────────────────────────────────────────────────────
+  async function checkAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'login.html'; return false; }
+    const { data: p } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+    if (!p || p.role !== 'admin') { window.location.href = 'dashboard.html'; return false; }
+    return true;
+  }
+
+  // ─── LOAD EXAMS ───────────────────────────────────────────────
+  async function loadExams() {
+    const { data: exams } = await sb.from('exams').select('*').order('created_at', {ascending:false});
+    const grid = document.getElementById('examGrid');
+    if (!exams || !exams.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;"><div class="empty"><div class="empty-icon">📝</div>No exams yet — create your first exam</div></div>`;
+      return;
+    }
+
+    const colors = {TCF:'#4169FF',TEF:'#9B6DFF',IELTS:'#F0A500',YDS:'#4169FF',YÖKDİL:'#00C9A7',TOEFL:'#FF5757',TOEIC:'#F0A500',DELF:'#FF7F50'};
+
+    // Get question counts
+    const { data: qCounts } = await sb.from('questions').select('exam_id');
+    const countMap = {};
+    (qCounts||[]).forEach(q => { countMap[q.exam_id] = (countMap[q.exam_id]||0)+1; });
+
+    grid.innerHTML = exams.map(e => {
+      const color = colors[e.type] || '#4169FF';
+      const qCount = countMap[e.id] || 0;
+      const mktFlag = e.market === 'tr' ? '🇹🇷' : '🇩🇿';
+      return `
+        <div class="exam-card">
+          <div class="exam-card-top">
+            <span class="exam-type-tag" style="background:${color}20;color:${color};border:1px solid ${color}30;">${e.type}</span>
+            <div class="exam-active-toggle" onclick="toggleActive('${e.id}', ${!e.is_active})">
+              <div class="toggle-mini ${e.is_active?'on':''}" id="toggle-${e.id}"></div>
+              <span>${e.is_active?'Active':'Inactive'}</span>
+            </div>
+          </div>
+          <div class="exam-title">${e.title}</div>
+          <div class="exam-meta">${mktFlag} ${e.market?.toUpperCase()} · ${e.skill} · ${e.duration_minutes} min · ${e.difficulty_level}</div>
+          <div class="exam-stats">
+            <div class="exam-stat"><div class="exam-stat-num">${qCount}</div><div class="exam-stat-label">Questions</div></div>
+            <div class="exam-stat"><div class="exam-stat-num" style="color:${e.is_free?'var(--teal)':'var(--muted)'};">${e.is_free?'Free':'Paid'}</div><div class="exam-stat-label">Access</div></div>
+          </div>
+          <div class="exam-actions">
+            <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openExamDetail('${e.id}')">✏️ Manage</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── TOGGLE ACTIVE ────────────────────────────────────────────
+  async function toggleActive(id, newVal) {
+    await sb.from('exams').update({ is_active: newVal }).eq('id', id);
+    const toggle = document.getElementById(`toggle-${id}`);
+    if (toggle) { toggle.classList.toggle('on', newVal); toggle.nextElementSibling.textContent = newVal?'Active':'Inactive'; }
+  }
+
+  // ─── OPEN EXAM DETAIL ─────────────────────────────────────────
+  async function openExamDetail(id) {
+    const { data: exam } = await sb.from('exams').select('*').eq('id', id).single();
+    if (!exam) return;
+    currentExam = exam;
+
+    document.getElementById('detailTitle').textContent = exam.title;
+    document.getElementById('detailMeta').textContent =
+      `${exam.type} · ${exam.skill} · ${exam.duration_minutes} min · ${exam.difficulty_level} · ${exam.market?.toUpperCase()}`;
+    document.getElementById('topbarTitle').textContent = exam.title;
+    document.getElementById('backBtn').style.display = 'inline-flex';
+
+    document.getElementById('viewList').classList.remove('active');
+    document.getElementById('viewDetail').classList.add('active');
+
+    clearPreview();
+    await loadQuestions();
+  }
+
+  // ─── LOAD QUESTIONS ───────────────────────────────────────────
+  async function loadQuestions() {
+    if (!currentExam) return;
+    const { data: qs } = await sb.from('questions')
+      .select('*').eq('exam_id', currentExam.id).order('order_index');
+
+    const el = document.getElementById('questionsList');
+    document.getElementById('questionCount').textContent = `(${qs?.length||0})`;
+
+    if (!qs || !qs.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">📝</div>No questions yet — import from Excel or add manually</div>`;
+      return;
+    }
+
+    el.innerHTML = qs.map((q, i) => `
+      <div class="q-row">
+        <div class="q-num">${i+1}</div>
+        <div class="q-text" title="${q.question_text}">${q.question_text.substring(0,100)}${q.question_text.length>100?'...':''}</div>
+        <span class="q-cat">${q.category||'—'}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px;">${q.correct_answer||''}</span>
+        <button class="btn btn-danger btn-sm" style="margin-left:8px;" onclick="deleteQuestion('${q.id}')">🗑</button>
+      </div>`).join('');
+  }
+
+  // ─── SHOW EXAMS LIST ──────────────────────────────────────────
+  function showExamsList() {
+    currentExam = null;
+    document.getElementById('viewDetail').classList.remove('active');
+    document.getElementById('viewList').classList.add('active');
+    document.getElementById('topbarTitle').textContent = 'Exam Builder';
+    document.getElementById('backBtn').style.display = 'none';
+    clearPreview();
+    loadExams();
+  }
+
+  // ─── CREATE / EDIT EXAM ───────────────────────────────────────
+  function openCreateExam() {
+    editingExamId = null;
+    document.getElementById('examModalTitle').textContent = 'New Exam';
+    document.getElementById('examTitle').value = '';
+    document.getElementById('examModal').classList.add('open');
+  }
+
+  function openEditExam() {
+    if (!currentExam) return;
+    editingExamId = currentExam.id;
+    document.getElementById('examModalTitle').textContent = 'Edit Exam';
+    document.getElementById('examTitle').value    = currentExam.title;
+    document.getElementById('examType').value     = currentExam.type;
+    document.getElementById('examMarket').value   = currentExam.market;
+    document.getElementById('examSkill').value    = currentExam.skill;
+    document.getElementById('examDuration').value = currentExam.duration_minutes;
+    document.getElementById('examDifficulty').value = currentExam.difficulty_level;
+    document.getElementById('examFree').value     = String(currentExam.is_free);
+    document.getElementById('examModal').classList.add('open');
+  }
+
+  function closeExamModal() {
+    document.getElementById('examModal').classList.remove('open');
+  }
+
+  async function saveExam() {
+    const data = {
+      title:            document.getElementById('examTitle').value.trim(),
+      type:             document.getElementById('examType').value,
+      market:           document.getElementById('examMarket').value,
+      skill:            document.getElementById('examSkill').value,
+      duration_minutes: parseInt(document.getElementById('examDuration').value) || 60,
+      difficulty_level: document.getElementById('examDifficulty').value,
+      is_free:          document.getElementById('examFree').value === 'true',
+      is_active:        true,
+    };
+
+    if (!data.title) { toast('Please enter an exam title', 'error'); return; }
+
+    if (editingExamId) {
+      await sb.from('exams').update(data).eq('id', editingExamId);
+      toast('Exam updated ✅', 'success');
+    } else {
+      await sb.from('exams').insert(data);
+      toast('Exam created ✅', 'success');
+    }
+
+    closeExamModal();
+    if (currentExam && editingExamId) {
+      const { data: updated } = await sb.from('exams').select('*').eq('id', editingExamId).single();
+      currentExam = updated;
+      document.getElementById('detailTitle').textContent = updated.title;
+    } else {
+      showExamsList();
+    }
+    loadExams();
+  }
+
+  // ─── DELETE EXAM ──────────────────────────────────────────────
+  async function deleteExam() {
+    if (!currentExam) return;
+    if (!confirm(`Delete "${currentExam.title}" and all its questions?`)) return;
+    await sb.from('exams').delete().eq('id', currentExam.id);
+    toast('Exam deleted', 'error');
+    showExamsList();
+  }
+
+  // ─── EXCEL UPLOAD ─────────────────────────────────────────────
+  function handleExcelUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb   = XLSX.read(e.target.result, {type:'array'});
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+      if (!rows.length) { toast('No data found in Excel', 'error'); return; }
+
+      // Map columns flexibly (case insensitive)
+      previewData = rows.map((r, i) => {
+        const get = (...keys) => {
+          for (const k of keys) {
+            const match = Object.keys(r).find(rk => rk.toLowerCase().replace(/\s/g,'') === k.toLowerCase().replace(/\s/g,''));
+            if (match && r[match]) return String(r[match]).trim();
+          }
+          return '';
+        };
+        return {
+          order_index:    i,
+          type:           'mcq',
+          question_text:  get('question','question text','q','text'),
+          option_a:       get('optiona','option a','a','answer a'),
+          option_b:       get('optionb','option b','b','answer b'),
+          option_c:       get('optionc','option c','c','answer c'),
+          option_d:       get('optiond','option d','d','answer d'),
+          correct_answer: get('correct','correctanswer','answer','correct answer').toUpperCase(),
+          explanation:    get('explanation','explain','why','reason'),
+          audio_url:      get('audio','audiofile','audio file') || null,
+          category:       get('category','cat','topic','skill'),
+          difficulty:     get('difficulty','level','diff') || 'medium',
+          exam_id:        currentExam.id,
+        };
+      }).filter(r => r.question_text);
+
+      if (!previewData.length) { toast('No valid questions found. Check column headers.', 'error'); return; }
+
+      // Show preview
+      document.getElementById('previewCount').textContent = previewData.length;
+      document.getElementById('previewSection').style.display = 'block';
+
+      const tbl = document.getElementById('previewTable');
+      tbl.innerHTML = `
+        <thead>
+          <tr>
+            <th>#</th><th>Question</th><th>A</th><th>B</th>
+            <th>C</th><th>D</th><th>Correct</th><th>Category</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${previewData.slice(0,10).map((q,i) => `
+            <tr>
+              <td>${i+1}</td>
+              <td>${q.question_text.substring(0,60)}${q.question_text.length>60?'...':''}</td>
+              <td>${q.option_a.substring(0,30)}</td>
+              <td>${q.option_b.substring(0,30)}</td>
+              <td>${q.option_c.substring(0,30)}</td>
+              <td>${q.option_d.substring(0,30)}</td>
+              <td><span class="correct-badge">${q.correct_answer}</span></td>
+              <td>${q.category}</td>
+            </tr>`).join('')}
+          ${previewData.length>10?`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:8px;">...and ${previewData.length-10} more questions</td></tr>`:''}
+        </tbody>`;
+
+      input.value = '';
+      toast(`${previewData.length} questions ready to import`, 'success');
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function clearPreview() {
+    previewData = [];
+    document.getElementById('previewSection').style.display = 'none';
+    document.getElementById('previewTable').innerHTML = '';
+  }
+
+  // ─── IMPORT QUESTIONS ─────────────────────────────────────────
+  async function importQuestions() {
+    if (!previewData.length || !currentExam) return;
+    toast('Importing...', 'success');
+
+    // Insert in batches of 50
+    for (let i = 0; i < previewData.length; i += 50) {
+      const batch = previewData.slice(i, i+50);
+      const { error } = await sb.from('questions').insert(batch);
+      if (error) { toast('Import error: ' + error.message, 'error'); return; }
+    }
+
+    clearPreview();
+    toast(`✅ ${previewData.length} questions imported!`, 'success');
+    previewData = [];
+    await loadQuestions();
+  }
+
+  // ─── ADD SINGLE QUESTION ──────────────────────────────────────
+  function openAddQuestion() {
+    document.getElementById('qText').value = '';
+    document.getElementById('qA').value = '';
+    document.getElementById('qB').value = '';
+    document.getElementById('qC').value = '';
+    document.getElementById('qD').value = '';
+    document.getElementById('qExplanation').value = '';
+    document.getElementById('qCategory').value = '';
+    document.getElementById('qAudio').value = '';
+    document.getElementById('questionModal').classList.add('open');
+  }
+
+  function closeQuestionModal() {
+    document.getElementById('questionModal').classList.remove('open');
+  }
+
+  function toggleQType() {
+    const type = document.getElementById('qType').value;
+    document.getElementById('mcqFields').style.display = type === 'mcq' ? 'block' : 'none';
+  }
+
+  async function saveQuestion() {
+    if (!currentExam) return;
+    const type = document.getElementById('qType').value;
+    const q = {
+      exam_id:        currentExam.id,
+      order_index:    999,
+      type:           type,
+      question_text:  document.getElementById('qText').value.trim(),
+      option_a:       document.getElementById('qA').value.trim(),
+      option_b:       document.getElementById('qB').value.trim(),
+      option_c:       document.getElementById('qC').value.trim(),
+      option_d:       document.getElementById('qD').value.trim(),
+      correct_answer: document.getElementById('qCorrect').value,
+      explanation:    document.getElementById('qExplanation').value.trim(),
+      category:       document.getElementById('qCategory').value.trim(),
+      difficulty:     document.getElementById('qDifficulty').value,
+      audio_url:      document.getElementById('qAudio').value.trim() || null,
+    };
+
+    if (!q.question_text) { toast('Question text is required', 'error'); return; }
+
+    await sb.from('questions').insert(q);
+    closeQuestionModal();
+    toast('Question added ✅', 'success');
+    await loadQuestions();
+  }
+
+  // ─── DELETE QUESTION ──────────────────────────────────────────
+  async function deleteQuestion(id) {
+    if (!confirm('Delete this question?')) return;
+    await sb.from('questions').delete().eq('id', id);
+    toast('Question deleted', 'error');
+    await loadQuestions();
+  }
+
+  async function deleteAllQuestions() {
+    if (!currentExam) return;
+    if (!confirm('Delete ALL questions in this exam?')) return;
+    await sb.from('questions').delete().eq('exam_id', currentExam.id);
+    toast('All questions deleted', 'error');
+    await loadQuestions();
+  }
+
+  // ─── DOWNLOAD TEMPLATE ────────────────────────────────────────
+  function downloadTemplate() {
+    const data = [
+      ['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct', 'Explanation', 'Audio', 'Category', 'Difficulty'],
+      ['The author implies that technology...', 'Has replaced teachers', 'Has both benefits and risks', 'Is harmful', 'Has no effect', 'B', 'The author uses balanced language suggesting both sides.', '', 'Implied Meaning', 'medium'],
+      ['Choose the synonym of "reluctant":', 'Eager', 'Unwilling', 'Excited', 'Determined', 'B', '"Reluctant" means unwilling or hesitant.', '', 'Vocabulary', 'easy'],
+      ['[LISTENING] You will hear a conversation...', 'Train', 'Bus', 'Taxi', 'Metro', 'C', 'The man says "I\'ll take a cab."', 'audio_01', 'Listening', 'medium'],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = Array(10).fill({wch:22});
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Questions');
+    XLSX.writeFile(wb, 'speaglish_exam_template.xlsx');
+    toast('Template downloaded ✅', 'success');
+  }
+
+  // ─── SIGN OUT ─────────────────────────────────────────────────
+  async function signOut() {
+    await sb.auth.signOut();
+    window.location.href = 'login.html';
+  }
+
+  // ─── TOAST ────────────────────────────────────────────────────
+  function toast(msg, type='success') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${msg}</span>`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  async function init() {
+    const ok = await checkAuth();
+    if (!ok) return;
+    try {
+      const { data: cfg } = await sb.from('landing_config').select('logo_url').eq('market','dz').single();
+      if (cfg?.logo_url) document.getElementById('logoMark').innerHTML =
+        `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+    } catch(e) {}
+    await loadExams();
+    document.getElementById('loaderOverlay').classList.add('out');
+  }
+
+  init();
+</script>
+</body>
+</html>
