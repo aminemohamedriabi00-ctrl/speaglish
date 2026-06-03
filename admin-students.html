@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Students</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#080B18;--card:#0E1120;--card2:#131626;
+      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
+      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
+      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;--sidebar:230px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);display:flex;min-height:100vh;}
+
+    /* ── SIDEBAR ─────────────────────────────── */
+    .sidebar{width:var(--sidebar);min-height:100vh;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:50;}
+    .sidebar-logo{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+    .logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#E8961A);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:13px;color:#000;flex-shrink:0;overflow:hidden;}
+    .logo-text{font-family:var(--fd);font-size:16px;font-weight:700;}
+    .logo-text span{color:var(--gold);}
+    .sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto;}
+    .nav-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;transition:all .15s;font-size:13px;color:var(--sub);font-weight:500;border:1px solid transparent;margin-bottom:2px;text-decoration:none;}
+    .nav-item:hover{background:var(--card2);color:var(--text);}
+    .nav-item.active{background:rgba(240,165,0,.1);color:var(--gold);border-color:rgba(240,165,0,.2);}
+    .nav-item .icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+    .sidebar-footer{padding:12px 8px;border-top:1px solid var(--border);}
+
+    /* ── MAIN ────────────────────────────────── */
+    .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;}
+    .topbar{position:sticky;top:0;z-index:40;background:rgba(8,11,24,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+    .topbar-title{font-family:var(--fd);font-size:18px;font-weight:700;}
+    .topbar-sub{font-size:12px;color:var(--muted);}
+
+    /* ── BUTTONS ─────────────────────────────── */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;font-family:var(--ff);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;text-decoration:none;}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub);}
+    .btn-ghost:hover{border-color:var(--sub);color:var(--text);}
+    .btn-primary{background:var(--gold);color:#000;}
+    .btn-sm{padding:5px 12px;font-size:12px;}
+    .btn-success{background:rgba(0,201,167,.15);border:1px solid rgba(0,201,167,.3);color:var(--teal);}
+    .btn-danger{background:rgba(255,87,87,.15);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+    .btn-info{background:rgba(65,105,255,.15);border:1px solid rgba(65,105,255,.3);color:var(--blue);}
+
+    /* ── CONTENT ─────────────────────────────── */
+    .content{padding:24px 28px;flex:1;}
+
+    /* ── TOOLBAR ─────────────────────────────── */
+    .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+    .search-wrap{position:relative;flex:1;min-width:200px;}
+    .search-wrap input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px 9px 36px;color:var(--text);font-family:var(--ff);font-size:13px;outline:none;}
+    .search-wrap input:focus{border-color:var(--gold);}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;}
+
+    /* ── FILTER TABS ─────────────────────────── */
+    .filter-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+    .filter-tab{background:var(--card);border:1px solid var(--border);color:var(--sub);padding:6px 14px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
+    .filter-tab:hover{border-color:var(--sub);color:var(--text);}
+    .filter-tab.active{background:rgba(240,165,0,.12);border-color:var(--gold);color:var(--gold);}
+    .filter-count{font-size:10px;margin-left:4px;opacity:.7;}
+
+    /* ── TABLE ───────────────────────────────── */
+    .students-table{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .table-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px 120px;gap:0;padding:10px 20px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+    .table-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px 120px;gap:0;padding:12px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background .15s;}
+    .table-row:last-child{border-bottom:none;}
+    .table-row:hover{background:rgba(255,255,255,.015);}
+
+    .student-info{display:flex;align-items:center;gap:10px;}
+    .student-avatar{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:13px;color:#000;}
+    .student-name{font-size:13px;font-weight:600;}
+    .student-email{font-size:11px;color:var(--muted);}
+
+    .cell{font-size:12px;color:var(--sub);}
+
+    .status-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;}
+    .pill-trial{background:rgba(240,165,0,.15);color:var(--gold);}
+    .pill-active{background:rgba(0,201,167,.15);color:var(--teal);}
+    .pill-expired{background:rgba(255,87,87,.15);color:var(--red);}
+    .pill-pending{background:rgba(155,109,255,.15);color:var(--purple);}
+
+    .row-actions{display:flex;gap:4px;justify-content:flex-end;}
+
+    /* ── EMPTY ───────────────────────────────── */
+    .empty{padding:48px;text-align:center;color:var(--muted);}
+    .empty-icon{font-size:36px;margin-bottom:12px;}
+    .empty-title{font-size:15px;font-weight:600;margin-bottom:4px;}
+
+    /* ── STUDENT DETAIL MODAL ────────────────── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;}
+    .modal-header{display:flex;align-items:center;gap:14px;margin-bottom:24px;}
+    .modal-avatar{width:52px;height:52px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:20px;color:#000;}
+    .modal-name{font-family:var(--fd);font-size:20px;font-weight:700;}
+    .modal-meta{font-size:13px;color:var(--muted);margin-top:2px;}
+    .modal-close{margin-left:auto;background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;}
+
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+    .info-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;}
+    .info-label{font-size:11px;color:var(--muted);margin-bottom:4px;}
+    .info-value{font-size:14px;font-weight:600;}
+
+    .section-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;margin-top:16px;}
+
+    .attempt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+    .attempt-row:last-child{border-bottom:none;}
+    .attempt-score{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:13px;font-weight:700;flex-shrink:0;}
+
+    label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:6px;}
+    select,input[type=date]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--ff);font-size:13px;outline:none;margin-bottom:12px;}
+    select:focus,input:focus{border-color:var(--gold);}
+
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;}
+
+    /* ── TOAST ───────────────────────────────── */
+    .toast-wrap{position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+    .toast{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;min-width:200px;animation:slideIn .3s ease;}
+    .toast.success{border-color:var(--teal);}
+    .toast.error{border-color:var(--red);}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+    /* ── LOADER ──────────────────────────────── */
+    .loader-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;align-items:center;justify-content:center;}
+    .loader-overlay.out{display:none;}
+    .spinner{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    @media(max-width:900px){
+      .sidebar{display:none;}
+      .main{margin-left:0;}
+      .table-header{display:none;}
+      .table-row{grid-template-columns:1fr;gap:6px;padding:14px 16px;}
+      .content{padding:16px;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark" id="logoMark">Sp</div>
+    <span class="logo-text">Speak<span>glish</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Admin</div>
+    <a href="admin.html" class="nav-item"><span class="icon">📊</span> Dashboard</a>
+    <a href="admin-students.html" class="nav-item active"><span class="icon">👥</span> Students</a>
+    <a href="admin-exams.html" class="nav-item"><span class="icon">📝</span> Exam Builder</a>
+    <a href="admin-landing.html" class="nav-item"><span class="icon">🎨</span> Landing Page</a>
+    <div class="nav-label">Account</div>
+    <a href="index.html" target="_blank" class="nav-item"><span class="icon">👁</span> View Site</a>
+    <div class="nav-item" onclick="signOut()"><span class="icon">🚪</span> Sign Out</div>
+  </nav>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Students</div>
+      <div class="topbar-sub" id="studentCount">Loading...</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search by name..." oninput="filterStudents()">
+      </div>
+      <select id="marketFilter" onchange="filterStudents()" style="width:auto;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--ff);font-size:13px;outline:none;margin-bottom:0;">
+        <option value="">All Markets</option>
+        <option value="dz">🇩🇿 Algeria</option>
+        <option value="tr">🇹🇷 Turkey</option>
+      </select>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="filter-tabs">
+      <div class="filter-tab active" onclick="setFilter('all', this)">All <span class="filter-count" id="count-all">0</span></div>
+      <div class="filter-tab" onclick="setFilter('active', this)">Active <span class="filter-count" id="count-active">0</span></div>
+      <div class="filter-tab" onclick="setFilter('pending', this)">Pending <span class="filter-count" id="count-pending">0</span></div>
+      <div class="filter-tab" onclick="setFilter('trial', this)">Trial <span class="filter-count" id="count-trial">0</span></div>
+      <div class="filter-tab" onclick="setFilter('expired', this)">Expired <span class="filter-count" id="count-expired">0</span></div>
+    </div>
+
+    <!-- Table -->
+    <div class="students-table">
+      <div class="table-header">
+        <div>Student</div>
+        <div>Market</div>
+        <div>Status</div>
+        <div>Expires</div>
+        <div>Exams</div>
+        <div style="text-align:right;">Actions</div>
+      </div>
+      <div id="studentsBody">
+        <div class="empty"><div class="spinner" style="margin:0 auto;"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student Detail Modal -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-avatar" id="modalAvatar">?</div>
+      <div>
+        <div class="modal-name" id="modalName">—</div>
+        <div class="modal-meta" id="modalMeta">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="info-grid" id="infoGrid"></div>
+
+    <div class="section-label">Subscription Management</div>
+    <div>
+      <label>Status</label>
+      <select id="editStatus">
+        <option value="trial">Trial</option>
+        <option value="active">Active</option>
+        <option value="pending">Pending</option>
+        <option value="expired">Expired</option>
+      </select>
+    </div>
+    <div>
+      <label>Subscription Expires</label>
+      <input type="date" id="editExpiry">
+    </div>
+
+    <div class="section-label">Exam History</div>
+    <div id="examHistory">
+      <div style="font-size:13px;color:var(--muted);">Loading...</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+      <button class="btn btn-danger btn-sm" onclick="resetToTrial()">Reset to Trial</button>
+      <button class="btn btn-primary" onclick="saveStudentChanges()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  let allStudents = [];
+  let filteredStudents = [];
+  let currentFilter = 'all';
+  let currentStudent = null;
+
+  const COLORS = ['#FF7F50','#6495ED','#DDA0DD','#98FB98','#FFB347','#87CEEB','#F0A500','#9B6DFF'];
+  const avatarColor = name => COLORS[name.charCodeAt(0) % COLORS.length];
+
+  // ─── AUTH ─────────────────────────────────────────────────────
+  async function checkAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'login.html'; return false; }
+    const { data: p } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+    if (!p || p.role !== 'admin') { window.location.href = 'dashboard.html'; return false; }
+    return true;
+  }
+
+  // ─── LOAD STUDENTS ────────────────────────────────────────────
+  async function loadStudents() {
+    const { data } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('role', 'student')
+      .order('created_at', { ascending: false });
+
+    allStudents = data || [];
+
+    // Count by status
+    const counts = { all: allStudents.length, active:0, pending:0, trial:0, expired:0 };
+    allStudents.forEach(s => {
+      const st = s.subscription_status || 'trial';
+      if (counts[st] !== undefined) counts[st]++;
+    });
+    Object.entries(counts).forEach(([k,v]) => {
+      const el = document.getElementById(`count-${k}`);
+      if (el) el.textContent = v;
+    });
+
+    document.getElementById('studentCount').textContent = `${allStudents.length} students total`;
+    filterStudents();
+  }
+
+  // ─── FILTER ───────────────────────────────────────────────────
+  function setFilter(filter, el) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    filterStudents();
+  }
+
+  function filterStudents() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const market = document.getElementById('marketFilter').value;
+
+    filteredStudents = allStudents.filter(s => {
+      const name   = (s.full_name || '').toLowerCase();
+      const status = s.subscription_status || 'trial';
+      const mkt    = s.market || 'dz';
+      const matchSearch = !search || name.includes(search);
+      const matchFilter = currentFilter === 'all' || status === currentFilter;
+      const matchMarket = !market || mkt === market;
+      return matchSearch && matchFilter && matchMarket;
+    });
+
+    renderTable();
+  }
+
+  // ─── RENDER TABLE ─────────────────────────────────────────────
+  function renderTable() {
+    const el = document.getElementById('studentsBody');
+    if (!filteredStudents.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No students found</div></div>`;
+      return;
+    }
+
+    el.innerHTML = filteredStudents.map(s => {
+      const name    = s.full_name || 'Unknown';
+      const status  = s.subscription_status || 'trial';
+      const market  = s.market || 'dz';
+      const expiry  = s.subscription_end ? new Date(s.subscription_end).toLocaleDateString() : '—';
+      const color   = avatarColor(name);
+      const pillMap = { trial:'pill-trial', active:'pill-active', expired:'pill-expired', pending:'pill-pending' };
+      const mktFlag = market === 'tr' ? '🇹🇷' : '🇩🇿';
+
+      return `
+        <div class="table-row">
+          <div class="student-info">
+            <div class="student-avatar" style="background:${color};">${name.charAt(0).toUpperCase()}</div>
+            <div>
+              <div class="student-name">${name}</div>
+              <div class="student-email">${s.trial_tests_used||0} exams taken</div>
+            </div>
+          </div>
+          <div class="cell">${mktFlag} ${market.toUpperCase()}</div>
+          <div><span class="status-pill ${pillMap[status]||'pill-trial'}">${status}</span></div>
+          <div class="cell">${expiry}</div>
+          <div class="cell">${s.trial_tests_used||0}</div>
+          <div class="row-actions">
+            <button class="btn btn-info btn-sm" onclick="openStudent('${s.id}')">View</button>
+            ${status==='pending' ? `<button class="btn btn-success btn-sm" onclick="quickActivate('${s.id}')">✅</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── QUICK ACTIVATE ───────────────────────────────────────────
+  async function quickActivate(id) {
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 90);
+    await sb.from('profiles').update({
+      subscription_status: 'active',
+      subscription_start:  new Date().toISOString(),
+      subscription_end:    expiry.toISOString(),
+    }).eq('id', id);
+    await sb.from('subscriptions').update({ status:'activated', activated_at: new Date().toISOString() })
+      .eq('student_id', id).eq('status','pending');
+    toast('✅ Student activated (3 months)','success');
+    await loadStudents();
+  }
+
+  // ─── OPEN STUDENT MODAL ───────────────────────────────────────
+  async function openStudent(id) {
+    currentStudent = allStudents.find(s => s.id === id);
+    if (!currentStudent) return;
+
+    const s      = currentStudent;
+    const name   = s.full_name || 'Unknown';
+    const color  = avatarColor(name);
+    const status = s.subscription_status || 'trial';
+
+    document.getElementById('modalAvatar').textContent = name.charAt(0).toUpperCase();
+    document.getElementById('modalAvatar').style.background = color;
+    document.getElementById('modalName').textContent = name;
+    document.getElementById('modalMeta').textContent = `${(s.market||'dz').toUpperCase()} · Joined ${new Date(s.created_at).toLocaleDateString()}`;
+
+    document.getElementById('infoGrid').innerHTML = `
+      <div class="info-card">
+        <div class="info-label">Status</div>
+        <div class="info-value" style="color:${status==='active'?'var(--teal)':status==='pending'?'var(--purple)':status==='expired'?'var(--red)':'var(--gold)'};">${status}</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Market</div>
+        <div class="info-value">${s.market==='tr'?'🇹🇷 Turkey':'🇩🇿 Algeria'}</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Subscription Ends</div>
+        <div class="info-value">${s.subscription_end ? new Date(s.subscription_end).toLocaleDateString() : '—'}</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Trial Exams Used</div>
+        <div class="info-value">${s.trial_tests_used||0} / 3</div>
+      </div>`;
+
+    document.getElementById('editStatus').value = status;
+    document.getElementById('editExpiry').value =
+      s.subscription_end ? s.subscription_end.split('T')[0] : '';
+
+    // Load exam attempts
+    const { data: attempts } = await sb.from('exam_attempts')
+      .select('*').eq('student_id', id).order('completed_at',{ascending:false}).limit(10);
+
+    const histEl = document.getElementById('examHistory');
+    if (!attempts || !attempts.length) {
+      histEl.innerHTML = `<div style="font-size:13px;color:var(--muted);">No exams taken yet</div>`;
+    } else {
+      histEl.innerHTML = attempts.map(a => {
+        const score = a.score || 0;
+        const color = score>=70?'var(--teal)':score>=50?'var(--gold)':'var(--red)';
+        return `
+          <div class="attempt-row">
+            <div class="attempt-score" style="background:${color}20;color:${color};border:1px solid ${color}30;">${score}%</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">${a.exam_title||a.exam_type}</div>
+              <div style="font-size:11px;color:var(--muted);">${a.correct_answers||0}/${a.total_questions||0} · ${new Date(a.completed_at).toLocaleDateString()}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    document.getElementById('studentModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('studentModal').classList.remove('open');
+    currentStudent = null;
+  }
+
+  // ─── SAVE STUDENT CHANGES ─────────────────────────────────────
+  async function saveStudentChanges() {
+    if (!currentStudent) return;
+    const status = document.getElementById('editStatus').value;
+    const expiry = document.getElementById('editExpiry').value;
+
+    await sb.from('profiles').update({
+      subscription_status: status,
+      subscription_end:    expiry ? new Date(expiry).toISOString() : null,
+    }).eq('id', currentStudent.id);
+
+    toast('✅ Student updated successfully', 'success');
+    closeModal();
+    await loadStudents();
+  }
+
+  // ─── RESET TO TRIAL ───────────────────────────────────────────
+  async function resetToTrial() {
+    if (!currentStudent) return;
+    await sb.from('profiles').update({
+      subscription_status: 'trial',
+      subscription_start:  null,
+      subscription_end:    null,
+      trial_tests_used:    0,
+    }).eq('id', currentStudent.id);
+    toast('Student reset to trial', 'error');
+    closeModal();
+    await loadStudents();
+  }
+
+  // ─── SIGN OUT ─────────────────────────────────────────────────
+  async function signOut() {
+    await sb.auth.signOut();
+    window.location.href = 'login.html';
+  }
+
+  // ─── TOAST ────────────────────────────────────────────────────
+  function toast(msg, type='success') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${msg}</span>`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  async function init() {
+    const ok = await checkAuth();
+    if (!ok) return;
+    try {
+      const { data: cfg } = await sb.from('landing_config').select('logo_url').eq('market','dz').single();
+      if (cfg?.logo_url) document.getElementById('logoMark').innerHTML =
+        `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+    } catch(e) {}
+    await loadStudents();
+    document.getElementById('loaderOverlay').classList.add('out');
+  }
+
+  init();
+</script>
+</body>
+</html>
