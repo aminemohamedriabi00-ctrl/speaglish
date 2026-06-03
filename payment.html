@@ -7,286 +7,155 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* ── DARK THEME ───────────────────────────── */
-    :root {
-      --bg:#080B18; --card:#0E1120; --card2:#131626;
-      --border:#1C2240; --gold:#F0A500; --gold2:#FFD166;
-      --teal:#00C9A7; --red:#FF5757; --blue:#4169FF;
-      --text:#EEF2FF; --sub:#8896B8; --muted:#3D4A6A;
+    :root{
+      --bg:#080B18;--card:#0E1120;--card2:#131626;
+      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
+      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
+      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
       --nav-bg:rgba(8,11,24,.85);
-      --ambient-1:rgba(65,105,255,.08); --ambient-2:rgba(240,165,0,.06);
-      --ff:'Barlow',sans-serif; --fd:'Syne',sans-serif;
+      --ambient-1:rgba(65,105,255,.08);--ambient-2:rgba(240,165,0,.06);
+      --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;
     }
-    /* ── LIGHT THEME ──────────────────────────── */
-    [data-theme="light"] {
-      --bg:#F4F6FB; --card:#FFFFFF; --card2:#EDF0F7;
-      --border:#D4DAE8; --gold:#D4900A; --gold2:#B87A00;
-      --teal:#009982; --red:#D93636; --blue:#2952E3;
-      --text:#0D1120; --sub:#4A5578; --muted:#9AA3BA;
+    [data-theme="light"]{
+      --bg:#F4F6FB;--card:#FFFFFF;--card2:#EDF0F7;
+      --border:#D4DAE8;--gold:#D4900A;--gold2:#B87A00;
+      --teal:#009982;--red:#D93636;--blue:#2952E3;--purple:#7B4FE0;
+      --text:#0D1120;--sub:#4A5578;--muted:#9AA3BA;
       --nav-bg:rgba(244,246,251,.90);
-      --ambient-1:rgba(65,105,255,.05); --ambient-2:rgba(240,165,0,.04);
+      --ambient-1:rgba(65,105,255,.05);--ambient-2:rgba(240,165,0,.04);
     }
-
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-    html{scroll-behavior:smooth;}
-    body{
-      background:var(--bg);color:var(--text);font-family:var(--ff);
-      min-height:100vh;overflow-x:hidden;
-      transition:background .25s,color .25s;
-    }
-    body::before{
-      content:'';position:fixed;inset:0;pointer-events:none;
-      background:
-        radial-gradient(ellipse 60% 50% at 20% 20%,var(--ambient-1),transparent 70%),
-        radial-gradient(ellipse 50% 40% at 80% 80%,var(--ambient-2),transparent 70%);
-    }
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;overflow-x:hidden;transition:background .25s,color .25s;}
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 20% 20%,var(--ambient-1),transparent 70%),radial-gradient(ellipse 50% 40% at 80% 80%,var(--ambient-2),transparent 70%);}
 
-    /* ── NAV ─────────────────────────────────── */
-    .top-nav{
-      position:fixed;top:0;left:0;right:0;
-      display:flex;align-items:center;justify-content:space-between;
-      padding:14px 32px;
-      background:var(--nav-bg);backdrop-filter:blur(16px);
-      border-bottom:1px solid var(--border);z-index:10;
-    }
+    .top-nav{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:var(--nav-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);z-index:10;}
     .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-    .logo-mark{
-      width:32px;height:32px;
-      background:linear-gradient(135deg,var(--gold),#E8961A);
-      border-radius:8px;display:flex;align-items:center;justify-content:center;
-      font-family:var(--fd);font-weight:800;font-size:13px;color:#000;
-      overflow:hidden;flex-shrink:0;
-    }
+    .logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#E8961A);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:13px;color:#000;overflow:hidden;flex-shrink:0;}
     .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--text);}
     .logo-text span{color:var(--gold);}
-    .nav-right{display:flex;align-items:center;gap:10px;}
-    .theme-btn{
-      width:34px;height:34px;border-radius:8px;
-      background:var(--card2);border:1px solid var(--border);
-      color:var(--sub);cursor:pointer;
-      display:flex;align-items:center;justify-content:center;
-      font-size:16px;transition:all .2s;
-    }
+    .theme-btn{width:34px;height:34px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;}
     .theme-btn:hover{color:var(--text);border-color:var(--gold);}
 
-    /* ── PAGE ────────────────────────────────── */
-    .page{
-      max-width:680px;margin:0 auto;
-      padding:100px 24px 60px;
-      position:relative;z-index:1;
-    }
+    .page{max-width:680px;margin:0 auto;padding:100px 24px 60px;position:relative;z-index:1;}
 
-    /* ── HEADER ──────────────────────────────── */
-    .page-header{text-align:center;margin-bottom:40px;}
-    .page-badge{
-      display:inline-flex;align-items:center;gap:8px;
-      background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.25);
-      color:var(--gold);padding:6px 16px;border-radius:30px;
-      font-size:12px;font-weight:600;letter-spacing:.5px;
-      margin-bottom:16px;
-    }
-    .page-title{
-      font-family:var(--fd);font-size:clamp(26px,5vw,38px);
-      font-weight:800;letter-spacing:-1px;margin-bottom:10px;
-    }
+    /* Header */
+    .page-header{text-align:center;margin-bottom:36px;}
+    .page-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.25);color:var(--gold);padding:6px 16px;border-radius:30px;font-size:12px;font-weight:600;letter-spacing:.5px;margin-bottom:16px;}
+    .page-title{font-family:var(--fd);font-size:clamp(26px,5vw,38px);font-weight:800;letter-spacing:-1px;margin-bottom:10px;}
     .page-sub{font-size:15px;color:var(--sub);font-weight:300;line-height:1.6;}
 
-    /* ── PLAN CARDS ──────────────────────────── */
-    .plans-grid{
-      display:grid;grid-template-columns:repeat(3,1fr);
-      gap:12px;margin-bottom:32px;
-    }
+    /* Step labels */
+    .step-label{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+    .step-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    /* Plan cards */
+    .plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;}
     @media(max-width:520px){.plans-grid{grid-template-columns:1fr;}}
-
-    .plan-card{
-      background:var(--card);border:2px solid var(--border);
-      border-radius:16px;padding:22px 18px;text-align:center;
-      cursor:pointer;transition:all .25s;position:relative;
-    }
+    .plan-card{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:22px 18px;text-align:center;cursor:pointer;transition:all .25s;position:relative;}
     .plan-card:hover{border-color:var(--gold);transform:translateY(-2px);}
-    .plan-card.selected{
-      border-color:var(--gold);
-      background:rgba(240,165,0,.06);
-    }
-    .plan-card.featured{border-color:var(--gold);}
-
-    .popular-tag{
-      position:absolute;top:-11px;left:50%;transform:translateX(-50%);
-      background:var(--gold);color:#000;
-      font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
-      padding:3px 12px;border-radius:20px;white-space:nowrap;
-    }
+    .plan-card.selected{border-color:var(--gold);background:rgba(240,165,0,.06);}
+    .popular-tag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:3px 12px;border-radius:20px;white-space:nowrap;}
     .plan-name{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:8px;}
-    .plan-price{
-      font-family:var(--fd);font-size:28px;font-weight:800;
-      color:var(--text);line-height:1;margin-bottom:4px;
-    }
+    .plan-price{font-family:var(--fd);font-size:28px;font-weight:800;line-height:1;margin-bottom:4px;}
     .plan-currency{font-size:12px;color:var(--muted);margin-bottom:14px;}
-    .plan-check{
-      width:22px;height:22px;border-radius:50%;
-      border:2px solid var(--border);
-      display:flex;align-items:center;justify-content:center;
-      margin:0 auto;transition:all .2s;font-size:12px;
-    }
-    .plan-card.selected .plan-check{
-      background:var(--gold);border-color:var(--gold);color:#000;
-    }
+    .plan-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto;transition:all .2s;font-size:12px;}
+    .plan-card.selected .plan-check{background:var(--gold);border-color:var(--gold);color:#000;}
 
-    /* ── DIVIDER ─────────────────────────────── */
-    .section-title{
-      font-family:var(--fd);font-size:13px;font-weight:700;
-      color:var(--sub);text-transform:uppercase;letter-spacing:1px;
-      margin-bottom:16px;
-    }
+    /* Payment method cards */
+    .pm-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+    .pm-card{background:var(--card);border:2px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s;cursor:pointer;}
+    .pm-card.open{border-color:var(--gold);}
+    .pm-header{display:flex;align-items:center;gap:14px;padding:16px 18px;}
+    .pm-icon{width:42px;height:42px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .pm-info{flex:1;}
+    .pm-title{font-size:14px;font-weight:700;margin-bottom:2px;}
+    .pm-desc{font-size:12px;color:var(--sub);}
+    .pm-arrow{font-size:18px;color:var(--muted);transition:transform .25s;}
+    .pm-card.open .pm-arrow{transform:rotate(90deg);}
+    .pm-body{padding:0 18px;max-height:0;overflow:hidden;transition:max-height .35s ease,padding .3s;}
+    .pm-card.open .pm-body{max-height:600px;padding:0 18px 18px;}
 
-    /* ── PAYMENT OPTIONS ─────────────────────── */
-    .payment-options{display:flex;flex-direction:column;gap:12px;margin-bottom:28px;}
+    /* Account details box */
+    .account-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;}
+    .account-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+    .account-row:last-child{border-bottom:none;}
+    .account-label{color:var(--muted);}
+    .account-value{font-weight:700;font-family:var(--fd);font-size:14px;display:flex;align-items:center;gap:8px;}
+    .copy-btn{background:transparent;border:1px solid var(--border);color:var(--sub);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--ff);}
+    .copy-btn:hover{border-color:var(--teal);color:var(--teal);}
+    .copy-btn.copied{border-color:var(--teal);color:var(--teal);}
+    .pm-instructions{font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:14px;padding:10px 12px;background:rgba(240,165,0,.05);border-radius:8px;border-left:3px solid var(--gold);}
 
-    .payment-option{
-      background:var(--card);border:2px solid var(--border);
-      border-radius:16px;overflow:hidden;transition:border-color .2s;
-    }
-    .payment-option.open{border-color:var(--gold);}
-
-    .option-header{
-      display:flex;align-items:center;gap:14px;
-      padding:18px 20px;cursor:pointer;
-    }
-    .option-icon{
-      width:44px;height:44px;border-radius:12px;flex-shrink:0;
-      display:flex;align-items:center;justify-content:center;font-size:22px;
-    }
-    .option-icon.green{background:rgba(0,201,167,.12);}
-    .option-icon.wa{background:rgba(37,211,102,.12);}
-    .option-info{flex:1;}
-    .option-title{font-size:15px;font-weight:700;margin-bottom:3px;}
-    .option-desc{font-size:12px;color:var(--sub);}
-    .option-arrow{
-      font-size:18px;color:var(--muted);
-      transition:transform .25s;
-    }
-    .payment-option.open .option-arrow{transform:rotate(90deg);}
-
-    .option-body{
-      padding:0 20px;max-height:0;overflow:hidden;
-      transition:max-height .3s ease, padding .3s ease;
-    }
-    .payment-option.open .option-body{max-height:400px;padding:0 20px 20px;}
-
-    /* ── UPLOAD ZONE ─────────────────────────── */
-    .upload-zone{
-      border:2px dashed var(--border);border-radius:12px;
-      padding:28px;text-align:center;cursor:pointer;
-      transition:all .2s;position:relative;margin-bottom:14px;
-    }
+    /* Upload zone */
+    .upload-zone{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;margin-bottom:12px;}
     .upload-zone:hover{border-color:var(--gold);background:rgba(240,165,0,.03);}
     .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
     .upload-zone.has-file{border-color:var(--teal);background:rgba(0,201,167,.04);}
-    .upload-icon{font-size:32px;margin-bottom:8px;}
-    .upload-text{font-size:14px;font-weight:600;margin-bottom:4px;}
+    .upload-icon{font-size:28px;margin-bottom:6px;}
+    .upload-text{font-size:14px;font-weight:600;margin-bottom:3px;}
     .upload-hint{font-size:12px;color:var(--muted);}
-    .upload-filename{font-size:12px;color:var(--teal);margin-top:8px;font-weight:600;}
+    .upload-filename{font-size:12px;color:var(--teal);margin-top:6px;font-weight:600;}
 
-    /* ── WHATSAPP BUTTON ─────────────────────── */
-    .wa-btn{
-      width:100%;padding:14px;border:none;border-radius:12px;
-      background:#25D366;color:#fff;
-      font-family:var(--ff);font-size:15px;font-weight:700;
-      cursor:pointer;transition:all .2s;
-      display:flex;align-items:center;justify-content:center;gap:10px;
-    }
+    /* WhatsApp button */
+    .wa-btn{width:100%;padding:13px;border:none;border-radius:10px;background:#25D366;color:#fff;font-family:var(--ff);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;}
     .wa-btn:hover{background:#1ebe5b;transform:translateY(-1px);}
-    .wa-note{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;}
+    .wa-note{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;}
 
-    /* ── SUBMIT ──────────────────────────────── */
-    .submit-btn{
-      width:100%;padding:15px;border:none;border-radius:12px;
-      background:var(--gold);color:#000;
-      font-family:var(--ff);font-size:15px;font-weight:700;
-      cursor:pointer;transition:all .2s;
-      display:flex;align-items:center;justify-content:center;gap:8px;
-    }
+    /* Submit button */
+    .submit-btn{width:100%;padding:14px;border:none;border-radius:10px;background:var(--gold);color:#000;font-family:var(--ff);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
     .submit-btn:hover{background:var(--gold2);transform:translateY(-1px);}
     .submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-    .spinner-sm{
-      width:18px;height:18px;border:2px solid rgba(0,0,0,.2);
-      border-top-color:#000;border-radius:50%;
-      animation:spin .7s linear infinite;display:none;
-    }
+    .spinner-sm{width:18px;height:18px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:none;}
     .submit-btn.loading .spinner-sm{display:block;}
     .submit-btn.loading .btn-text{display:none;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
-    /* ── CONFIRMATION ────────────────────────── */
-    .confirm-state{
-      text-align:center;display:none;
-      background:var(--card);border:1px solid var(--border);
-      border-radius:20px;padding:48px 32px;
-      animation:fadeUp .5s ease both;
-    }
+    /* Error */
+    .error-msg{background:rgba(255,87,87,.1);border:1px solid rgba(255,87,87,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:14px;display:none;}
+    .error-msg.show{display:block;}
+
+    /* No methods warning */
+    .no-methods{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:40px;text-align:center;color:var(--muted);}
+    .no-methods-icon{font-size:36px;margin-bottom:12px;}
+
+    /* Confirmation */
+    .confirm-state{text-align:center;display:none;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px 32px;animation:fadeUp .5s ease both;}
     .confirm-state.show{display:block;}
     @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
     .confirm-icon{font-size:56px;margin-bottom:20px;}
     .confirm-title{font-family:var(--fd);font-size:26px;font-weight:800;margin-bottom:10px;}
-    .confirm-sub{font-size:15px;color:var(--sub);line-height:1.7;max-width:400px;margin:0 auto;}
-    .pending-pill{
-      display:inline-flex;align-items:center;gap:8px;
-      background:rgba(155,109,255,.12);border:1px solid rgba(155,109,255,.3);
-      color:#9B6DFF;padding:8px 20px;border-radius:30px;
-      font-size:13px;font-weight:700;margin-top:24px;
-    }
-    .pending-dot{
-      width:8px;height:8px;background:#9B6DFF;border-radius:50%;
-      animation:blink 2s infinite;
-    }
+    .confirm-sub{font-size:15px;color:var(--sub);line-height:1.7;max-width:420px;margin:0 auto 24px;}
+    .pending-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(155,109,255,.12);border:1px solid rgba(155,109,255,.3);color:var(--purple);padding:8px 20px;border-radius:30px;font-size:13px;font-weight:700;}
+    .pending-dot{width:8px;height:8px;background:var(--purple);border-radius:50%;animation:blink 2s infinite;}
     @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-    /* ── ERROR MSG ───────────────────────────── */
-    .error-msg{
-      background:rgba(255,87,87,.1);border:1px solid rgba(255,87,87,.3);
-      border-radius:8px;padding:10px 14px;font-size:13px;
-      color:var(--red);margin-bottom:16px;display:none;
-    }
-    .error-msg.show{display:block;}
-
-    /* ── LOADING OVERLAY ─────────────────────── */
-    .loader-overlay{
-      position:fixed;inset:0;background:var(--bg);
-      z-index:400;display:flex;align-items:center;justify-content:center;
-    }
+    /* Loader */
+    .loader-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;align-items:center;justify-content:center;}
     .loader-overlay.out{display:none;}
-    .spinner-lg{
-      width:40px;height:40px;border:2px solid var(--border);
-      border-top-color:var(--gold);border-radius:50%;
-      animation:spin .8s linear infinite;
-    }
+    .spinner-lg{width:40px;height:40px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
   </style>
 </head>
 <body>
 
 <div class="loader-overlay" id="loaderOverlay"><div class="spinner-lg"></div></div>
 
-<!-- Nav -->
 <nav class="top-nav">
   <a href="index.html" class="nav-logo">
     <div class="logo-mark" id="logoMark">Sp</div>
     <span class="logo-text">Speak<span>glish</span></span>
   </a>
-  <div class="nav-right">
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
-  </div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
 </nav>
 
-<!-- Page -->
 <div class="page">
 
-  <!-- Confirmation state (shown after payment submitted) -->
+  <!-- Confirmation state -->
   <div class="confirm-state" id="confirmState">
     <div class="confirm-icon">✅</div>
     <div class="confirm-title">Request received!</div>
     <div class="confirm-sub">
-      Your payment has been submitted. Our team will review and activate your account within <strong>24 hours</strong>.<br><br>
-      You'll be able to access all exams as soon as your account is activated.
+      Your payment request has been submitted. Our team will review and activate your account within <strong>24 hours</strong>.
+      You can close this page — we'll take care of the rest.
     </div>
     <div class="pending-pill">
       <span class="pending-dot"></span>
@@ -299,89 +168,40 @@
     <div class="page-header">
       <div class="page-badge">🔓 Unlock Full Access</div>
       <div class="page-title">Choose your plan</div>
-      <div class="page-sub">Select a plan and pay via receipt upload or WhatsApp. Your account will be activated within 24h.</div>
+      <div class="page-sub" id="pageSubText">Select a plan and pay using any of the methods below. Your account will be activated within 24h.</div>
     </div>
 
     <div class="error-msg" id="errorMsg"></div>
 
-    <!-- Plan selector -->
-    <div class="section-title">1 — Pick a plan</div>
-    <div class="plans-grid" id="plansGrid">
-      <!-- Populated by JS -->
-    </div>
+    <!-- Step 1: Plan -->
+    <div class="step-label">1 — Pick a plan</div>
+    <div class="plans-grid" id="plansGrid"></div>
 
-    <!-- Payment method -->
-    <div class="section-title">2 — Choose how to pay</div>
-    <div class="payment-options">
+    <!-- Step 2: Payment method -->
+    <div class="step-label">2 — Choose how to pay</div>
+    <div class="pm-grid" id="pmGrid"></div>
 
-      <!-- Option A: Upload receipt -->
-      <div class="payment-option" id="optReceipt">
-        <div class="option-header" onclick="toggleOption('receipt')">
-          <div class="option-icon green">📎</div>
-          <div class="option-info">
-            <div class="option-title">Upload payment receipt</div>
-            <div class="option-desc">Pay via CCP / bank transfer, then upload your receipt</div>
-          </div>
-          <span class="option-arrow">›</span>
-        </div>
-        <div class="option-body">
-          <label class="upload-zone" id="uploadZone" for="receiptFile">
-            <input type="file" id="receiptFile" accept="image/*,.pdf,.jpg,.jpeg,.png,.webp" onchange="handleFileSelect(this)">
-            <div class="upload-icon">📄</div>
-            <div class="upload-text">Click to upload receipt</div>
-            <div class="upload-hint">Image or PDF · Max 10MB</div>
-            <div class="upload-filename" id="uploadFilename"></div>
-          </label>
-          <div class="error-msg" id="uploadError"></div>
-          <button class="submit-btn" id="uploadBtn" onclick="submitReceipt()">
-            <div class="spinner-sm"></div>
-            <span class="btn-text">Submit Receipt →</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Option B: WhatsApp -->
-      <div class="payment-option" id="optWhatsapp">
-        <div class="option-header" onclick="toggleOption('whatsapp')">
-          <div class="option-icon wa">💬</div>
-          <div class="option-info">
-            <div class="option-title">Pay via WhatsApp</div>
-            <div class="option-desc">Chat with us directly to arrange payment</div>
-          </div>
-          <span class="option-arrow">›</span>
-        </div>
-        <div class="option-body">
-          <button class="wa-btn" onclick="openWhatsApp()">
-            <span>💬</span>
-            <span>Contact us on WhatsApp</span>
-          </button>
-          <div class="wa-note">Opens WhatsApp with your plan details pre-filled. Your account will be marked as pending automatically.</div>
-        </div>
-      </div>
-
-    </div>
   </div>
 </div>
 
 <script>
-  // ─── SUPABASE ─────────────────────────────────────────────────
   const sb = supabase.createClient(
     'https://iugggbzgrucopvxkgzry.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
   );
 
-  // ─── STATE ────────────────────────────────────────────────────
-  let currentUser   = null;
+  let currentUser    = null;
   let currentProfile = null;
-  let landingCfg    = null;
-  let selectedPlan  = null;
-  let selectedFile  = null;
-  let market        = 'dz';
+  let landingCfg     = null;
+  let selectedPlan   = null;
+  let selectedFiles  = {};   // { methodKey: File }
+  let market         = 'dz';
+  let openMethod     = null;
 
   const PLAN_DURATIONS = { '1month':30, '3months':90, '6months':180 };
   const PLAN_LABELS    = { '1month':'1 Month', '3months':'3 Months', '6months':'6 Months' };
 
-  // ─── THEME ────────────────────────────────────────────────────
+  // ── THEME ──────────────────────────────────────────────────────
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     const btn = document.getElementById('themeBtn');
@@ -393,26 +213,24 @@
     applyTheme(next);
   }
 
-  // ─── PLAN CARDS ───────────────────────────────────────────────
+  // ── PLAN CARDS ─────────────────────────────────────────────────
   function buildPlans(cfg) {
-    const currency = cfg.currency || (market === 'tr' ? 'TRY' : 'DZD');
+    const currency = cfg?.currency || (market === 'tr' ? 'TRY' : 'DZD');
     const plans = [
-      { key:'1month',  price: cfg.price_1month  || (market==='tr'?300:1500),  featured:false },
-      { key:'3months', price: cfg.price_3months || (market==='tr'?700:3500),  featured:true  },
-      { key:'6months', price: cfg.price_6months || (market==='tr'?1200:5500), featured:false },
+      { key:'1month',  price: cfg?.price_1month  || (market==='tr'?300:1500),  featured:false },
+      { key:'3months', price: cfg?.price_3months || (market==='tr'?700:3500),  featured:true  },
+      { key:'6months', price: cfg?.price_6months || (market==='tr'?1200:5500), featured:false },
     ];
 
     document.getElementById('plansGrid').innerHTML = plans.map(p => `
-      <div class="plan-card ${p.featured?'featured':''}" id="plan_${p.key}" onclick="selectPlan('${p.key}')">
+      <div class="plan-card${p.featured?' featured':''}" id="plan_${p.key}" onclick="selectPlan('${p.key}')">
         ${p.featured ? '<div class="popular-tag">Best value</div>' : ''}
         <div class="plan-name">${PLAN_LABELS[p.key]}</div>
         <div class="plan-price">${p.price.toLocaleString()}</div>
         <div class="plan-currency">${currency}</div>
-        <div class="plan-check">${p.featured ? '✓' : ''}</div>
-      </div>
-    `).join('');
+        <div class="plan-check">${p.featured?'✓':''}</div>
+      </div>`).join('');
 
-    // Pre-select featured plan
     selectPlan('3months');
   }
 
@@ -423,47 +241,219 @@
     if (card) card.classList.add('selected');
   }
 
-  // ─── TOGGLE PAYMENT OPTION ────────────────────────────────────
-  function toggleOption(type) {
-    const el = document.getElementById(type === 'receipt' ? 'optReceipt' : 'optWhatsapp');
-    el.classList.toggle('open');
+  // ── PAYMENT METHODS ────────────────────────────────────────────
+  function buildPaymentMethods(cfg) {
+    const pm = cfg?.payment_methods || {};
+    const methods = [];
+
+    // Define all possible methods with their display config
+    const defs = [
+      {
+        key: 'ccp', label: 'CCP', icon: '🏦', color: 'rgba(65,105,255,.12)',
+        desc: 'Algérie Poste — CCP bank transfer',
+        markets: ['dz'],
+        accountRows: (d) => [
+          { label:'Account number', value: d.number },
+          { label:'Account holder', value: d.name },
+        ],
+        instructions: (d) => d.instructions,
+        hasUpload: true,
+      },
+      {
+        key: 'baridimob', label: 'Baridimob', icon: '📱', color: 'rgba(0,201,167,.12)',
+        desc: 'Barid Bank mobile payment',
+        markets: ['dz'],
+        accountRows: (d) => [
+          { label:'RIP / Phone number', value: d.number },
+          { label:'Account holder',     value: d.name },
+        ],
+        hasUpload: true,
+      },
+      {
+        key: 'papara', label: 'Papara', icon: '💜', color: 'rgba(155,109,255,.12)',
+        desc: 'Turkish digital wallet',
+        markets: ['tr'],
+        accountRows: (d) => [
+          { label:'Papara number', value: d.number },
+          { label:'Account holder', value: d.name },
+        ],
+        hasUpload: true,
+      },
+      {
+        key: 'iban', label: 'IBAN Transfer', icon: '🏛️', color: 'rgba(65,105,255,.12)',
+        desc: 'Bank wire transfer',
+        markets: ['tr', 'dz'],
+        accountRows: (d) => [
+          { label:'IBAN',           value: d.number },
+          { label:'Bank',           value: d.bank },
+          { label:'Account holder', value: d.name },
+        ],
+        hasUpload: true,
+      },
+      {
+        key: 'usdt', label: 'USDT Crypto', icon: '🪙', color: 'rgba(240,165,0,.12)',
+        desc: (d) => `Tether USD · ${d.network || 'TRC20'} network`,
+        markets: ['dz', 'tr'],
+        accountRows: (d) => [
+          { label:'Wallet address', value: d.address },
+          { label:'Network',        value: d.network || 'TRC20' },
+        ],
+        hasUpload: true,
+      },
+      {
+        key: 'custom', label: (d) => d.name || 'Other', icon: '➕', color: 'rgba(136,150,184,.12)',
+        desc: 'Alternative payment method',
+        markets: ['dz', 'tr'],
+        accountRows: (d) => [
+          { label:'Details', value: d.details },
+        ],
+        instructions: (d) => d.instructions,
+        hasUpload: true,
+      },
+      {
+        key: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'rgba(37,211,102,.12)',
+        desc: 'Chat with us to arrange payment',
+        markets: ['dz', 'tr'],
+        isWhatsapp: true,
+      },
+    ];
+
+    // Filter: must be enabled AND relevant to market (or have no market restriction)
+    for (const def of defs) {
+      if (def.key === 'whatsapp') {
+        if (cfg?.whatsapp_active && cfg?.whatsapp_number) methods.push(def);
+        continue;
+      }
+      const data = pm[def.key] || {};
+      if (data.active && def.markets.includes(market)) {
+        methods.push({ ...def, data });
+      }
+    }
+
+    const grid = document.getElementById('pmGrid');
+
+    if (!methods.length) {
+      grid.innerHTML = `<div class="no-methods"><div class="no-methods-icon">💳</div><div style="font-size:14px;font-weight:600;margin-bottom:6px;">Payment methods not configured yet</div><div style="font-size:13px;">Please contact us via WhatsApp to arrange payment.</div></div>`;
+      return;
+    }
+
+    grid.innerHTML = methods.map(m => {
+      const label = typeof m.label === 'function' ? m.label(m.data || {}) : m.label;
+      const desc  = typeof m.desc  === 'function' ? m.desc(m.data  || {}) : m.desc;
+      return `<div class="pm-card" id="pm_${m.key}">
+        <div class="pm-header" onclick="toggleMethod('${m.key}')">
+          <div class="pm-icon" style="background:${m.color};">${m.icon}</div>
+          <div class="pm-info">
+            <div class="pm-title">${label}</div>
+            <div class="pm-desc">${desc}</div>
+          </div>
+          <span class="pm-arrow">›</span>
+        </div>
+        <div class="pm-body" id="pmBody_${m.key}">
+          ${buildMethodBody(m, cfg)}
+        </div>
+      </div>`;
+    }).join('');
   }
 
-  // ─── FILE SELECT ──────────────────────────────────────────────
-  function handleFileSelect(input) {
+  function buildMethodBody(m, cfg) {
+    if (m.isWhatsapp) {
+      return `
+        <button class="wa-btn" onclick="doWhatsApp()">
+          <span>💬</span><span>Contact us on WhatsApp</span>
+        </button>
+        <div class="wa-note">Opens WhatsApp with your plan details pre-filled. Your account will be marked as pending automatically.</div>`;
+    }
+
+    const rows  = m.accountRows(m.data || {}).filter(r => r.value);
+    const instr = m.instructions ? m.instructions(m.data || {}) : null;
+
+    let html = '';
+
+    if (rows.length) {
+      html += `<div class="account-box">`;
+      html += rows.map(r => `
+        <div class="account-row">
+          <span class="account-label">${r.label}</span>
+          <span class="account-value">
+            ${r.value}
+            <button class="copy-btn" onclick="copyText('${r.value.replace(/'/g,"\\'")}', this)">Copy</button>
+          </span>
+        </div>`).join('');
+      html += `</div>`;
+    }
+
+    if (instr) {
+      html += `<div class="pm-instructions">${instr}</div>`;
+    }
+
+    if (m.hasUpload) {
+      html += `
+        <label class="upload-zone${selectedFiles[m.key]?' has-file':''}" id="zone_${m.key}" for="file_${m.key}">
+          <input type="file" id="file_${m.key}" accept="image/*,.pdf" style="display:none;" onchange="handleFile(this,'${m.key}')">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Upload payment receipt</div>
+          <div class="upload-hint">Image or PDF · Max 10MB</div>
+          <div class="upload-filename" id="fname_${m.key}">${selectedFiles[m.key]?'✅ '+selectedFiles[m.key].name:''}</div>
+        </label>
+        <div class="error-msg" id="err_${m.key}"></div>
+        <button class="submit-btn" onclick="submitReceipt('${m.key}')">
+          <div class="spinner-sm" id="spin_${m.key}"></div>
+          <span class="btn-text">Submit Receipt →</span>
+        </button>`;
+    }
+
+    return html;
+  }
+
+  // ── TOGGLE METHOD ──────────────────────────────────────────────
+  function toggleMethod(key) {
+    const card = document.getElementById('pm_' + key);
+    const wasOpen = card.classList.contains('open');
+    document.querySelectorAll('.pm-card').forEach(c => c.classList.remove('open'));
+    if (!wasOpen) card.classList.add('open');
+  }
+
+  // ── COPY ───────────────────────────────────────────────────────
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  // ── FILE SELECT ────────────────────────────────────────────────
+  function handleFile(input, key) {
     const file = input.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      showError('uploadError', 'File too large — maximum 10MB');
+      showErr('err_' + key, 'File too large — maximum 10MB');
       return;
     }
-    selectedFile = file;
-    const zone = document.getElementById('uploadZone');
-    zone.classList.add('has-file');
-    document.getElementById('uploadFilename').textContent = '✅ ' + file.name;
+    selectedFiles[key] = file;
+    const zone = document.getElementById('zone_' + key);
+    if (zone) zone.classList.add('has-file');
+    const fname = document.getElementById('fname_' + key);
+    if (fname) fname.textContent = '✅ ' + file.name;
   }
 
-  // ─── SUBMIT RECEIPT ───────────────────────────────────────────
-  async function submitReceipt() {
-    if (!selectedPlan) { showError('errorMsg', 'Please select a plan first'); return; }
-    if (!selectedFile) { showError('uploadError', 'Please upload your receipt'); return; }
+  // ── SUBMIT RECEIPT ─────────────────────────────────────────────
+  async function submitReceipt(key) {
+    if (!selectedPlan) { showErr('errorMsg', 'Please select a plan first'); return; }
+    const file = selectedFiles[key];
+    if (!file) { showErr('err_' + key, 'Please upload your receipt first'); return; }
 
-    const btn = document.getElementById('uploadBtn');
-    btn.classList.add('loading'); btn.disabled = true;
+    const spin = document.getElementById('spin_' + key);
+    if (spin) { spin.style.display = 'block'; spin.parentElement.disabled = true; }
 
     try {
-      // Upload file to Supabase Storage
-      const ext  = selectedFile.name.split('.').pop().toLowerCase();
+      const ext  = file.name.split('.').pop().toLowerCase();
       const path = `${currentUser.id}/${Date.now()}.${ext}`;
-      const { error: uploadErr } = await sb.storage
-        .from('receipts')
-        .upload(path, selectedFile, { upsert: false });
-
-      if (uploadErr) throw new Error('Upload failed: ' + uploadErr.message);
+      const { error: upErr } = await sb.storage.from('receipts').upload(path, file, { upsert: false });
+      if (upErr) throw new Error('Upload failed: ' + upErr.message);
 
       const { data: { publicUrl } } = sb.storage.from('receipts').getPublicUrl(path);
-
-      // Create subscriptions row
       const cfg = landingCfg;
       const currency = cfg?.currency || (market === 'tr' ? 'TRY' : 'DZD');
       const priceMap = {
@@ -473,132 +463,99 @@
       };
 
       await sb.from('subscriptions').insert({
-        student_id:  currentUser.id,
-        status:      'pending',
-        plan_type:   selectedPlan,
-        amount:      priceMap[selectedPlan],
-        currency:    currency,
-        receipt_url: publicUrl,
-        created_at:  new Date().toISOString(),
+        student_id:     currentUser.id,
+        status:         'pending',
+        plan_type:      selectedPlan,
+        amount:         priceMap[selectedPlan],
+        currency:       currency,
+        receipt_url:    publicUrl,
+        payment_method: key,
+        created_at:     new Date().toISOString(),
       });
 
-      // Update profile to pending
-      await sb.from('profiles').update({
-        subscription_status: 'pending',
-      }).eq('id', currentUser.id);
-
+      await sb.from('profiles').update({ subscription_status: 'pending' }).eq('id', currentUser.id);
       showConfirmation();
 
-    } catch (err) {
-      showError('uploadError', err.message || 'Something went wrong. Please try again.');
-      btn.classList.remove('loading'); btn.disabled = false;
+    } catch(err) {
+      showErr('err_' + key, err.message || 'Something went wrong. Please try again.');
+      const spinEl = document.getElementById('spin_' + key);
+      if (spinEl) { spinEl.style.display = 'none'; spinEl.parentElement.disabled = false; }
     }
   }
 
-  // ─── WHATSAPP ─────────────────────────────────────────────────
-  async function openWhatsApp() {
-    if (!selectedPlan) { showError('errorMsg', 'Please select a plan first'); return; }
+  // ── WHATSAPP ───────────────────────────────────────────────────
+  async function doWhatsApp() {
+    if (!selectedPlan) { showErr('errorMsg', 'Please select a plan first'); return; }
 
-    const name     = currentProfile?.full_name || 'Student';
+    const waNumber = (landingCfg?.whatsapp_number || '').replace(/\D/g, '');
+    if (!waNumber) { showErr('errorMsg', 'WhatsApp not configured. Please use a receipt method.'); return; }
+
+    const name      = currentProfile?.full_name || 'Student';
     const planLabel = PLAN_LABELS[selectedPlan];
-    const waNumber = landingCfg?.whatsapp_number || '';
-
-    if (!waNumber) {
-      showError('errorMsg', 'WhatsApp contact not configured yet. Please use receipt upload.');
-      return;
-    }
-
-    // Set profile to pending
-    await sb.from('subscriptions').insert({
-      student_id: currentUser.id,
-      status:     'pending',
-      plan_type:  selectedPlan,
-      created_at: new Date().toISOString(),
-    });
-
-    await sb.from('profiles').update({
-      subscription_status: 'pending',
-    }).eq('id', currentUser.id);
-
-    // Build pre-filled WhatsApp message
     const msg = encodeURIComponent(
-      `Hi! I'd like to subscribe to Speaglish.\n\n` +
-      `Name: ${name}\n` +
-      `Plan: ${planLabel}\n` +
-      `Market: ${market.toUpperCase()}\n\n` +
-      `Please let me know the payment details.`
+      `Hi! I'd like to subscribe to Speaglish.\n\nName: ${name}\nPlan: ${planLabel}\nMarket: ${market.toUpperCase()}\n\nPlease let me know the payment details.`
     );
 
-    const cleanNumber = waNumber.replace(/\D/g, '');
-    window.open(`https://wa.me/${cleanNumber}?text=${msg}`, '_blank');
+    // Create pending record
+    await sb.from('subscriptions').insert({
+      student_id:     currentUser.id,
+      status:         'pending',
+      plan_type:      selectedPlan,
+      payment_method: 'whatsapp',
+      created_at:     new Date().toISOString(),
+    });
+    await sb.from('profiles').update({ subscription_status: 'pending' }).eq('id', currentUser.id);
 
+    window.open(`https://wa.me/${waNumber}?text=${msg}`, '_blank');
     showConfirmation();
   }
 
-  // ─── CONFIRMATION ─────────────────────────────────────────────
-  function showConfirmation() {
-    document.getElementById('paymentForm').style.display = 'none';
-    document.getElementById('confirmState').classList.add('show');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  // ─── HELPERS ──────────────────────────────────────────────────
-  function showError(id, msg) {
+  // ── HELPERS ────────────────────────────────────────────────────
+  function showErr(id, msg) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.textContent = msg;
-    el.classList.add('show');
+    el.textContent = msg; el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 5000);
   }
 
-  // ─── INIT ─────────────────────────────────────────────────────
+  function showConfirmation() {
+    document.getElementById('paymentForm').style.display = 'none';
+    document.getElementById('confirmState').classList.add('show');
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  // ── INIT ───────────────────────────────────────────────────────
   async function init() {
     applyTheme(localStorage.getItem('sp_theme') || 'dark');
     market = localStorage.getItem('sp_market') || 'dz';
 
-    // Auth check — must be logged in
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
     currentUser = session.user;
 
-    // Load profile
-    const { data: profile } = await sb.from('profiles')
-      .select('*').eq('id', currentUser.id).single();
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
     currentProfile = profile;
 
-    // If already active, no need to pay
-    if (profile?.subscription_status === 'active') {
-      window.location.href = 'dashboard.html';
-      return;
-    }
+    if (profile?.subscription_status === 'active') { window.location.href = 'dashboard.html'; return; }
+    if (profile?.subscription_status === 'pending') { showConfirmation(); document.getElementById('loaderOverlay').classList.add('out'); return; }
 
-    // If already pending, show confirmation directly
-    if (profile?.subscription_status === 'pending') {
-      showConfirmation();
-      document.getElementById('loaderOverlay').classList.add('out');
-      return;
-    }
-
-    // Load landing config for prices + whatsapp number
     try {
       const { data: cfg } = await sb.from('landing_config')
-        .select('price_1month,price_3months,price_6months,currency,whatsapp_number,logo_url')
+        .select('price_1month,price_3months,price_6months,currency,whatsapp_number,whatsapp_active,logo_url,payment_methods')
         .eq('market', market).single();
       landingCfg = cfg;
 
-      // Load logo
       if (cfg?.logo_url) {
         const img = new Image();
-        img.onload = () => {
-          document.getElementById('logoMark').innerHTML =
-            `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
-        };
+        img.onload = () => { document.getElementById('logoMark').innerHTML = `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`; };
         img.src = cfg.logo_url;
       }
 
       buildPlans(cfg || {});
+      buildPaymentMethods(cfg || {});
     } catch(e) {
       buildPlans({});
+      buildPaymentMethods({});
     }
 
     document.getElementById('loaderOverlay').classList.add('out');

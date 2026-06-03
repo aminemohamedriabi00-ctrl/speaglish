@@ -338,6 +338,7 @@
     <div class="nav-item" onclick="showSection('popup', this)"><span class="icon">🔔</span> Popup / Modal</div>
     <div class="nav-label">Technical</div>
     <div class="nav-item" onclick="showSection('contact', this)"><span class="icon">📱</span> Contact & Social</div>
+    <div class="nav-item" onclick="showSection('payment', this)"><span class="icon">💳</span> Payment Methods</div>
     <div class="nav-item" onclick="showSection('seo', this)"><span class="icon">🔍</span> SEO</div>
     <div class="nav-item" onclick="showSection('tracking', this)"><span class="icon">📈</span> Tracking</div>
   </nav>
@@ -707,6 +708,148 @@
       </div>
     </div>
 
+    <!-- ── PAYMENT METHODS ───────────────────── -->
+    <div class="section-panel" id="sec-payment">
+      <div class="panel-title">💳 Payment Methods</div>
+      <div class="panel-desc">Enable the payment methods you accept for this market. Only enabled methods will appear on the payment page.</div>
+
+      <!-- CCP (Algeria) -->
+      <div class="card">
+        <div class="card-title">🏦 CCP <span class="badge">Algeria</span></div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable CCP</div>
+            <div class="toggle-desc">Algérie Poste CCP bank transfer</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="pm_ccp_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>CCP Account Number</label>
+          <input type="text" id="pm_ccp_number" placeholder="0123456789 / 00">
+        </div>
+        <div class="field">
+          <label>Account Holder Name</label>
+          <input type="text" id="pm_ccp_name" placeholder="Riabi Mohamedamine">
+        </div>
+        <div class="field">
+          <label>Payment Instructions</label>
+          <textarea id="pm_ccp_instructions" placeholder="Transfer the amount to the CCP account above, then upload your receipt."></textarea>
+        </div>
+      </div>
+
+      <!-- Baridimob (Algeria) -->
+      <div class="card">
+        <div class="card-title">📱 Baridimob <span class="badge">Algeria</span></div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable Baridimob</div>
+            <div class="toggle-desc">Mobile payment via Barid Bank app</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="pm_baridimob_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Baridimob Phone / RIP Number</label>
+          <input type="text" id="pm_baridimob_number" placeholder="00799999XXXXXXXXXX">
+        </div>
+        <div class="field">
+          <label>Account Holder Name</label>
+          <input type="text" id="pm_baridimob_name" placeholder="Riabi Mohamedamine">
+        </div>
+      </div>
+
+      <!-- Papara (Turkey) -->
+      <div class="card">
+        <div class="card-title">💜 Papara <span class="badge">Turkey</span></div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable Papara</div>
+            <div class="toggle-desc">Popular Turkish digital wallet</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="pm_papara_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Papara Number / Account Tag</label>
+          <input type="text" id="pm_papara_number" placeholder="1234567890">
+        </div>
+        <div class="field">
+          <label>Account Holder Name</label>
+          <input type="text" id="pm_papara_name" placeholder="Riabi Mohamedamine">
+        </div>
+      </div>
+
+      <!-- IBAN (Turkey / International) -->
+      <div class="card">
+        <div class="card-title">🏛️ IBAN Bank Transfer <span class="badge">Turkey</span></div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable IBAN Transfer</div>
+            <div class="toggle-desc">Standard bank wire transfer</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="pm_iban_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>IBAN</label>
+          <input type="text" id="pm_iban_number" placeholder="TR00 0000 0000 0000 0000 0000 00">
+        </div>
+        <div class="field">
+          <label>Bank Name</label>
+          <input type="text" id="pm_iban_bank" placeholder="Ziraat Bankası">
+        </div>
+        <div class="field">
+          <label>Account Holder Name</label>
+          <input type="text" id="pm_iban_name" placeholder="Riabi Mohamedamine">
+        </div>
+      </div>
+
+      <!-- USDT (Both markets) -->
+      <div class="card">
+        <div class="card-title">🪙 USDT Crypto <span class="badge">Both markets</span></div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable USDT</div>
+            <div class="toggle-desc">Tether USD on TRC20 or ERC20 network</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="pm_usdt_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>USDT Wallet Address</label>
+          <input type="text" id="pm_usdt_address" placeholder="Txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+        </div>
+        <div class="field">
+          <label>Network</label>
+          <select id="pm_usdt_network">
+            <option value="TRC20">TRC20 (Tron) — recommended, lower fees</option>
+            <option value="ERC20">ERC20 (Ethereum)</option>
+            <option value="BEP20">BEP20 (Binance Smart Chain)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Custom method -->
+      <div class="card">
+        <div class="card-title">➕ Custom Payment Method</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Enable Custom Method</div>
+            <div class="toggle-desc">Add any other payment method with custom instructions</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="pm_custom_active"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Method Name</label>
+          <input type="text" id="pm_custom_name" placeholder="Western Union, Wise, etc.">
+        </div>
+        <div class="field">
+          <label>Account / Reference Details</label>
+          <input type="text" id="pm_custom_details" placeholder="Account number or reference">
+        </div>
+        <div class="field">
+          <label>Instructions</label>
+          <textarea id="pm_custom_instructions" placeholder="Step-by-step payment instructions for the student..."></textarea>
+        </div>
+      </div>
+    </div>
+
     <!-- ── SEO ───────────────────────────────── -->
     <div class="section-panel" id="sec-seo">
       <div class="panel-title">🔍 SEO</div>
@@ -878,6 +1021,30 @@
     setVal('whatsapp_number',  cfg.whatsapp_number);
     setVal('social_facebook',  cfg.social_facebook);
     setVal('social_instagram', cfg.social_instagram);
+
+    // Payment methods
+    const pm = cfg.payment_methods || {};
+    setCheck('pm_ccp_active',          pm.ccp?.active);
+    setVal('pm_ccp_number',            pm.ccp?.number);
+    setVal('pm_ccp_name',              pm.ccp?.name);
+    setVal('pm_ccp_instructions',      pm.ccp?.instructions);
+    setCheck('pm_baridimob_active',    pm.baridimob?.active);
+    setVal('pm_baridimob_number',      pm.baridimob?.number);
+    setVal('pm_baridimob_name',        pm.baridimob?.name);
+    setCheck('pm_papara_active',       pm.papara?.active);
+    setVal('pm_papara_number',         pm.papara?.number);
+    setVal('pm_papara_name',           pm.papara?.name);
+    setCheck('pm_iban_active',         pm.iban?.active);
+    setVal('pm_iban_number',           pm.iban?.number);
+    setVal('pm_iban_bank',             pm.iban?.bank);
+    setVal('pm_iban_name',             pm.iban?.name);
+    setCheck('pm_usdt_active',         pm.usdt?.active);
+    setVal('pm_usdt_address',          pm.usdt?.address);
+    if (pm.usdt?.network) setVal('pm_usdt_network', pm.usdt.network);
+    setCheck('pm_custom_active',       pm.custom?.active);
+    setVal('pm_custom_name',           pm.custom?.name);
+    setVal('pm_custom_details',        pm.custom?.details);
+    setVal('pm_custom_instructions',   pm.custom?.instructions);
 
     // SEO
     setVal('seo_title',       cfg.seo_title);
@@ -1176,6 +1343,42 @@
       whatsapp_number:      getVal('whatsapp_number'),
       social_facebook:      getVal('social_facebook'),
       social_instagram:     getVal('social_instagram'),
+      // Payment methods
+      payment_methods: {
+        ccp: {
+          active:       getCheck('pm_ccp_active'),
+          number:       getVal('pm_ccp_number'),
+          name:         getVal('pm_ccp_name'),
+          instructions: getVal('pm_ccp_instructions'),
+        },
+        baridimob: {
+          active: getCheck('pm_baridimob_active'),
+          number: getVal('pm_baridimob_number'),
+          name:   getVal('pm_baridimob_name'),
+        },
+        papara: {
+          active: getCheck('pm_papara_active'),
+          number: getVal('pm_papara_number'),
+          name:   getVal('pm_papara_name'),
+        },
+        iban: {
+          active:  getCheck('pm_iban_active'),
+          number:  getVal('pm_iban_number'),
+          bank:    getVal('pm_iban_bank'),
+          name:    getVal('pm_iban_name'),
+        },
+        usdt: {
+          active:   getCheck('pm_usdt_active'),
+          address:  getVal('pm_usdt_address'),
+          network:  getVal('pm_usdt_network'),
+        },
+        custom: {
+          active:       getCheck('pm_custom_active'),
+          name:         getVal('pm_custom_name'),
+          details:      getVal('pm_custom_details'),
+          instructions: getVal('pm_custom_instructions'),
+        },
+      },
       // SEO
       seo_title:            getVal('seo_title'),
       seo_description:      getVal('seo_description'),
