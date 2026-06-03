@@ -23,10 +23,34 @@
       --text: #EEF2FF;
       --sub: #8896B8;
       --muted: #3D4A6A;
+      --nav-bg: rgba(8,11,24,0.88);
+      --ambient-1: rgba(65,105,255,0.09);
+      --ambient-2: rgba(240,165,0,0.07);
+      --ambient-3: rgba(0,201,167,0.04);
       --ff: 'Barlow', sans-serif;
       --fd: 'Syne', sans-serif;
       --radius: 12px;
       --radius-lg: 20px;
+    }
+
+    [data-theme="light"] {
+      --bg: #F4F6FB;
+      --card: #FFFFFF;
+      --card2: #EDF0F7;
+      --border: #D4DAE8;
+      --gold: #D4900A;
+      --gold2: #B87A00;
+      --teal: #009982;
+      --red: #D93636;
+      --blue: #2952E3;
+      --purple: #7B4FE0;
+      --text: #0D1120;
+      --sub: #4A5578;
+      --muted: #9AA3BA;
+      --nav-bg: rgba(244,246,251,0.92);
+      --ambient-1: rgba(65,105,255,0.05);
+      --ambient-2: rgba(240,165,0,0.04);
+      --ambient-3: rgba(0,201,167,0.03);
     }
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,9 +70,9 @@
       position: fixed; inset: 0;
       pointer-events: none; z-index: 0;
       background:
-        radial-gradient(ellipse 60% 50% at 15% 15%, rgba(65,105,255,0.09) 0%, transparent 70%),
-        radial-gradient(ellipse 50% 40% at 85% 85%, rgba(240,165,0,0.07) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(0,201,167,0.04) 0%, transparent 70%);
+        radial-gradient(ellipse 60% 50% at 15% 15%, var(--ambient-1) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 85% 85%, var(--ambient-2) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, var(--ambient-3) 0%, transparent 70%);
     }
 
     .page-content { position: relative; z-index: 2; }
@@ -74,7 +98,7 @@
       display: flex; align-items: center;
       justify-content: space-between;
       padding: 16px 40px;
-      background: rgba(8,11,24,0.88);
+      background: var(--nav-bg);
       backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
       gap: 16px; flex-wrap: wrap;
@@ -122,6 +146,15 @@
       letter-spacing: .3px;
     }
     .lang-btn.active { background: var(--border); color: var(--text); }
+
+    .theme-btn {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--card2); border: 1px solid var(--border);
+      color: var(--sub); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; transition: all .2s; flex-shrink: 0;
+    }
+    .theme-btn:hover { color: var(--text); border-color: var(--gold); }
 
     .btn {
       display: inline-flex; align-items: center;
@@ -650,8 +683,9 @@
         <button class="lang-btn" id="btnEn" onclick="switchLang('en')">EN</button>
         <button class="lang-btn" id="btnTr" onclick="switchLang('tr')">TR</button>
       </div>
-      <a href="login.html" class="btn btn-ghost">Sign in</a>
+      <a href="login.html" class="btn btn-ghost" id="navSignIn">Sign in</a>
       <a href="register.html" class="btn btn-primary" id="navCta">Start Free</a>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
     </div>
   </nav>
 
@@ -804,6 +838,7 @@
       cta: 'ابدأ مجاناً ←',
       cta2: 'اكتشف الامتحانات',
       navCta: 'ابدأ مجاناً',
+      navSignIn: 'تسجيل الدخول',
       steps: [
         { icon:'📝', title:'قم بمحاكاة الامتحان', desc:'تجربة امتحان كاملة مع مؤقت وتنقل بين الأسئلة وإمكانية تعليم الأسئلة.' },
         { icon:'📊', title:'تصحيح فوري', desc:'نتائج تفصيلية لكل مهارة مع تصحيح الكتابة بالذكاء الاصطناعي وشرح مفصل.' },
@@ -832,6 +867,7 @@
       cta: 'Essai gratuit →',
       cta2: 'Voir les examens',
       navCta: 'Commencer',
+      navSignIn: 'Connexion',
       steps: [
         { icon:'📝', title:'Passez une simulation', desc:'Expérience d\'examen complète avec minuterie, navigation et signalement des questions.' },
         { icon:'📊', title:'Feedback instantané', desc:'Résultats détaillés par compétence avec correction IA des rédactions et explications.' },
@@ -860,6 +896,7 @@
       cta: 'Start Free Trial →',
       cta2: 'View Exams',
       navCta: 'Start Free',
+      navSignIn: 'Sign in',
       steps: [
         { icon:'📝', title:'Take a simulation', desc:'Full exam experience with real timer, question navigation, and flagging system.' },
         { icon:'📊', title:'Get instant feedback', desc:'Detailed score breakdown by skill with AI-powered writing correction and explanations.' },
@@ -888,6 +925,7 @@
       cta: 'Ücretsiz Başla →',
       cta2: 'Sınavlara Bak',
       navCta: 'Ücretsiz Başla',
+      navSignIn: 'Giriş yap',
       steps: [
         { icon:'📝', title:'Simülasyon yap', desc:'Gerçek zamanlı soru gezinme ve işaretleme ile tam sınav deneyimi.' },
         { icon:'📊', title:'Anında geri bildirim', desc:'AI destekli yazma düzeltmesi ve açıklamalar ile beceriye göre detaylı puanlama.' },
@@ -935,21 +973,45 @@
   let lang   = 'fr';   // user-chosen, drives text language
   let globalConfig = null;
 
-  // ─── MARKET DETECTION (automatic, not shown to user) ──────────
+  // ─── MARKET DETECTION ────────────────────────────────────────
   async function detectMarket() {
+    // 1. URL param overrides everything
     const param = new URLSearchParams(window.location.search).get('market');
     if (param === 'dz' || param === 'tr') {
       localStorage.setItem('sp_market', param);
       return param;
     }
+    // 2. Previously saved preference
     const saved = localStorage.getItem('sp_market');
     if (saved === 'dz' || saved === 'tr') return saved;
-    try {
-      const r = await fetch('https://ipapi.co/json/');
-      const d = await r.json();
-      if (d.country_code === 'TR') return 'tr';
-    } catch(e) {}
-    return 'dz';
+
+    // 3. IP detection — try three services in sequence
+    const services = [
+      async () => {
+        const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) });
+        const d = await r.json();
+        return d.country_code;
+      },
+      async () => {
+        const r = await fetch('https://api.country.is/', { signal: AbortSignal.timeout(3000) });
+        const d = await r.json();
+        return d.country;
+      },
+      async () => {
+        const r = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(3000) });
+        const d = await r.json();
+        return d.country_code;
+      },
+    ];
+
+    for (const service of services) {
+      try {
+        const code = await service();
+        if (code === 'TR') { localStorage.setItem('sp_market', 'tr'); return 'tr'; }
+        if (code === 'DZ') { localStorage.setItem('sp_market', 'dz'); return 'dz'; }
+      } catch(e) { /* try next */ }
+    }
+    return 'dz'; // final fallback
   }
 
   // ─── LANGUAGE DETECTION ───────────────────────────────────────
@@ -992,19 +1054,33 @@
       annBar.classList.remove('active');
     }
 
-    // Logo
+    // Logo — validate before injecting to avoid broken image
     if (cfg?.logo_url) {
-      document.getElementById('logoMark').innerHTML =
-        `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+      const img = new Image();
+      img.onload = () => {
+        document.getElementById('logoMark').innerHTML =
+          `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+      };
+      img.onerror = () => {};
+      img.src = cfg.logo_url;
     }
 
-    // Hero background
-    const isMobile = window.innerWidth < 768;
-    const bgUrl = isMobile ? (cfg?.bg_mobile_url || cfg?.bg_desktop_url) : cfg?.bg_desktop_url;
-    if (bgUrl) {
-      document.getElementById('heroBg').style.backgroundImage = `url(${bgUrl})`;
-      document.getElementById('heroOverlay').style.background =
-        `rgba(8,11,24,${cfg?.bg_overlay_opacity ?? 0.62})`;
+    // Hero background — separate mobile/desktop, re-check on resize
+    function applyHeroBg(cfg) {
+      const isMobile = window.innerWidth < 768;
+      const bgUrl = isMobile
+        ? (cfg?.bg_mobile_url || cfg?.bg_desktop_url)
+        : (cfg?.bg_desktop_url || cfg?.bg_mobile_url);
+      if (bgUrl) {
+        document.getElementById('heroBg').style.backgroundImage = `url(${bgUrl})`;
+        document.getElementById('heroOverlay').style.background =
+          `rgba(8,11,24,${cfg?.bg_overlay_opacity ?? 0.62})`;
+      }
+    }
+    applyHeroBg(cfg);
+    if (!window._bgResizeWired) {
+      window._bgResizeWired = true;
+      window.addEventListener('resize', () => applyHeroBg(globalConfig));
     }
 
     // Campaign banner image (below hero)
@@ -1026,6 +1102,7 @@
     document.getElementById('heroCta').textContent  = cfg?.cta_text || t.cta;
     document.getElementById('heroSecondary').textContent = t.cta2;
     document.getElementById('navCta').textContent   = t.navCta;
+    document.getElementById('navSignIn').textContent = t.navSignIn;
 
     // Exam pills (driven by market, not language)
     document.getElementById('examPills').innerHTML =
@@ -1196,8 +1273,25 @@
     document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
   }
 
+  // ─── THEME ────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+
+  function toggleTheme() {
+    const current = localStorage.getItem('sp_theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('sp_theme', next);
+    applyTheme(next);
+  }
+
   // ─── INIT ─────────────────────────────────────────────────────
   async function init() {
+    // Apply saved theme immediately — before any render
+    applyTheme(localStorage.getItem('sp_theme') || 'dark');
+
     market = await detectMarket();
     lang   = detectLang(market);
     updateLangToggle(lang);

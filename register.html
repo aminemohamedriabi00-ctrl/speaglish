@@ -7,25 +7,39 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* ── DARK THEME (default) ─────────────────── */
     :root {
       --bg:#080B18; --card:#0E1120; --card2:#131626;
       --border:#1C2240; --gold:#F0A500; --gold2:#FFD166;
       --teal:#00C9A7; --red:#FF5757; --blue:#4169FF;
       --text:#EEF2FF; --sub:#8896B8; --muted:#3D4A6A;
+      --nav-bg:rgba(8,11,24,.85);
+      --ambient-1:rgba(65,105,255,.08); --ambient-2:rgba(240,165,0,.06);
       --ff:'Barlow',sans-serif; --fd:'Syne',sans-serif;
     }
+
+    /* ── LIGHT THEME ──────────────────────────── */
+    [data-theme="light"] {
+      --bg:#F4F6FB; --card:#FFFFFF; --card2:#EDF0F7;
+      --border:#D4DAE8; --gold:#D4900A; --gold2:#B87A00;
+      --teal:#009982; --red:#D93636; --blue:#2952E3;
+      --text:#0D1120; --sub:#4A5578; --muted:#9AA3BA;
+      --nav-bg:rgba(244,246,251,.90);
+      --ambient-1:rgba(65,105,255,.05); --ambient-2:rgba(240,165,0,.04);
+    }
+
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
     body{
       background:var(--bg);color:var(--text);font-family:var(--ff);
       min-height:100vh;display:flex;flex-direction:column;
       align-items:center;justify-content:center;
-      padding:24px;overflow-x:hidden;
+      padding:24px;overflow-x:hidden;transition:background .25s,color .25s;
     }
     body::before{
       content:'';position:fixed;inset:0;pointer-events:none;
       background:
-        radial-gradient(ellipse 60% 50% at 20% 20%,rgba(65,105,255,.08),transparent 70%),
-        radial-gradient(ellipse 50% 40% at 80% 80%,rgba(240,165,0,.06),transparent 70%);
+        radial-gradient(ellipse 60% 50% at 20% 20%,var(--ambient-1),transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%,var(--ambient-2),transparent 70%);
     }
 
     /* ── NAV ─────────────────────────────────── */
@@ -33,9 +47,10 @@
       position:fixed;top:0;left:0;right:0;
       display:flex;align-items:center;justify-content:space-between;
       padding:14px 32px;
-      background:rgba(8,11,24,.85);backdrop-filter:blur(16px);
+      background:var(--nav-bg);backdrop-filter:blur(16px);
       border-bottom:1px solid var(--border);z-index:10;
     }
+    .nav-right{display:flex;align-items:center;gap:10px;}
     .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
     .logo-mark{
       width:32px;height:32px;
@@ -44,7 +59,7 @@
       font-family:var(--fd);font-weight:800;font-size:13px;color:#000;
       overflow:hidden;flex-shrink:0;
     }
-    .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;}
+    .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--text);}
     .logo-text span{color:var(--gold);}
 
     .lang-toggle{
@@ -57,6 +72,16 @@
       font-family:var(--ff);font-size:11px;font-weight:600;transition:all .2s;
     }
     .lang-btn.active{background:var(--border);color:var(--text);}
+
+    /* ── THEME TOGGLE ────────────────────────── */
+    .theme-btn{
+      width:34px;height:34px;border-radius:8px;
+      background:var(--card2);border:1px solid var(--border);
+      color:var(--sub);cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;transition:all .2s;flex-shrink:0;
+    }
+    .theme-btn:hover{color:var(--text);border-color:var(--gold);}
 
     /* ── FREE TRIAL BADGE ────────────────────── */
     .trial-badge{
@@ -77,7 +102,7 @@
       background:var(--card);border:1px solid var(--border);
       border-radius:20px;padding:36px;width:100%;max-width:420px;
       position:relative;z-index:1;animation:fadeUp .5s ease both;
-      margin-top:70px;
+      margin-top:70px;transition:background .25s,border-color .25s;
     }
     @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 
@@ -96,7 +121,7 @@
       border:1px solid var(--border);border-radius:10px;
       padding:11px 14px;color:var(--text);
       font-family:var(--ff);font-size:14px;outline:none;
-      transition:border-color .2s;
+      transition:border-color .2s,background .25s;
     }
     input:focus,select:focus{border-color:var(--gold);}
     select{cursor:pointer;}
@@ -120,6 +145,7 @@
     .trial-perks{
       background:var(--bg);border:1px solid var(--border);
       border-radius:10px;padding:14px;margin-bottom:18px;
+      transition:background .25s;
     }
     .trial-perks-title{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:10px;letter-spacing:.5px;text-transform:uppercase;}
     .perk{
@@ -137,9 +163,7 @@
     .error-msg.show{display:block;}
 
     /* ── SUCCESS STATE ───────────────────────── */
-    .success-state{
-      text-align:center;display:none;padding:20px 0;
-    }
+    .success-state{text-align:center;display:none;padding:20px 0;}
     .success-state.show{display:block;}
     .success-icon{font-size:48px;margin-bottom:16px;}
     .success-title{font-family:var(--fd);font-size:22px;font-weight:700;margin-bottom:8px;}
@@ -192,18 +216,21 @@
     <div class="logo-mark" id="logoMark">Sp</div>
     <span class="logo-text">Speak<span>glish</span></span>
   </a>
-  <div class="lang-toggle">
-    <button class="lang-btn" id="btnAr" onclick="setLang('ar')">AR</button>
-    <button class="lang-btn" id="btnFr" onclick="setLang('fr')">FR</button>
-    <button class="lang-btn active" id="btnEn" onclick="setLang('en')">EN</button>
-    <button class="lang-btn" id="btnTr" onclick="setLang('tr')">TR</button>
+  <div class="nav-right">
+    <div class="lang-toggle">
+      <button class="lang-btn" id="btnAr" onclick="setLang('ar')">AR</button>
+      <button class="lang-btn" id="btnFr" onclick="setLang('fr')">FR</button>
+      <button class="lang-btn active" id="btnEn" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="btnTr" onclick="setLang('tr')">TR</button>
+    </div>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   </div>
 </nav>
 
 <!-- Auth Card -->
 <div class="auth-card">
 
-  <!-- Success State (shown after registration) -->
+  <!-- Success State -->
   <div class="success-state" id="successState">
     <div class="success-icon">🎉</div>
     <div class="success-title" id="successTitle">Account created!</div>
@@ -224,7 +251,6 @@
 
     <div class="error-msg" id="errorMsg"></div>
 
-    <!-- What you get -->
     <div class="trial-perks">
       <div class="trial-perks-title" id="perksTitle">Free trial includes</div>
       <div class="perk" id="perk1">3 complete exam simulations</div>
@@ -249,25 +275,13 @@
     </div>
 
     <div class="field">
-      <label id="lblPhone">Phone number <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+      <label id="lblPhone">Phone number <span style="color:var(--muted);font-weight:400;" id="lblPhoneOpt">(optional)</span></label>
       <input type="tel" id="phone" placeholder="+213 XXX XXX XXX">
     </div>
 
     <div class="field">
       <label id="lblGoal">My main goal</label>
-      <select id="goal">
-        <option value="">Select your goal...</option>
-        <option value="tcf_canada">TCF — Immigration to Canada</option>
-        <option value="tcf_france">TCF — Immigration to France</option>
-        <option value="tef">TEF — Immigration</option>
-        <option value="ielts_study">IELTS — Study abroad</option>
-        <option value="ielts_work">IELTS — Work visa</option>
-        <option value="yds">YDS — Academic promotion (Turkey)</option>
-        <option value="yokdil">YÖKDİL — University (Turkey)</option>
-        <option value="toefl">TOEFL — University application</option>
-        <option value="general">General English improvement</option>
-        <option value="other">Other</option>
-      </select>
+      <select id="goal"></select>
     </div>
 
     <div class="field">
@@ -320,29 +334,47 @@
       perksTitle:'التجربة المجانية تشمل',
       perk1:'3 محاكاة كاملة للامتحان',perk2:'نتيجة فورية وتحليل المهارات',perk3:'شرح سؤال بسؤال',
       lblFirst:'الاسم الأول',lblLast:'اسم العائلة',lblEmail:'البريد الإلكتروني',
-      lblPhone:'رقم الهاتف',lblGoal:'هدفي الرئيسي',lblPassword:'كلمة المرور',lblConfirm:'تأكيد كلمة المرور',
+      lblPhone:'رقم الهاتف',lblPhoneOpt:'(اختياري)',lblGoal:'هدفي الرئيسي',
+      lblPassword:'كلمة المرور',lblConfirm:'تأكيد كلمة المرور',
       btnText:'إنشاء حساب مجاني ←',
       switchText:'هل لديك حساب بالفعل؟',switchLink:'تسجيل الدخول',
+      termsText:'بإنشاء حساب، أنت توافق على <a href="#">شروط الخدمة</a> و<a href="#">سياسة الخصوصية</a>',
       errEmpty:'يرجى ملء جميع الحقول المطلوبة.',errPass:'كلمات المرور غير متطابقة.',
       errShort:'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',errEmail:'البريد الإلكتروني مستخدم بالفعل.',
       successTitle:'تم إنشاء الحساب!',
       successSub:'تجربتك المجانية نشطة. يمكنك إجراء 3 امتحانات مجانية الآن.\n\nللحصول على الوصول الكامل، انتقل إلى لوحتك واتبع تعليمات الدفع.',
-      dashBtn:'الذهاب إلى اللوحة ←',dir:'rtl'
+      dashBtn:'الذهاب إلى اللوحة ←',dir:'rtl',
+      goals:[
+        {v:'',l:'اختر هدفك...'},{v:'tcf_canada',l:'TCF — الهجرة إلى كندا'},
+        {v:'tcf_france',l:'TCF — الهجرة إلى فرنسا'},{v:'tef',l:'TEF — الهجرة'},
+        {v:'ielts_study',l:'IELTS — الدراسة في الخارج'},{v:'ielts_work',l:'IELTS — تأشيرة عمل'},
+        {v:'yds',l:'YDS — ترقية أكاديمية (تركيا)'},{v:'yokdil',l:'YÖKDİL — جامعة (تركيا)'},
+        {v:'toefl',l:'TOEFL — تسجيل جامعي'},{v:'general',l:'تحسين الإنجليزية العامة'},{v:'other',l:'أخرى'}
+      ]
     },
     fr:{
       trialBadge:'Essai gratuit — aucune carte bancaire requise',
-      pageTitle:'Créez votre compte', pageSub:'Commencez à préparer votre examen aujourd\'hui',
-      perksTitle:'L\'essai gratuit inclut',
-      perk1:'3 simulations complètes d\'examen',perk2:'Score instantané et analyse par compétence',perk3:'Explication question par question',
+      pageTitle:'Créez votre compte', pageSub:"Commencez à préparer votre examen aujourd'hui",
+      perksTitle:"L'essai gratuit inclut",
+      perk1:"3 simulations complètes d'examen",perk2:'Score instantané et analyse par compétence',perk3:'Explication question par question',
       lblFirst:'Prénom',lblLast:'Nom',lblEmail:'Adresse email',
-      lblPhone:'Téléphone',lblGoal:'Mon objectif principal',lblPassword:'Mot de passe',lblConfirm:'Confirmer le mot de passe',
+      lblPhone:'Téléphone',lblPhoneOpt:'(facultatif)',lblGoal:'Mon objectif principal',
+      lblPassword:'Mot de passe',lblConfirm:'Confirmer le mot de passe',
       btnText:'Créer un compte gratuit →',
       switchText:'Vous avez déjà un compte ?',switchLink:'Se connecter',
+      termsText:"En créant un compte, vous acceptez nos <a href='#'>Conditions d'utilisation</a> et notre <a href='#'>Politique de confidentialité</a>",
       errEmpty:'Veuillez remplir tous les champs obligatoires.',errPass:'Les mots de passe ne correspondent pas.',
       errShort:'Le mot de passe doit comporter au moins 8 caractères.',errEmail:'Cette adresse email est déjà utilisée.',
       successTitle:'Compte créé !',
-      successSub:'Votre essai gratuit est actif. Vous pouvez passer 3 examens gratuitement maintenant.\n\nPour débloquer l\'accès complet, rendez-vous sur votre tableau de bord.',
-      dashBtn:'Aller au tableau de bord →',dir:'ltr'
+      successSub:"Votre essai gratuit est actif. Vous pouvez passer 3 examens gratuitement maintenant.\n\nPour débloquer l'accès complet, rendez-vous sur votre tableau de bord.",
+      dashBtn:'Aller au tableau de bord →',dir:'ltr',
+      goals:[
+        {v:'',l:'Choisissez votre objectif...'},{v:'tcf_canada',l:'TCF — Immigration au Canada'},
+        {v:'tcf_france',l:'TCF — Immigration en France'},{v:'tef',l:'TEF — Immigration'},
+        {v:'ielts_study',l:'IELTS — Études à l\'étranger'},{v:'ielts_work',l:'IELTS — Visa de travail'},
+        {v:'yds',l:'YDS — Promotion académique (Turquie)'},{v:'yokdil',l:'YÖKDİL — Université (Turquie)'},
+        {v:'toefl',l:'TOEFL — Candidature universitaire'},{v:'general',l:'Amélioration générale de l\'anglais'},{v:'other',l:'Autre'}
+      ]
     },
     en:{
       trialBadge:'Free trial — no credit card required',
@@ -350,14 +382,23 @@
       perksTitle:'Free trial includes',
       perk1:'3 complete exam simulations',perk2:'Instant score and skill breakdown',perk3:'Question-by-question explanations',
       lblFirst:'First name',lblLast:'Last name',lblEmail:'Email address',
-      lblPhone:'Phone number',lblGoal:'My main goal',lblPassword:'Password',lblConfirm:'Confirm password',
+      lblPhone:'Phone number',lblPhoneOpt:'(optional)',lblGoal:'My main goal',
+      lblPassword:'Password',lblConfirm:'Confirm password',
       btnText:'Create Free Account →',
       switchText:'Already have an account?',switchLink:'Sign in',
+      termsText:"By creating an account you agree to our <a href='#'>Terms of Service</a> and <a href='#'>Privacy Policy</a>",
       errEmpty:'Please fill in all required fields.',errPass:'Passwords do not match.',
       errShort:'Password must be at least 8 characters.',errEmail:'This email is already in use.',
       successTitle:'Account created!',
       successSub:'Your free trial is active. You can take 3 exams for free right now.\n\nTo unlock full access, go to your dashboard and follow the payment instructions.',
-      dashBtn:'Go to Dashboard →',dir:'ltr'
+      dashBtn:'Go to Dashboard →',dir:'ltr',
+      goals:[
+        {v:'',l:'Select your goal...'},{v:'tcf_canada',l:'TCF — Immigration to Canada'},
+        {v:'tcf_france',l:'TCF — Immigration to France'},{v:'tef',l:'TEF — Immigration'},
+        {v:'ielts_study',l:'IELTS — Study abroad'},{v:'ielts_work',l:'IELTS — Work visa'},
+        {v:'yds',l:'YDS — Academic promotion (Turkey)'},{v:'yokdil',l:'YÖKDİL — University (Turkey)'},
+        {v:'toefl',l:'TOEFL — University application'},{v:'general',l:'General English improvement'},{v:'other',l:'Other'}
+      ]
     },
     tr:{
       trialBadge:'Ücretsiz deneme — kredi kartı gerekmez',
@@ -365,14 +406,23 @@
       perksTitle:'Ücretsiz deneme içerir',
       perk1:'3 tam sınav simülasyonu',perk2:'Anında puan ve beceri analizi',perk3:'Soru bazında açıklamalar',
       lblFirst:'Ad',lblLast:'Soyad',lblEmail:'E-posta adresi',
-      lblPhone:'Telefon numarası',lblGoal:'Ana hedefim',lblPassword:'Şifre',lblConfirm:'Şifreyi onayla',
+      lblPhone:'Telefon numarası',lblPhoneOpt:'(isteğe bağlı)',lblGoal:'Ana hedefim',
+      lblPassword:'Şifre',lblConfirm:'Şifreyi onayla',
       btnText:'Ücretsiz Hesap Oluştur →',
       switchText:'Zaten hesabınız var mı?',switchLink:'Giriş yap',
+      termsText:"Hesap oluşturarak <a href='#'>Kullanım Koşullarımızı</a> ve <a href='#'>Gizlilik Politikamızı</a> kabul etmiş olursunuz",
       errEmpty:'Lütfen tüm gerekli alanları doldurun.',errPass:'Şifreler eşleşmiyor.',
       errShort:'Şifre en az 8 karakter olmalıdır.',errEmail:'Bu e-posta adresi zaten kullanılıyor.',
       successTitle:'Hesap oluşturuldu!',
       successSub:'Ücretsiz denemeniz aktif. Şu anda 3 sınav ücretsiz girebilirsiniz.\n\nTam erişim için kontrol panelinize gidin.',
-      dashBtn:'Kontrol Paneline Git →',dir:'ltr'
+      dashBtn:'Kontrol Paneline Git →',dir:'ltr',
+      goals:[
+        {v:'',l:'Hedefinizi seçin...'},{v:'tcf_canada',l:'TCF — Kanada\'ya göç'},
+        {v:'tcf_france',l:'TCF — Fransa\'ya göç'},{v:'tef',l:'TEF — Göç'},
+        {v:'ielts_study',l:'IELTS — Yurt dışında eğitim'},{v:'ielts_work',l:'IELTS — Çalışma vizesi'},
+        {v:'yds',l:'YDS — Akademik yükseltme'},{v:'yokdil',l:'YÖKDİL — Üniversite'},
+        {v:'toefl',l:'TOEFL — Üniversite başvurusu'},{v:'general',l:'Genel İngilizce geliştirme'},{v:'other',l:'Diğer'}
+      ]
     }
   };
 
@@ -388,19 +438,41 @@
       trialBadgeText:t.trialBadge, pageTitle:t.pageTitle, pageSub:t.pageSub,
       perksTitle:t.perksTitle, perk1:t.perk1, perk2:t.perk2, perk3:t.perk3,
       lblFirst:t.lblFirst, lblLast:t.lblLast, lblEmail:t.lblEmail,
-      lblPhone:t.lblPhone, lblGoal:t.lblGoal, lblPassword:t.lblPassword,
-      lblConfirm:t.lblConfirm, btnText:t.btnText, switchText:t.switchText,
-      switchLink:t.switchLink, successTitle:t.successTitle, dashBtn:t.dashBtn,
+      lblPhone:t.lblPhone, lblPhoneOpt:t.lblPhoneOpt, lblGoal:t.lblGoal,
+      lblPassword:t.lblPassword, lblConfirm:t.lblConfirm, btnText:t.btnText,
+      switchText:t.switchText, switchLink:t.switchLink,
+      successTitle:t.successTitle, dashBtn:t.dashBtn,
     };
     Object.entries(ids).forEach(([id,val]) => {
       const el = document.getElementById(id); if(el) el.textContent = val;
     });
     document.getElementById('successSub').innerHTML = t.successSub.replace(/\n/g,'<br>');
+    document.getElementById('termsText').innerHTML = t.termsText;
+
+    // Rebuild goal dropdown in current language
+    const sel = document.getElementById('goal');
+    const current = sel.value;
+    sel.innerHTML = t.goals.map(g => `<option value="${g.v}">${g.l}</option>`).join('');
+    sel.value = current;
+
     ['ar','fr','en','tr'].forEach(code => {
       const btn = document.getElementById('btn'+code.charAt(0).toUpperCase()+code.slice(1));
       if(btn) btn.classList.toggle('active', code===lang);
     });
     document.title = `Speaglish — ${t.pageTitle}`;
+  }
+
+  // ─── THEME ────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('themeBtn').textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+
+  function toggleTheme() {
+    const current = localStorage.getItem('sp_theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('sp_theme', next);
+    applyTheme(next);
   }
 
   // ─── PASSWORD TOGGLE ──────────────────────────────────────────
@@ -474,11 +546,12 @@
       return;
     }
 
-    // Update profile with extra info
+    // Update profile — includes goal field (B1 fix)
     if (data.user) {
       await sb.from('profiles').update({
         full_name: fullName,
         phone:     phone || null,
+        goal:      goal  || null,
         market:    market,
         role:      'student',
         subscription_status: 'trial',
@@ -486,7 +559,6 @@
       }).eq('id', data.user.id);
     }
 
-    // Show success state
     document.getElementById('registerForm').style.display = 'none';
     document.getElementById('successState').classList.add('show');
   }
@@ -495,16 +567,25 @@
   async function loadLogo() {
     try {
       const market = localStorage.getItem('sp_market') || 'dz';
-      const { data } = await sb.from('landing_config').select('logo_url').eq('market',market).single();
-      if (data?.logo_url) {
-        document.getElementById('logoMark').innerHTML =
-          `<img src="${data.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+      const { data, error } = await sb.from('landing_config').select('logo_url').eq('market',market).single();
+      if (!error && data?.logo_url) {
+        const img = new Image();
+        img.onload = () => {
+          document.getElementById('logoMark').innerHTML =
+            `<img src="${data.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+        };
+        img.onerror = () => {};
+        img.src = data.logo_url;
       }
     } catch(e) {}
   }
 
   // ─── INIT ─────────────────────────────────────────────────────
   async function init() {
+    // Apply saved theme immediately
+    const savedTheme = localStorage.getItem('sp_theme') || 'dark';
+    applyTheme(savedTheme);
+
     const { data: { session } } = await sb.auth.getSession();
     if (session) { window.location.href = 'dashboard.html'; return; }
     applyLang();
