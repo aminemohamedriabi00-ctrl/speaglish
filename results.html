@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Results</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#080B18;--card:#0E1120;--card2:#131626;
+      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
+      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
+      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;}
+    body::before{
+      content:'';position:fixed;inset:0;pointer-events:none;
+      background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(65,105,255,.07),transparent 60%);
+    }
+
+    /* ── NAV ─────────────────────────────────── */
+    nav{
+      position:sticky;top:0;z-index:50;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 28px;background:rgba(8,11,24,.9);
+      backdrop-filter:blur(16px);border-bottom:1px solid var(--border);
+      gap:12px;flex-wrap:wrap;
+    }
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+    .logo-mark{
+      width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#E8961A);
+      border-radius:8px;display:flex;align-items:center;justify-content:center;
+      font-family:var(--fd);font-weight:800;font-size:13px;color:#000;
+      overflow:hidden;flex-shrink:0;
+    }
+    .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;}
+    .logo-text span{color:var(--gold);}
+    .nav-right{display:flex;gap:8px;}
+    .btn{
+      display:inline-flex;align-items:center;gap:6px;padding:9px 20px;
+      border-radius:10px;font-family:var(--ff);font-size:13px;font-weight:600;
+      cursor:pointer;transition:all .2s;border:none;text-decoration:none;
+    }
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub);}
+    .btn-ghost:hover{border-color:var(--sub);color:var(--text);}
+    .btn-primary{background:var(--gold);color:#000;}
+    .btn-primary:hover{background:var(--gold2);}
+
+    /* ── PAGE ────────────────────────────────── */
+    .page{max-width:760px;margin:0 auto;padding:32px 20px;position:relative;z-index:1;}
+
+    /* ── SCORE HERO ──────────────────────────── */
+    .score-hero{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:16px;padding:32px;text-align:center;margin-bottom:16px;
+    }
+    .score-meta{font-size:13px;color:var(--muted);margin-bottom:20px;}
+
+    .score-circle-wrap{position:relative;width:140px;height:140px;margin:0 auto 20px;}
+    .score-circle-wrap svg{transform:rotate(-90deg);}
+    .score-circle-bg{fill:none;stroke:var(--border);stroke-width:8;}
+    .score-circle-fill{
+      fill:none;stroke-width:8;stroke-linecap:round;
+      stroke-dasharray:376;stroke-dashoffset:376;
+      transition:stroke-dashoffset 1.2s ease;
+    }
+    .score-center{
+      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+      text-align:center;
+    }
+    .score-pct{font-family:var(--fd);font-size:34px;font-weight:800;line-height:1;}
+    .score-label{font-size:11px;color:var(--muted);margin-top:2px;}
+
+    .score-tags{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+    .tag{
+      font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px;
+    }
+
+    .score-message{font-size:14px;color:var(--sub);font-weight:300;line-height:1.6;}
+
+    .score-stats-row{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px;
+    }
+    .score-stat{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:10px;text-align:center;
+    }
+    .score-stat-num{font-family:var(--fd);font-size:18px;font-weight:700;}
+    .score-stat-label{font-size:11px;color:var(--muted);margin-top:2px;}
+
+    /* ── SECTION CARD ────────────────────────── */
+    .result-card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:12px;padding:22px;margin-bottom:14px;
+    }
+    .result-card-title{
+      font-family:var(--fd);font-size:15px;font-weight:700;
+      margin-bottom:16px;display:flex;align-items:center;gap:8px;
+    }
+
+    /* ── CATEGORY BARS ───────────────────────── */
+    .cat-bar{margin-bottom:14px;}
+    .cat-bar:last-child{margin-bottom:0;}
+    .cat-bar-header{display:flex;justify-content:space-between;margin-bottom:7px;align-items:center;}
+    .cat-bar-name{font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
+    .weak-tag{
+      font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;
+      background:rgba(255,87,87,.15);color:var(--red);
+    }
+    .cat-bar-pct{font-size:13px;font-weight:700;}
+    .cat-bar-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+    .cat-bar-fill{height:100%;border-radius:3px;transition:width 1s ease;width:0;}
+
+    /* ── QUESTION REVIEW ─────────────────────── */
+    .q-review-item{
+      border:1px solid var(--border);border-radius:10px;
+      margin-bottom:10px;overflow:hidden;
+    }
+    .q-review-item:last-child{margin-bottom:0;}
+
+    .q-review-header{
+      padding:12px 16px;display:flex;align-items:center;gap:10px;
+      cursor:pointer;transition:background .15s;
+    }
+    .q-review-header:hover{background:rgba(255,255,255,.02);}
+
+    .q-status-icon{
+      width:28px;height:28px;border-radius:50%;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;font-weight:700;
+    }
+    .q-status-correct{background:rgba(0,201,167,.2);color:var(--teal);}
+    .q-status-wrong{background:rgba(255,87,87,.2);color:var(--red);}
+    .q-status-writing{background:rgba(240,165,0,.2);color:var(--gold);}
+
+    .q-review-info{flex:1;}
+    .q-review-title{font-size:13px;font-weight:600;}
+    .q-review-cat{font-size:11px;color:var(--muted);margin-top:1px;}
+
+    .q-review-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+
+    .q-review-body{
+      padding:0 16px;max-height:0;overflow:hidden;transition:max-height .3s ease;
+    }
+    .q-review-body.open{max-height:600px;}
+    .q-review-inner{padding-bottom:16px;border-top:1px solid var(--border);padding-top:14px;}
+
+    .q-review-text{
+      font-size:13px;color:var(--sub);line-height:1.7;
+      white-space:pre-wrap;margin-bottom:14px;
+    }
+
+    .q-option-row{
+      padding:8px 12px;border-radius:7px;margin-bottom:6px;
+      font-size:13px;display:flex;align-items:center;gap:10px;
+    }
+    .q-option-correct{background:rgba(0,201,167,.1);border:1px solid rgba(0,201,167,.3);color:var(--teal);}
+    .q-option-wrong{background:rgba(255,87,87,.1);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+    .q-option-neutral{background:var(--bg);border:1px solid var(--border);color:var(--muted);}
+
+    .q-explanation{
+      background:rgba(65,105,255,.08);border:1px solid rgba(65,105,255,.2);
+      border-radius:8px;padding:12px;font-size:13px;color:var(--sub);
+      line-height:1.65;margin-top:10px;
+    }
+    .q-explanation strong{color:var(--blue);}
+
+    /* ── YOUTUBE RECS ────────────────────────── */
+    .yt-card{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:10px;padding:14px;margin-bottom:10px;
+      display:flex;gap:12px;align-items:center;
+      cursor:pointer;transition:border-color .2s;text-decoration:none;
+    }
+    .yt-card:hover{border-color:var(--red);}
+    .yt-card:last-child{margin-bottom:0;}
+    .yt-icon{
+      width:44px;height:44px;background:rgba(255,87,87,.15);
+      border-radius:8px;display:flex;align-items:center;
+      justify-content:center;font-size:18px;flex-shrink:0;
+      border:1px solid rgba(255,87,87,.3);
+    }
+    .yt-info{flex:1;}
+    .yt-title{font-size:13px;font-weight:600;margin-bottom:2px;color:var(--text);}
+    .yt-meta{font-size:11px;color:var(--muted);}
+    .yt-cat{font-size:11px;font-weight:700;flex-shrink:0;}
+
+    /* ── ACTION PLAN ─────────────────────────── */
+    .action-plan{
+      background:linear-gradient(135deg,rgba(65,105,255,.08),rgba(240,165,0,.06));
+      border:1px solid rgba(65,105,255,.2);border-radius:12px;
+      padding:22px;margin-bottom:14px;
+    }
+    .action-plan-title{
+      font-family:var(--fd);font-size:15px;font-weight:700;
+      color:var(--blue);margin-bottom:14px;
+    }
+    .action-item{
+      display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;
+    }
+    .action-item:last-child{margin-bottom:0;}
+    .action-arrow{color:var(--blue);font-size:14px;flex-shrink:0;margin-top:1px;}
+    .action-text{font-size:13px;color:var(--sub);line-height:1.55;}
+    .action-text strong{color:var(--text);}
+
+    /* ── CTA ROW ─────────────────────────────── */
+    .cta-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:32px;}
+
+    /* ── LOADER ──────────────────────────────── */
+    .loader-overlay{
+      position:fixed;inset:0;background:var(--bg);z-index:400;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .loader-overlay.out{display:none;}
+    .spinner{width:36px;height:36px;border:2px solid var(--border);
+      border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── ANIMATE IN ──────────────────────────── */
+    .fade-up{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s;}
+    .fade-up.in{opacity:1;transform:translateY(0);}
+
+    @media(max-width:640px){
+      nav{padding:12px 16px;}
+      .page{padding:20px 14px;}
+      .score-stats-row{grid-template-columns:1fr 1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="logo-mark" id="logoMark">Sp</div>
+    <span class="logo-text">Speak<span>glish</span></span>
+  </a>
+  <div class="nav-right">
+    <button class="btn btn-ghost" id="retakeBtn" onclick="retakeExam()">↺ Retake</button>
+    <a href="dashboard.html" class="btn btn-primary" id="dashBtn">Dashboard →</a>
+  </div>
+</nav>
+
+<div class="page" id="page"></div>
+
+<script>
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  // ─── YOUTUBE RECS ─────────────────────────────────────────────
+  const YT = {
+    'Compréhension':  {t:'TCF Lecture : Localiser l\'Information Rapidement', ch:'FrenchPod101', dur:'11 min', url:'https://youtube.com'},
+    'Sens Implicite': {t:'Lire Entre les Lignes — Stratégie TCF', ch:'Alliance Française', dur:'14 min', url:'https://youtube.com'},
+    'Vocabulaire':    {t:'Vocabulaire B2 Essentiel pour le TCF', ch:'InnerFrench', dur:'18 min', url:'https://youtube.com'},
+    'Grammaire':      {t:'Les Temps du Passé — Guide Complet', ch:'Français Authentique', dur:'22 min', url:'https://youtube.com'},
+    'Idée Principale':{t:'Identifier l\'Idée Principale en 3 Étapes', ch:'TV5Monde', dur:'9 min', url:'https://youtube.com'},
+    'Reading':        {t:'IELTS Reading: Finding Answers Fast', ch:'IELTS Liz', dur:'15 min', url:'https://youtube.com'},
+    'Vocabulary':     {t:'Academic Vocabulary for IELTS', ch:'E2 IELTS', dur:'20 min', url:'https://youtube.com'},
+    'Grammar':        {t:'IELTS Grammar — Common Mistakes', ch:'IELTS Ryan', dur:'18 min', url:'https://youtube.com'},
+    'İngilizce':      {t:'YDS Sınavı için Gramer Rehberi', ch:'Yabancı Dil TV', dur:'25 min', url:'https://youtube.com'},
+  };
+
+  const CAT_COLORS = {
+    'Compréhension':'#4169FF','Sens Implicite':'#9B6DFF','Vocabulaire':'#00C9A7',
+    'Grammaire':'#FF5757','Idée Principale':'#F0A500','Reading':'#4169FF',
+    'Vocabulary':'#00C9A7','Grammar':'#FF5757','İngilizce':'#4169FF',
+  };
+
+  // ─── LEVEL MAPPING ────────────────────────────────────────────
+  function getLevel(pct) {
+    if (pct >= 85) return {label:'C1', color:'var(--purple)'};
+    if (pct >= 70) return {label:'B2', color:'var(--teal)'};
+    if (pct >= 55) return {label:'B1', color:'var(--gold)'};
+    if (pct >= 40) return {label:'A2', color:'#FF9F43'};
+    return               {label:'A1', color:'var(--red)'};
+  }
+
+  function getScoreColor(pct) {
+    if (pct >= 70) return 'var(--teal)';
+    if (pct >= 50) return 'var(--gold)';
+    return 'var(--red)';
+  }
+
+  function fmtTime(secs) {
+    const m = Math.floor(secs/60), s = secs%60;
+    return `${m}m ${s}s`;
+  }
+
+  // ─── CALCULATE CATEGORIES ────────────────────────────────────
+  function calcCategories(questions, answers) {
+    const cats = {};
+    questions.forEach((q, i) => {
+      if (q.type === 'writing') return;
+      const cat = q.category || 'Question';
+      if (!cats[cat]) cats[cat] = {correct:0, total:0};
+      cats[cat].total++;
+      if (answers[i] === q.correct_answer) cats[cat].correct++;
+    });
+    return cats;
+  }
+
+  // ─── RENDER PAGE ──────────────────────────────────────────────
+  function renderResults(result) {
+    const {score, correct, total, timeTaken, questions, answers, examType, examTitle} = result;
+    const level      = getLevel(score);
+    const scoreColor = getScoreColor(score);
+    const cats       = calcCategories(questions || [], answers || {});
+    const weakCats   = Object.entries(cats)
+      .filter(([,v]) => v.total > 0 && Math.round(v.correct/v.total*100) < 60)
+      .map(([k]) => k);
+
+    // Message
+    const msg = score >= 75
+      ? '🎉 Excellent result! You are well prepared for this exam.'
+      : score >= 55
+        ? '👍 Good work! Keep practicing to reach the next level.'
+        : '💪 Keep going — every attempt brings you closer to your goal.';
+
+    const circumference = 2 * Math.PI * 54;
+    const offset = circumference * (1 - score/100);
+
+    let html = `
+      <!-- Score Hero -->
+      <div class="score-hero fade-up">
+        <div class="score-meta">${examTitle || examType || 'Exam'}</div>
+
+        <div class="score-circle-wrap">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle class="score-circle-bg" cx="70" cy="70" r="54"/>
+            <circle class="score-circle-fill" id="scoreFill"
+              cx="70" cy="70" r="54"
+              stroke="${scoreColor}"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${circumference}"/>
+          </svg>
+          <div class="score-center">
+            <div class="score-pct" style="color:${scoreColor};">${score}%</div>
+            <div class="score-label">Score</div>
+          </div>
+        </div>
+
+        <div class="score-tags">
+          <span class="tag" style="background:${level.color}20;color:${level.color};border:1px solid ${level.color}40;">
+            Level ${level.label}
+          </span>
+          <span class="tag" style="background:rgba(65,105,255,.15);color:var(--blue);border:1px solid rgba(65,105,255,.3);">
+            ${correct}/${total} correct
+          </span>
+        </div>
+
+        <div class="score-message">${msg}</div>
+
+        <div class="score-stats-row">
+          <div class="score-stat">
+            <div class="score-stat-num" style="color:var(--teal);">${correct}</div>
+            <div class="score-stat-label">Correct</div>
+          </div>
+          <div class="score-stat">
+            <div class="score-stat-num" style="color:var(--red);">${total - correct}</div>
+            <div class="score-stat-label">Incorrect</div>
+          </div>
+          <div class="score-stat">
+            <div class="score-stat-num" style="color:var(--sub);">${timeTaken ? fmtTime(timeTaken) : '—'}</div>
+            <div class="score-stat-label">Time taken</div>
+          </div>
+        </div>
+      </div>`;
+
+    // Category breakdown
+    if (Object.keys(cats).length > 0) {
+      html += `<div class="result-card fade-up"><div class="result-card-title">📊 Results by Category</div>`;
+      Object.entries(cats).forEach(([cat, {correct:c, total:t}]) => {
+        const pct  = Math.round(c/t*100);
+        const clr  = getScoreColor(pct);
+        const col  = CAT_COLORS[cat] || '#4169FF';
+        const weak = pct < 60;
+        html += `
+          <div class="cat-bar">
+            <div class="cat-bar-header">
+              <div class="cat-bar-name">
+                ${cat}
+                ${weak ? '<span class="weak-tag">Needs work</span>' : ''}
+              </div>
+              <span class="cat-bar-pct" style="color:${clr};">${pct}%</span>
+            </div>
+            <div class="cat-bar-track">
+              <div class="cat-bar-fill" data-width="${pct}" style="background:${col};"></div>
+            </div>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Question review
+    if (questions && questions.length) {
+      html += `<div class="result-card fade-up"><div class="result-card-title">📝 Question Review</div>`;
+      questions.forEach((q, i) => {
+        if (q.type === 'writing') {
+          html += `
+            <div class="q-review-item">
+              <div class="q-review-header" onclick="toggleReview(${i})">
+                <div class="q-status-icon q-status-writing">✍</div>
+                <div class="q-review-info">
+                  <div class="q-review-title">Writing Task ${i+1}</div>
+                  <div class="q-review-cat">Written response</div>
+                </div>
+                <span class="q-review-badge" style="background:rgba(240,165,0,.15);color:var(--gold);">Submitted</span>
+                <span style="color:var(--muted);margin-left:8px;" id="arrow-${i}">▼</span>
+              </div>
+              <div class="q-review-body" id="body-${i}">
+                <div class="q-review-inner">
+                  <div class="q-review-text">${q.question_text}</div>
+                  <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;color:var(--sub);">
+                    ${answers[i] || '<em style="color:var(--muted);">No answer submitted</em>'}
+                  </div>
+                  ${q.explanation ? `<div class="q-explanation"><strong>💡 Model approach:</strong> ${q.explanation}</div>` : ''}
+                </div>
+              </div>
+            </div>`;
+          return;
+        }
+
+        const userAns = answers[i];
+        const isCorrect = userAns === q.correct_answer;
+        const opts = [
+          {l:'A',v:q.option_a},{l:'B',v:q.option_b},
+          {l:'C',v:q.option_c},{l:'D',v:q.option_d}
+        ].filter(o=>o.v);
+
+        html += `
+          <div class="q-review-item">
+            <div class="q-review-header" onclick="toggleReview(${i})">
+              <div class="q-status-icon ${isCorrect?'q-status-correct':'q-status-wrong'}">
+                ${isCorrect?'✓':'✗'}
+              </div>
+              <div class="q-review-info">
+                <div class="q-review-title">Question ${i+1} — ${q.category||''}</div>
+                <div class="q-review-cat">${isCorrect?'Correct':'Incorrect'}</div>
+              </div>
+              <span class="q-review-badge"
+                style="background:${isCorrect?'rgba(0,201,167,.15)':'rgba(255,87,87,.15)'};color:${isCorrect?'var(--teal)':'var(--red)'};">
+                ${isCorrect?'✓ Correct':'✗ Incorrect'}
+              </span>
+              <span style="color:var(--muted);margin-left:8px;" id="arrow-${i}">▼</span>
+            </div>
+            <div class="q-review-body" id="body-${i}">
+              <div class="q-review-inner">
+                <div class="q-review-text">${q.question_text.substring(0,220)}${q.question_text.length>220?'...':''}</div>
+                <div>
+                  ${opts.map(o=>{
+                    const isC = o.l === q.correct_answer;
+                    const isU = o.l === userAns;
+                    let cls = 'q-option-neutral';
+                    let marker = '';
+                    if(isC){cls='q-option-correct';marker=' ✓';}
+                    else if(isU&&!isC){cls='q-option-wrong';marker=' ← Your answer';}
+                    return `<div class="q-option-row ${cls}">
+                      <strong>${o.l}.</strong> ${o.v}<span style="margin-left:auto;font-size:11px;">${marker}</span>
+                    </div>`;
+                  }).join('')}
+                </div>
+                ${q.explanation?`<div class="q-explanation"><strong>💡 Explanation:</strong> ${q.explanation}</div>`:''}
+              </div>
+            </div>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // YouTube recommendations
+    const ytRecs = weakCats.map(cat => YT[cat]).filter(Boolean);
+    if (ytRecs.length > 0) {
+      html += `<div class="result-card fade-up"><div class="result-card-title">📺 Recommended Videos</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Based on your weak areas</p>`;
+      ytRecs.forEach((yt, i) => {
+        const cat = weakCats[i];
+        const col = CAT_COLORS[cat] || '#4169FF';
+        html += `
+          <a href="${yt.url}" target="_blank" class="yt-card">
+            <div class="yt-icon">▶</div>
+            <div class="yt-info">
+              <div class="yt-title">${yt.t}</div>
+              <div class="yt-meta">${yt.ch} · ${yt.dur}</div>
+            </div>
+            <span class="yt-cat" style="color:${col};">${cat}</span>
+          </a>`;
+      });
+      html += `</div>`;
+    }
+
+    // Action plan
+    html += `
+      <div class="action-plan fade-up">
+        <div class="action-plan-title">🎯 Your Action Plan</div>`;
+
+    if (weakCats.length > 0) {
+      weakCats.slice(0, 3).forEach(cat => {
+        const pct = Math.round(cats[cat].correct/cats[cat].total*100);
+        html += `
+          <div class="action-item">
+            <span class="action-arrow">→</span>
+            <div class="action-text">
+              <strong>${cat}</strong> — ${pct}% — Watch the recommended video then retake this exam
+            </div>
+          </div>`;
+      });
+    } else {
+      html += `<div class="action-item">
+        <span class="action-arrow">→</span>
+        <div class="action-text">
+          <strong>Excellent result!</strong> — Try a harder exam or practice a different skill
+        </div>
+      </div>`;
+    }
+
+    html += `</div>
+
+    <div class="cta-row fade-up">
+      <button class="btn btn-ghost" onclick="retakeExam()">↺ Retake This Exam</button>
+      <a href="dashboard.html" class="btn btn-primary">Go to Dashboard →</a>
+    </div>`;
+
+    document.getElementById('page').innerHTML = html;
+
+    // Animate bars and score
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        // Score circle
+        const fill = document.getElementById('scoreFill');
+        if (fill) fill.style.strokeDashoffset = offset;
+
+        // Category bars
+        document.querySelectorAll('.cat-bar-fill').forEach(el => {
+          el.style.width = (el.dataset.width || 0) + '%';
+        });
+
+        // Fade up
+        document.querySelectorAll('.fade-up').forEach((el, i) => {
+          setTimeout(() => el.classList.add('in'), i * 100);
+        });
+      }, 100);
+    });
+
+    // Scroll animations
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+  }
+
+  // ─── TOGGLE REVIEW ────────────────────────────────────────────
+  function toggleReview(i) {
+    const body  = document.getElementById(`body-${i}`);
+    const arrow = document.getElementById(`arrow-${i}`);
+    if (!body) return;
+    const open = body.classList.toggle('open');
+    if (arrow) arrow.textContent = open ? '▲' : '▼';
+  }
+
+  // ─── RETAKE ───────────────────────────────────────────────────
+  function retakeExam() {
+    window.location.href = 'exam.html';
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'login.html'; return; }
+
+    // Load result from localStorage (set by exam.html)
+    let result = null;
+    const raw = localStorage.getItem('sp_last_result');
+    if (raw) {
+      result = JSON.parse(raw);
+    } else {
+      // Try loading from DB by attempt ID
+      const attemptId = localStorage.getItem('sp_result_id');
+      if (attemptId) {
+        const { data } = await sb.from('exam_attempts')
+          .select('*').eq('id', attemptId).single();
+        if (data) {
+          result = {
+            score:         data.score || 0,
+            correct:       data.correct_answers || 0,
+            total:         data.total_questions || 0,
+            timeTaken:     data.time_taken_seconds,
+            questions:     [],
+            answers:       data.answers || {},
+            examType:      data.exam_type,
+            examTitle:     data.exam_title,
+          };
+        }
+      }
+    }
+
+    if (!result) {
+      document.getElementById('page').innerHTML = `
+        <div style="text-align:center;padding:60px 20px;">
+          <div style="font-size:48px;margin-bottom:16px;">📭</div>
+          <div style="font-family:var(--fd);font-size:20px;font-weight:700;margin-bottom:8px;">No results found</div>
+          <div style="font-size:14px;color:var(--sub);margin-bottom:24px;">Take an exam first to see your results here.</div>
+          <a href="dashboard.html" class="btn btn-primary">← Back to Dashboard</a>
+        </div>`;
+      document.getElementById('loaderOverlay').classList.add('out');
+      return;
+    }
+
+    renderResults(result);
+
+    // Load logo
+    try {
+      const market = localStorage.getItem('sp_market') || 'dz';
+      const { data: cfg } = await sb.from('landing_config')
+        .select('logo_url').eq('market', market).single();
+      if (cfg?.logo_url) {
+        document.getElementById('logoMark').innerHTML =
+          `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+      }
+    } catch(e) {}
+
+    document.getElementById('loaderOverlay').classList.add('out');
+  }
+
+  init();
+</script>
+</body>
+</html>
