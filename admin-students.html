@@ -12,7 +12,15 @@
       --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
       --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
       --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --nav-bg:rgba(8,11,24,.92);
       --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;--sidebar:230px;
+    }
+    [data-theme="light"]{
+      --bg:#F4F6FB;--card:#FFFFFF;--card2:#EDF0F7;
+      --border:#D4DAE8;--gold:#D4900A;--gold2:#B87A00;
+      --teal:#009982;--red:#D93636;--blue:#2952E3;--purple:#7B4FE0;
+      --text:#0D1120;--sub:#4A5578;--muted:#9AA3BA;
+      --nav-bg:rgba(244,246,251,.92);
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
     body{background:var(--bg);color:var(--text);font-family:var(--ff);display:flex;min-height:100vh;}
@@ -33,9 +41,11 @@
 
     /* ── MAIN ────────────────────────────────── */
     .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;}
-    .topbar{position:sticky;top:0;z-index:40;background:rgba(8,11,24,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+    .topbar{position:sticky;top:0;z-index:40;background:var(--nav-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
     .topbar-title{font-family:var(--fd);font-size:18px;font-weight:700;}
     .topbar-sub{font-size:12px;color:var(--muted);}
+    .theme-btn{width:34px;height:34px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;flex-shrink:0;}
+    .theme-btn:hover{color:var(--text);border-color:var(--gold);}
 
     /* ── BUTTONS ─────────────────────────────── */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;font-family:var(--ff);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;text-decoration:none;}
@@ -170,6 +180,7 @@
       <div class="topbar-title">Students</div>
       <div class="topbar-sub" id="studentCount">Loading...</div>
     </div>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   </div>
 
   <div class="content">
@@ -477,6 +488,18 @@
     await loadStudents();
   }
 
+  // ─── THEME ────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+  function toggleTheme() {
+    const next = (localStorage.getItem('sp_theme') || 'dark') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('sp_theme', next);
+    applyTheme(next);
+  }
+
   // ─── SIGN OUT ─────────────────────────────────────────────────
   async function signOut() {
     await sb.auth.signOut();
@@ -494,12 +517,21 @@
 
   // ─── INIT ─────────────────────────────────────────────────────
   async function init() {
+    applyTheme(localStorage.getItem('sp_theme') || 'dark');
     const ok = await checkAuth();
     if (!ok) return;
     try {
-      const { data: cfg } = await sb.from('landing_config').select('logo_url').eq('market','dz').single();
-      if (cfg?.logo_url) document.getElementById('logoMark').innerHTML =
-        `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+      const market = localStorage.getItem('sp_market') || 'dz';
+      const { data: cfg } = await sb.from('landing_config').select('logo_url').eq('market', market).single();
+      if (cfg?.logo_url) {
+        const img = new Image();
+        img.onload = () => {
+          document.getElementById('logoMark').innerHTML =
+            `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+        };
+        img.onerror = () => {};
+        img.src = cfg.logo_url;
+      }
     } catch(e) {}
     await loadStudents();
     document.getElementById('loaderOverlay').classList.add('out');

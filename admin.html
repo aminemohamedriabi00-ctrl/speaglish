@@ -12,8 +12,16 @@
       --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
       --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
       --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --nav-bg:rgba(8,11,24,.92);
       --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;
       --sidebar:230px;
+    }
+    [data-theme="light"]{
+      --bg:#F4F6FB;--card:#FFFFFF;--card2:#EDF0F7;
+      --border:#D4DAE8;--gold:#D4900A;--gold2:#B87A00;
+      --teal:#009982;--red:#D93636;--blue:#2952E3;--purple:#7B4FE0;
+      --text:#0D1120;--sub:#4A5578;--muted:#9AA3BA;
+      --nav-bg:rgba(244,246,251,.92);
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
     body{background:var(--bg);color:var(--text);font-family:var(--ff);display:flex;min-height:100vh;}
@@ -61,13 +69,15 @@
     /* ── TOPBAR ──────────────────────────────── */
     .topbar{
       position:sticky;top:0;z-index:40;
-      background:rgba(8,11,24,.92);backdrop-filter:blur(16px);
+      background:var(--nav-bg);backdrop-filter:blur(16px);
       border-bottom:1px solid var(--border);
       padding:14px 28px;display:flex;align-items:center;
       justify-content:space-between;gap:12px;flex-wrap:wrap;
     }
     .topbar-title{font-family:var(--fd);font-size:18px;font-weight:700;}
     .topbar-sub{font-size:12px;color:var(--muted);}
+    .theme-btn{width:34px;height:34px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;flex-shrink:0;}
+    .theme-btn:hover{color:var(--text);border-color:var(--gold);}
     .btn{
       display:inline-flex;align-items:center;gap:6px;padding:8px 18px;
       border-radius:8px;font-family:var(--ff);font-size:13px;font-weight:600;
@@ -253,7 +263,10 @@
       <div class="topbar-title">Dashboard</div>
       <div class="topbar-sub" id="lastUpdated">Loading...</div>
     </div>
-    <button class="btn btn-ghost" onclick="loadData()">↺ Refresh</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-ghost" onclick="loadData()">↺ Refresh</button>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+    </div>
   </div>
 
   <div class="content">
@@ -441,40 +454,76 @@
 
   // ─── PENDING ACTIVATIONS ──────────────────────────────────────
   async function loadPending() {
+    // Fetch pending subscriptions rows
     const { data: subs } = await sb
       .from('subscriptions')
-      .select('*, profiles(full_name, market)')
+      .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
-    const el = document.getElementById('pendingList');
-    if (!subs || !subs.length) {
-      el.innerHTML = `<div class="empty"><div class="empty-icon">🎉</div>No pending payments</div>`;
-      return;
-    }
+    // Also fetch profiles with subscription_status='pending' that have no subscriptions row
+    const { data: pendingProfiles } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('role', 'student')
+      .eq('subscription_status', 'pending');
 
-    el.innerHTML = subs.map(s => {
-      const name   = s.profiles?.full_name || 'Unknown';
-      const market = s.profiles?.market || 'dz';
+    const el = document.getElementById('pendingList');
+
+    // Build unified list — subscriptions rows take priority, then orphaned profiles
+    const subStudentIds = new Set((subs || []).map(s => s.student_id));
+    const orphans = (pendingProfiles || []).filter(p => !subStudentIds.has(p.id));
+
+    const colors = ['#FF7F50','#6495ED','#DDA0DD','#98FB98','#FFB347'];
+    let html = '';
+
+    // Render subscription rows
+    for (const s of (subs || [])) {
+      // Fetch profile separately to avoid broken join
+      const { data: prof } = await sb.from('profiles').select('full_name, market').eq('id', s.student_id).single();
+      const name   = prof?.full_name || 'Unknown';
+      const market = prof?.market || 'dz';
       const date   = new Date(s.created_at).toLocaleDateString();
-      const colors = ['#FF7F50','#6495ED','#DDA0DD','#98FB98','#FFB347'];
       const color  = colors[name.charCodeAt(0) % colors.length];
-      return `
+      html += `
         <div class="table-row">
           <div class="row-avatar" style="background:${color};">${name.charAt(0).toUpperCase()}</div>
           <div class="row-info">
             <div class="row-name">${name}</div>
-            <div class="row-meta">${s.plan_type} · ${date} · ${market.toUpperCase()}</div>
+            <div class="row-meta">${s.plan_type||'—'} · ${date} · ${market.toUpperCase()}</div>
           </div>
           ${s.receipt_url
             ? `<a href="${s.receipt_url}" target="_blank" class="btn btn-ghost btn-sm">📎</a>`
             : '<span style="font-size:11px;color:var(--muted);">No receipt</span>'}
-          <span class="amount-badge">${s.amount?.toLocaleString()} ${s.currency}</span>
-          <button class="btn btn-success btn-sm" onclick="openActivation('${s.id}')">
-            Activate
-          </button>
+          <span class="amount-badge">${s.amount?.toLocaleString()||'—'} ${s.currency||''}</span>
+          <button class="btn btn-success btn-sm" onclick="openActivation('${s.id}')">Activate</button>
         </div>`;
-    }).join('');
+    }
+
+    // Render orphaned profiles (pending status but no subscriptions row)
+    for (const p of orphans) {
+      const name   = p.full_name || 'Unknown';
+      const market = p.market || 'dz';
+      const date   = new Date(p.created_at).toLocaleDateString();
+      const color  = colors[name.charCodeAt(0) % colors.length];
+      html += `
+        <div class="table-row">
+          <div class="row-avatar" style="background:${color};">${name.charAt(0).toUpperCase()}</div>
+          <div class="row-info">
+            <div class="row-name">${name}</div>
+            <div class="row-meta">No payment record · ${date} · ${market.toUpperCase()}</div>
+          </div>
+          <span style="font-size:11px;color:var(--muted);">No receipt</span>
+          <span class="amount-badge" style="color:var(--muted);">—</span>
+          <button class="btn btn-success btn-sm" onclick="openActivationForProfile('${p.id}','${name}','${market}')">Activate</button>
+        </div>`;
+    }
+
+    if (!html) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">🎉</div>No pending payments</div>`;
+    } else {
+      el.innerHTML = html;
+    }
   }
 
   // ─── RECENT STUDENTS ──────────────────────────────────────────
@@ -543,32 +592,32 @@
 
   // ─── ACTIVATION MODAL ─────────────────────────────────────────
   async function openActivation(subId) {
-    const { data: sub } = await sb
-      .from('subscriptions')
-      .select('*, profiles(full_name, market)')
-      .eq('id', subId)
-      .single();
+    const { data: sub } = await sb.from('subscriptions').select('*').eq('id', subId).single();
     if (!sub) return;
-    currentSub = sub;
+    const { data: prof } = await sb.from('profiles').select('full_name, market').eq('id', sub.student_id).single();
+    currentSub = { ...sub, _name: prof?.full_name || 'Unknown', _market: prof?.market || 'dz', _profileOnly: false };
+    _renderActivationModal(currentSub._name, currentSub._market, sub.plan_type, sub.amount, sub.currency, sub.receipt_url);
+  }
 
-    // Pre-fill expiry based on plan
-    const days = { '1month':30, '3months':90, '6months':180 }[sub.plan_type] || 30;
+  async function openActivationForProfile(profileId, name, market) {
+    currentSub = { student_id: profileId, _name: name, _market: market, _profileOnly: true };
+    _renderActivationModal(name, market, '3months', null, null, null);
+  }
+
+  function _renderActivationModal(name, market, planType, amount, currency, receiptUrl) {
+    const days = { '1month':30, '3months':90, '6months':180 }[planType] || 90;
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + days);
     document.getElementById('activateExpiry').value = expiry.toISOString().split('T')[0];
-    document.getElementById('activatePlan').value = sub.plan_type || '3months';
-
-    const name = sub.profiles?.full_name || 'Unknown';
+    document.getElementById('activatePlan').value = planType || '3months';
     document.getElementById('modalInfo').innerHTML = `
       <div class="modal-info-row"><span class="modal-info-label">Student</span><span class="modal-info-value">${name}</span></div>
-      <div class="modal-info-row"><span class="modal-info-label">Plan</span><span class="modal-info-value">${sub.plan_type}</span></div>
-      <div class="modal-info-row"><span class="modal-info-label">Amount</span><span class="modal-info-value" style="color:var(--gold);">${sub.amount?.toLocaleString()} ${sub.currency}</span></div>
-      <div class="modal-info-row"><span class="modal-info-label">Market</span><span class="modal-info-value">${(sub.profiles?.market||'dz').toUpperCase()}</span></div>
-      ${sub.receipt_url?`<div class="modal-info-row"><span class="modal-info-label">Receipt</span><a href="${sub.receipt_url}" target="_blank" style="color:var(--teal);font-size:12px;">View receipt ↗</a></div>`:''}`;
-
+      <div class="modal-info-row"><span class="modal-info-label">Plan</span><span class="modal-info-value">${planType||'—'}</span></div>
+      <div class="modal-info-row"><span class="modal-info-label">Amount</span><span class="modal-info-value" style="color:var(--gold);">${amount ? amount.toLocaleString()+' '+(currency||'') : '—'}</span></div>
+      <div class="modal-info-row"><span class="modal-info-label">Market</span><span class="modal-info-value">${market.toUpperCase()}</span></div>
+      ${receiptUrl ? `<div class="modal-info-row"><span class="modal-info-label">Receipt</span><a href="${receiptUrl}" target="_blank" style="color:var(--teal);font-size:12px;">View receipt ↗</a></div>` : ''}`;
     document.getElementById('activationModal').classList.add('open');
   }
-
   function closeModal() {
     document.getElementById('activationModal').classList.remove('open');
     currentSub = null;
@@ -586,21 +635,25 @@
     if (!currentSub) return;
     const expiry = document.getElementById('activateExpiry').value;
     const plan   = document.getElementById('activatePlan').value;
-
-    // Update subscription
-    await sb.from('subscriptions').update({
-      status:       'activated',
-      activated_at: new Date().toISOString(),
-      expires_at:   new Date(expiry).toISOString(),
-      plan_type:    plan,
-    }).eq('id', currentSub.id);
+    const now    = new Date().toISOString();
+    const expiryISO = new Date(expiry).toISOString();
 
     // Update student profile
     await sb.from('profiles').update({
       subscription_status: 'active',
-      subscription_start:  new Date().toISOString(),
-      subscription_end:    new Date(expiry).toISOString(),
+      subscription_start:  now,
+      subscription_end:    expiryISO,
     }).eq('id', currentSub.student_id);
+
+    // Update subscriptions row only if it exists (not profile-only case)
+    if (!currentSub._profileOnly && currentSub.id) {
+      await sb.from('subscriptions').update({
+        status:       'activated',
+        activated_at: now,
+        expires_at:   expiryISO,
+        plan_type:    plan,
+      }).eq('id', currentSub.id);
+    }
 
     closeModal();
     toast('✅ Student activated successfully!', 'success');
@@ -636,18 +689,36 @@
     setTimeout(() => el.remove(), 3500);
   }
 
+  // ─── THEME ────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+  function toggleTheme() {
+    const next = (localStorage.getItem('sp_theme') || 'dark') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('sp_theme', next);
+    applyTheme(next);
+  }
+
   // ─── INIT ─────────────────────────────────────────────────────
   async function init() {
+    applyTheme(localStorage.getItem('sp_theme') || 'dark');
     const ok = await checkAuth();
     if (!ok) return;
-
-    // Load logo
     try {
-      const { data: cfg } = await sb.from('landing_config').select('logo_url').eq('market','dz').single();
-      if (cfg?.logo_url) document.getElementById('logoMark').innerHTML =
-        `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+      const market = localStorage.getItem('sp_market') || 'dz';
+      const { data: cfg } = await sb.from('landing_config').select('logo_url').eq('market', market).single();
+      if (cfg?.logo_url) {
+        const img = new Image();
+        img.onload = () => {
+          document.getElementById('logoMark').innerHTML =
+            `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+        };
+        img.onerror = () => {};
+        img.src = cfg.logo_url;
+      }
     } catch(e) {}
-
     await loadData();
     document.getElementById('loaderOverlay').classList.add('out');
   }
