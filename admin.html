@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#080B18;--card:#0E1120;--card2:#131626;
+      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
+      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
+      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;
+      --sidebar:230px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);display:flex;min-height:100vh;}
+
+    /* ── SIDEBAR ─────────────────────────────── */
+    .sidebar{
+      width:var(--sidebar);min-height:100vh;background:var(--card);
+      border-right:1px solid var(--border);
+      display:flex;flex-direction:column;
+      position:fixed;left:0;top:0;bottom:0;z-index:50;
+    }
+    .sidebar-logo{
+      padding:20px 16px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;gap:10px;
+    }
+    .logo-mark{
+      width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#E8961A);
+      border-radius:8px;display:flex;align-items:center;justify-content:center;
+      font-family:var(--fd);font-weight:800;font-size:13px;color:#000;flex-shrink:0;overflow:hidden;
+    }
+    .logo-text{font-family:var(--fd);font-size:16px;font-weight:700;}
+    .logo-text span{color:var(--gold);}
+
+    .sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto;}
+    .nav-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px;}
+    .nav-item{
+      display:flex;align-items:center;gap:10px;padding:9px 12px;
+      border-radius:8px;cursor:pointer;transition:all .15s;
+      font-size:13px;color:var(--sub);font-weight:500;
+      border:1px solid transparent;margin-bottom:2px;text-decoration:none;
+    }
+    .nav-item:hover{background:var(--card2);color:var(--text);}
+    .nav-item.active{background:rgba(240,165,0,.1);color:var(--gold);border-color:rgba(240,165,0,.2);}
+    .nav-item .icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+    .nav-badge{
+      margin-left:auto;background:var(--red);color:#fff;
+      font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;
+    }
+
+    .sidebar-footer{padding:12px 8px;border-top:1px solid var(--border);}
+
+    /* ── MAIN ────────────────────────────────── */
+    .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+    /* ── TOPBAR ──────────────────────────────── */
+    .topbar{
+      position:sticky;top:0;z-index:40;
+      background:rgba(8,11,24,.92);backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+      padding:14px 28px;display:flex;align-items:center;
+      justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .topbar-title{font-family:var(--fd);font-size:18px;font-weight:700;}
+    .topbar-sub{font-size:12px;color:var(--muted);}
+    .btn{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 18px;
+      border-radius:8px;font-family:var(--ff);font-size:13px;font-weight:600;
+      cursor:pointer;transition:all .2s;border:none;text-decoration:none;
+    }
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub);}
+    .btn-ghost:hover{border-color:var(--sub);color:var(--text);}
+    .btn-primary{background:var(--gold);color:#000;}
+    .btn-primary:hover{background:var(--gold2);}
+    .btn-sm{padding:5px 12px;font-size:12px;}
+    .btn-success{background:rgba(0,201,167,.15);border:1px solid rgba(0,201,167,.3);color:var(--teal);}
+    .btn-success:hover{background:rgba(0,201,167,.25);}
+    .btn-danger{background:rgba(255,87,87,.15);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+
+    /* ── CONTENT ─────────────────────────────── */
+    .content{padding:28px;flex:1;}
+
+    /* ── STATS ROW ───────────────────────────── */
+    .stats-grid{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+      gap:12px;margin-bottom:24px;
+    }
+    .stat-card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:12px;padding:18px;
+    }
+    .stat-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    .stat-card-icon{font-size:22px;}
+    .stat-card-trend{font-size:11px;font-weight:600;}
+    .trend-up{color:var(--teal);}
+    .stat-card-num{font-family:var(--fd);font-size:28px;font-weight:700;margin-bottom:3px;}
+    .stat-card-label{font-size:12px;color:var(--muted);}
+
+    /* ── TWO COL LAYOUT ──────────────────────── */
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+
+    /* ── CARD ────────────────────────────────── */
+    .panel{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:12px;overflow:hidden;
+    }
+    .panel-header{
+      padding:16px 20px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .panel-title{font-family:var(--fd);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+    .panel-body{padding:0;}
+
+    /* ── TABLE ───────────────────────────────── */
+    .table-row{
+      padding:14px 20px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;gap:12px;
+    }
+    .table-row:last-child{border-bottom:none;}
+    .table-row:hover{background:rgba(255,255,255,.015);}
+
+    .row-avatar{
+      width:36px;height:36px;border-radius:50%;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--fd);font-weight:700;font-size:14px;color:#000;
+    }
+    .row-info{flex:1;min-width:0;}
+    .row-name{font-size:13px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .row-meta{font-size:11px;color:var(--muted);}
+    .row-actions{display:flex;gap:6px;flex-shrink:0;}
+
+    .status-pill{
+      font-size:10px;font-weight:700;padding:3px 9px;
+      border-radius:20px;white-space:nowrap;flex-shrink:0;
+    }
+    .pill-pending{background:rgba(155,109,255,.15);color:var(--purple);}
+    .pill-active{background:rgba(0,201,167,.15);color:var(--teal);}
+    .pill-trial{background:rgba(240,165,0,.15);color:var(--gold);}
+    .pill-expired{background:rgba(255,87,87,.15);color:var(--red);}
+
+    /* ── AMOUNT BADGE ────────────────────────── */
+    .amount-badge{
+      font-family:var(--fd);font-size:13px;font-weight:700;
+      color:var(--gold);white-space:nowrap;flex-shrink:0;
+    }
+
+    /* ── QUICK LINKS ─────────────────────────── */
+    .quick-grid{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+      gap:10px;padding:16px;
+    }
+    .quick-card{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:10px;padding:16px;text-align:center;
+      cursor:pointer;transition:all .2s;text-decoration:none;
+    }
+    .quick-card:hover{border-color:var(--gold);transform:translateY(-2px);}
+    .quick-icon{font-size:24px;margin-bottom:8px;}
+    .quick-label{font-size:12px;font-weight:600;color:var(--sub);}
+
+    /* ── ACTIVATION MODAL ────────────────────── */
+    .modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.75);
+      z-index:200;display:none;align-items:center;justify-content:center;padding:20px;
+    }
+    .modal-overlay.open{display:flex;}
+    .modal{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:16px;padding:28px;width:100%;max-width:440px;
+    }
+    .modal-title{font-family:var(--fd);font-size:18px;font-weight:700;margin-bottom:8px;}
+    .modal-sub{font-size:13px;color:var(--sub);margin-bottom:20px;line-height:1.6;}
+
+    .modal-info{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:14px;margin-bottom:16px;
+    }
+    .modal-info-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;}
+    .modal-info-label{color:var(--muted);}
+    .modal-info-value{font-weight:600;}
+
+    label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:6px;}
+    select,input[type=date]{
+      width:100%;background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:10px 13px;color:var(--text);
+      font-family:var(--ff);font-size:13px;outline:none;margin-bottom:14px;
+    }
+    select:focus,input:focus{border-color:var(--gold);}
+
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+    /* ── EMPTY ───────────────────────────────── */
+    .empty{padding:32px;text-align:center;color:var(--muted);font-size:13px;}
+    .empty-icon{font-size:32px;margin-bottom:10px;}
+
+    /* ── TOAST ───────────────────────────────── */
+    .toast-wrap{position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+    .toast{
+      background:var(--card);border:1px solid var(--border);border-radius:10px;
+      padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;
+      min-width:220px;animation:slideIn .3s ease;
+    }
+    .toast.success{border-color:var(--teal);}
+    .toast.error{border-color:var(--red);}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+    /* ── LOADER ──────────────────────────────── */
+    .loader-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;align-items:center;justify-content:center;}
+    .loader-overlay.out{display:none;}
+    .spinner{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    @media(max-width:768px){
+      .sidebar{display:none;}
+      .main{margin-left:0;}
+      .two-col{grid-template-columns:1fr;}
+      .content{padding:16px;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark" id="logoMark">Sp</div>
+    <span class="logo-text">Speak<span>glish</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Admin</div>
+    <a href="admin.html" class="nav-item active"><span class="icon">📊</span> Dashboard</a>
+    <a href="admin-students.html" class="nav-item"><span class="icon">👥</span> Students</a>
+    <a href="admin-exams.html" class="nav-item"><span class="icon">📝</span> Exam Builder</a>
+    <a href="admin-landing.html" class="nav-item"><span class="icon">🎨</span> Landing Page</a>
+    <div class="nav-label">Account</div>
+    <a href="index.html" target="_blank" class="nav-item"><span class="icon">👁</span> View Site</a>
+    <div class="nav-item" onclick="signOut()"><span class="icon">🚪</span> Sign Out</div>
+  </nav>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-sub" id="lastUpdated">Loading...</div>
+    </div>
+    <button class="btn btn-ghost" onclick="loadData()">↺ Refresh</button>
+  </div>
+
+  <div class="content">
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-icon">👥</span></div>
+        <div class="stat-card-num" id="statTotal" style="color:var(--blue);">—</div>
+        <div class="stat-card-label">Total Students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-icon">✅</span></div>
+        <div class="stat-card-num" id="statActive" style="color:var(--teal);">—</div>
+        <div class="stat-card-label">Active Subscriptions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-icon">⏳</span></div>
+        <div class="stat-card-num" id="statPending" style="color:var(--gold);">—</div>
+        <div class="stat-card-label">Pending Payments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-icon">📝</span></div>
+        <div class="stat-card-num" id="statExams" style="color:var(--purple);">—</div>
+        <div class="stat-card-label">Exams Taken</div>
+      </div>
+    </div>
+
+    <!-- Pending Activations + Recent Students -->
+    <div class="two-col">
+
+      <!-- Pending Activations -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⏳ Pending Activations <span class="nav-badge" id="pendingBadge" style="display:none;">0</span></div>
+        </div>
+        <div id="pendingList">
+          <div class="empty"><div class="empty-icon">🎉</div>No pending payments</div>
+        </div>
+      </div>
+
+      <!-- Recent Students -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🆕 Recent Students</div>
+          <a href="admin-students.html" class="btn btn-ghost btn-sm">View All →</a>
+        </div>
+        <div id="recentList">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-header">
+        <div class="panel-title">⚡ Quick Actions</div>
+      </div>
+      <div class="quick-grid">
+        <a href="admin-students.html" class="quick-card">
+          <div class="quick-icon">👥</div>
+          <div class="quick-label">Manage Students</div>
+        </a>
+        <a href="admin-exams.html" class="quick-card">
+          <div class="quick-icon">📝</div>
+          <div class="quick-label">Exam Builder</div>
+        </a>
+        <a href="admin-landing.html" class="quick-card">
+          <div class="quick-icon">🎨</div>
+          <div class="quick-label">Edit Landing Page</div>
+        </a>
+        <a href="index.html" target="_blank" class="quick-card">
+          <div class="quick-icon">👁</div>
+          <div class="quick-label">View Live Site</div>
+        </a>
+        <div class="quick-card" onclick="loadData()">
+          <div class="quick-icon">↺</div>
+          <div class="quick-label">Refresh Data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Exam Attempts -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📊 Recent Exam Attempts</div>
+      </div>
+      <div id="attemptsList">
+        <div class="empty">Loading...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Activation Modal -->
+<div class="modal-overlay" id="activationModal">
+  <div class="modal">
+    <div class="modal-title">✅ Activate Subscription</div>
+    <div class="modal-sub">Review the payment and set the subscription period.</div>
+
+    <div class="modal-info" id="modalInfo"></div>
+
+    <div>
+      <label>Subscription Plan</label>
+      <select id="activatePlan">
+        <option value="1month">1 Month</option>
+        <option value="3months" selected>3 Months</option>
+        <option value="6months">6 Months</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Expiry Date</label>
+      <input type="date" id="activateExpiry">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger btn-sm" onclick="rejectPayment()">Reject</button>
+      <button class="btn btn-success" onclick="confirmActivation()">✅ Activate</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  let currentSub = null;
+
+  // ─── AUTH CHECK ───────────────────────────────────────────────
+  async function checkAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'login.html'; return false; }
+    const { data: p } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+    if (!p || p.role !== 'admin') { window.location.href = 'dashboard.html'; return false; }
+    return true;
+  }
+
+  // ─── LOAD DATA ────────────────────────────────────────────────
+  async function loadData() {
+    // Stats
+    const [
+      { count: totalStudents },
+      { count: activeStudents },
+      { count: pendingCount },
+      { count: examCount },
+    ] = await Promise.all([
+      sb.from('profiles').select('*', {count:'exact',head:true}).eq('role','student'),
+      sb.from('profiles').select('*', {count:'exact',head:true}).eq('role','student').eq('subscription_status','active'),
+      sb.from('subscriptions').select('*', {count:'exact',head:true}).eq('status','pending'),
+      sb.from('exam_attempts').select('*', {count:'exact',head:true}),
+    ]);
+
+    setText('statTotal',   totalStudents || 0);
+    setText('statActive',  activeStudents || 0);
+    setText('statPending', pendingCount || 0);
+    setText('statExams',   examCount || 0);
+
+    // Pending badge
+    const badge = document.getElementById('pendingBadge');
+    if (pendingCount > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = pendingCount;
+    } else {
+      badge.style.display = 'none';
+    }
+
+    // Pending activations
+    await loadPending();
+
+    // Recent students
+    await loadRecentStudents();
+
+    // Recent attempts
+    await loadRecentAttempts();
+
+    document.getElementById('lastUpdated').textContent =
+      'Last updated: ' + new Date().toLocaleTimeString();
+  }
+
+  // ─── PENDING ACTIVATIONS ──────────────────────────────────────
+  async function loadPending() {
+    const { data: subs } = await sb
+      .from('subscriptions')
+      .select('*, profiles(full_name, market)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    const el = document.getElementById('pendingList');
+    if (!subs || !subs.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">🎉</div>No pending payments</div>`;
+      return;
+    }
+
+    el.innerHTML = subs.map(s => {
+      const name   = s.profiles?.full_name || 'Unknown';
+      const market = s.profiles?.market || 'dz';
+      const date   = new Date(s.created_at).toLocaleDateString();
+      const colors = ['#FF7F50','#6495ED','#DDA0DD','#98FB98','#FFB347'];
+      const color  = colors[name.charCodeAt(0) % colors.length];
+      return `
+        <div class="table-row">
+          <div class="row-avatar" style="background:${color};">${name.charAt(0).toUpperCase()}</div>
+          <div class="row-info">
+            <div class="row-name">${name}</div>
+            <div class="row-meta">${s.plan_type} · ${date} · ${market.toUpperCase()}</div>
+          </div>
+          ${s.receipt_url
+            ? `<a href="${s.receipt_url}" target="_blank" class="btn btn-ghost btn-sm">📎</a>`
+            : '<span style="font-size:11px;color:var(--muted);">No receipt</span>'}
+          <span class="amount-badge">${s.amount?.toLocaleString()} ${s.currency}</span>
+          <button class="btn btn-success btn-sm" onclick="openActivation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+            Activate
+          </button>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── RECENT STUDENTS ──────────────────────────────────────────
+  async function loadRecentStudents() {
+    const { data: students } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('role', 'student')
+      .order('created_at', { ascending: false })
+      .limit(6);
+
+    const el = document.getElementById('recentList');
+    if (!students || !students.length) {
+      el.innerHTML = `<div class="empty">No students yet</div>`;
+      return;
+    }
+
+    const colors = ['#FF7F50','#6495ED','#DDA0DD','#98FB98','#FFB347','#87CEEB'];
+    el.innerHTML = students.map((s, i) => {
+      const name   = s.full_name || 'Unknown';
+      const status = s.subscription_status || 'trial';
+      const date   = new Date(s.created_at).toLocaleDateString();
+      const pillMap = { trial:'pill-trial', active:'pill-active', expired:'pill-expired', pending:'pill-pending' };
+      return `
+        <div class="table-row">
+          <div class="row-avatar" style="background:${colors[i%colors.length]};">${name.charAt(0).toUpperCase()}</div>
+          <div class="row-info">
+            <div class="row-name">${name}</div>
+            <div class="row-meta">${s.market?.toUpperCase()||'DZ'} · ${date}</div>
+          </div>
+          <span class="status-pill ${pillMap[status]||'pill-trial'}">${status}</span>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── RECENT ATTEMPTS ──────────────────────────────────────────
+  async function loadRecentAttempts() {
+    const { data: attempts } = await sb
+      .from('exam_attempts')
+      .select('*, profiles(full_name)')
+      .order('completed_at', { ascending: false })
+      .limit(8);
+
+    const el = document.getElementById('attemptsList');
+    if (!attempts || !attempts.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">📝</div>No exam attempts yet</div>`;
+      return;
+    }
+
+    el.innerHTML = attempts.map(a => {
+      const name  = a.profiles?.full_name || 'Unknown';
+      const score = a.score || 0;
+      const color = score>=70?'var(--teal)':score>=50?'var(--gold)':'var(--red)';
+      const date  = new Date(a.completed_at).toLocaleDateString();
+      return `
+        <div class="table-row">
+          <div style="width:40px;height:40px;border-radius:8px;background:${color}20;border:1px solid ${color}40;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:13px;font-weight:700;color:${color};flex-shrink:0;">${score}%</div>
+          <div class="row-info">
+            <div class="row-name">${name} — ${a.exam_title || a.exam_type}</div>
+            <div class="row-meta">${a.correct_answers||0}/${a.total_questions||0} correct · ${date}</div>
+          </div>
+          <span class="status-pill" style="background:${color}15;color:${color};">${a.exam_type||'Exam'}</span>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── ACTIVATION MODAL ─────────────────────────────────────────
+  function openActivation(sub) {
+    currentSub = sub;
+
+    // Pre-fill expiry based on plan
+    const days = { '1month':30, '3months':90, '6months':180 }[sub.plan_type] || 30;
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + days);
+    document.getElementById('activateExpiry').value = expiry.toISOString().split('T')[0];
+    document.getElementById('activatePlan').value = sub.plan_type || '3months';
+
+    const name = sub.profiles?.full_name || 'Unknown';
+    document.getElementById('modalInfo').innerHTML = `
+      <div class="modal-info-row"><span class="modal-info-label">Student</span><span class="modal-info-value">${name}</span></div>
+      <div class="modal-info-row"><span class="modal-info-label">Plan</span><span class="modal-info-value">${sub.plan_type}</span></div>
+      <div class="modal-info-row"><span class="modal-info-label">Amount</span><span class="modal-info-value" style="color:var(--gold);">${sub.amount?.toLocaleString()} ${sub.currency}</span></div>
+      <div class="modal-info-row"><span class="modal-info-label">Market</span><span class="modal-info-value">${(sub.profiles?.market||'dz').toUpperCase()}</span></div>
+      ${sub.receipt_url?`<div class="modal-info-row"><span class="modal-info-label">Receipt</span><a href="${sub.receipt_url}" target="_blank" style="color:var(--teal);font-size:12px;">View receipt ↗</a></div>`:''}`;
+
+    document.getElementById('activationModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('activationModal').classList.remove('open');
+    currentSub = null;
+  }
+
+  // Plan change → update expiry
+  document.getElementById('activatePlan').addEventListener('change', function() {
+    const days = { '1month':30, '3months':90, '6months':180 }[this.value] || 30;
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + days);
+    document.getElementById('activateExpiry').value = expiry.toISOString().split('T')[0];
+  });
+
+  async function confirmActivation() {
+    if (!currentSub) return;
+    const expiry = document.getElementById('activateExpiry').value;
+    const plan   = document.getElementById('activatePlan').value;
+
+    // Update subscription
+    await sb.from('subscriptions').update({
+      status:       'activated',
+      activated_at: new Date().toISOString(),
+      expires_at:   new Date(expiry).toISOString(),
+      plan_type:    plan,
+    }).eq('id', currentSub.id);
+
+    // Update student profile
+    await sb.from('profiles').update({
+      subscription_status: 'active',
+      subscription_start:  new Date().toISOString(),
+      subscription_end:    new Date(expiry).toISOString(),
+    }).eq('id', currentSub.student_id);
+
+    closeModal();
+    toast('✅ Student activated successfully!', 'success');
+    await loadData();
+  }
+
+  async function rejectPayment() {
+    if (!currentSub) return;
+    await sb.from('subscriptions').update({ status: 'rejected' }).eq('id', currentSub.id);
+    await sb.from('profiles').update({ subscription_status: 'trial' }).eq('id', currentSub.student_id);
+    closeModal();
+    toast('Payment rejected.', 'error');
+    await loadData();
+  }
+
+  // ─── SIGN OUT ─────────────────────────────────────────────────
+  async function signOut() {
+    await sb.auth.signOut();
+    window.location.href = 'login.html';
+  }
+
+  // ─── HELPERS ──────────────────────────────────────────────────
+  const setText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+
+  function toast(msg, type='success') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${msg}</span>`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────
+  async function init() {
+    const ok = await checkAuth();
+    if (!ok) return;
+
+    // Load logo
+    try {
+      const { data: cfg } = await sb.from('landing_config').select('logo_url').eq('market','dz').single();
+      if (cfg?.logo_url) document.getElementById('logoMark').innerHTML =
+        `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
+    } catch(e) {}
+
+    await loadData();
+    document.getElementById('loaderOverlay').classList.add('out');
+  }
+
+  init();
+</script>
+</body>
+</html>
