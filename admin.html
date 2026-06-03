@@ -615,7 +615,12 @@
       <div class="modal-info-row"><span class="modal-info-label">Plan</span><span class="modal-info-value">${planType||'—'}</span></div>
       <div class="modal-info-row"><span class="modal-info-label">Amount</span><span class="modal-info-value" style="color:var(--gold);">${amount ? amount.toLocaleString()+' '+(currency||'') : '—'}</span></div>
       <div class="modal-info-row"><span class="modal-info-label">Market</span><span class="modal-info-value">${market.toUpperCase()}</span></div>
-      ${receiptUrl ? `<div class="modal-info-row"><span class="modal-info-label">Receipt</span><a href="${receiptUrl}" target="_blank" style="color:var(--teal);font-size:12px;">View receipt ↗</a></div>` : ''}`;
+      ${receiptUrl ? `
+        <div class="modal-info-row"><span class="modal-info-label">Receipt</span><a href="${receiptUrl}" target="_blank" style="color:var(--teal);font-size:12px;">Open full size ↗</a></div>
+        <div style="margin-top:10px;border-radius:8px;overflow:hidden;border:1px solid var(--border);max-height:180px;">
+          <img src="${receiptUrl}" style="width:100%;object-fit:cover;display:block;" onerror="this.parentElement.style.display='none'">
+        </div>` : '<div class="modal-info-row"><span class="modal-info-label">Receipt</span><span style="color:var(--muted);font-size:12px;">No receipt uploaded</span></div>'}
+    `;
     document.getElementById('activationModal').classList.add('open');
   }
   function closeModal() {
