@@ -152,13 +152,13 @@
   <!-- Confirmation state -->
   <div class="confirm-state" id="confirmState">
     <div class="confirm-icon">✅</div>
-    <div class="confirm-title">Request received!</div>
-    <div class="confirm-sub">
+    <div class="confirm-title" id="confirmTitle">Request received!</div>
+    <div class="confirm-sub" id="confirmSub">
       Your payment request has been submitted. Our team will review and activate your account within <strong>24 hours</strong>.
     </div>
     <div class="pending-pill">
       <span class="pending-dot"></span>
-      Pending activation
+      <span id="pendingPillText">Pending activation</span>
     </div>
 
     <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px;max-width:360px;margin-left:auto;margin-right:auto;">
@@ -168,7 +168,7 @@
         <input type="file" id="reuploadFile" accept="image/*,.pdf" style="display:none;" onchange="handleReupload(this)">
         <span style="font-size:22px;">📎</span>
         <div style="text-align:left;">
-          <div style="font-size:13px;font-weight:700;">Re-upload receipt</div>
+          <div style="font-size:13px;font-weight:700;" id="reuploadLabel">Re-upload receipt</div>
           <div style="font-size:12px;color:var(--muted);" id="reuploadStatus">Wrong file? Upload a new one</div>
         </div>
       </label>
@@ -177,8 +177,8 @@
       <button class="wa-btn" id="waFollowupBtn" onclick="waFollowup()" style="border-radius:12px;padding:14px 18px;justify-content:flex-start;gap:12px;">
         <span style="font-size:22px;">💬</span>
         <div style="text-align:left;">
-          <div style="font-size:13px;font-weight:700;">Contact us on WhatsApp</div>
-          <div style="font-size:12px;opacity:.8;">Questions about your payment?</div>
+          <div style="font-size:13px;font-weight:700;" id="waFollowupLabel">Contact us on WhatsApp</div>
+          <div style="font-size:12px;opacity:.8;" id="waFollowupDesc">Questions about your payment?</div>
         </div>
       </button>
 
@@ -190,8 +190,8 @@
   <!-- Payment form -->
   <div id="paymentForm">
     <div class="page-header">
-      <div class="page-badge">🔓 Unlock Full Access</div>
-      <div class="page-title">Choose your plan</div>
+      <div class="page-badge" id="pageBadge">🔓 Unlock Full Access</div>
+      <div class="page-title" id="pageTitle">Choose your plan</div>
       <div class="page-sub" id="pageSubText">Select a plan and pay using any of the methods below. Your account will be activated within 24h.</div>
     </div>
 
@@ -224,6 +224,123 @@
 
   const PLAN_DURATIONS = { '1month':30, '3months':90, '6months':180 };
   const PLAN_LABELS    = { '1month':'1 Month', '3months':'3 Months', '6months':'6 Months' };
+
+  // ── TRANSLATIONS ───────────────────────────────────────────────
+  const T = {
+    ar:{
+      badge:'🔓 فتح الوصول الكامل', title:'اختر خطتك',
+      sub:'اختر خطة وادفع بإحدى الطرق أدناه. سيتم تفعيل حسابك خلال 24 ساعة.',
+      step1:'1 — اختر الخطة', step2:'2 — اختر طريقة الدفع',
+      confirmTitle:'تم استلام الطلب!',
+      confirmSub:'تم إرسال طلب الدفع. سيقوم فريقنا بمراجعة وتفعيل حسابك خلال <strong>24 ساعة</strong>.',
+      pendingPill:'في انتظار التفعيل',
+      reuploadLabel:'إعادة رفع الوصل', reuploadDefault:'ملف خاطئ؟ ارفع واحدًا جديدًا',
+      reuploadDone:'✅ تم رفع الوصل الجديد — سنراجعه قريبًا',
+      reuploadExisting:'✅ الوصل مُرسل — يمكنك إعادة الرفع لاستبداله',
+      waFollowupLabel:'تواصل معنا على واتساب', waFollowupDesc:'لديك سؤال عن دفعتك؟',
+      uploadText:'ارفع وصل الدفع', uploadHint:'صورة أو PDF · الحد الأقصى 10MB',
+      submitBtn:'إرسال الوصل ←',
+      waBtn:'تواصل معنا على واتساب',
+      waNotePayment:'يفتح واتساب مع تفاصيل خطتك. سيتم تسجيل حسابك كـ "في الانتظار" تلقائياً.',
+      noMethods:'لم يتم تكوين طرق الدفع بعد',
+      noMethodsSub:'يرجى التواصل معنا عبر واتساب لترتيب الدفع.',
+      errPlan:'يرجى اختيار خطة أولاً',
+      errFile:'يرجى رفع الوصل أولاً',
+      errSize:'الملف كبير جداً — الحد الأقصى 10MB',
+      errWa:'واتساب غير مكوّن. يرجى استخدام رفع الوصل.',
+      dir:'rtl'
+    },
+    fr:{
+      badge:'🔓 Accès complet', title:'Choisissez votre plan',
+      sub:'Sélectionnez un plan et payez via l\'une des méthodes ci-dessous. Votre compte sera activé sous 24h.',
+      step1:'1 — Choisir un plan', step2:'2 — Choisir le mode de paiement',
+      confirmTitle:'Demande reçue !',
+      confirmSub:'Votre demande de paiement a été soumise. Notre équipe examinera et activera votre compte dans les <strong>24 heures</strong>.',
+      pendingPill:'En attente d\'activation',
+      reuploadLabel:'Ré-uploader le reçu', reuploadDefault:'Mauvais fichier ? Uploadez-en un nouveau',
+      reuploadDone:'✅ Nouveau reçu envoyé — nous l\'examinerons bientôt',
+      reuploadExisting:'✅ Reçu déjà soumis — ré-uploadez pour le remplacer',
+      waFollowupLabel:'Contactez-nous sur WhatsApp', waFollowupDesc:'Une question sur votre paiement ?',
+      uploadText:'Uploader le reçu de paiement', uploadHint:'Image ou PDF · Max 10 Mo',
+      submitBtn:'Soumettre le reçu →',
+      waBtn:'Nous contacter sur WhatsApp',
+      waNotePayment:'Ouvre WhatsApp avec vos détails pré-remplis. Votre compte sera marqué comme en attente automatiquement.',
+      noMethods:'Modes de paiement non configurés',
+      noMethodsSub:'Veuillez nous contacter via WhatsApp pour organiser le paiement.',
+      errPlan:'Veuillez sélectionner un plan d\'abord',
+      errFile:'Veuillez uploader votre reçu d\'abord',
+      errSize:'Fichier trop volumineux — maximum 10 Mo',
+      errWa:'WhatsApp non configuré. Veuillez utiliser l\'upload de reçu.',
+      dir:'ltr'
+    },
+    en:{
+      badge:'🔓 Unlock Full Access', title:'Choose your plan',
+      sub:'Select a plan and pay using any of the methods below. Your account will be activated within 24h.',
+      step1:'1 — Pick a plan', step2:'2 — Choose how to pay',
+      confirmTitle:'Request received!',
+      confirmSub:'Your payment request has been submitted. Our team will review and activate your account within <strong>24 hours</strong>.',
+      pendingPill:'Pending activation',
+      reuploadLabel:'Re-upload receipt', reuploadDefault:'Wrong file? Upload a new one',
+      reuploadDone:'✅ New receipt uploaded — we\'ll review it shortly',
+      reuploadExisting:'✅ Receipt already submitted — re-upload to replace it',
+      waFollowupLabel:'Contact us on WhatsApp', waFollowupDesc:'Questions about your payment?',
+      uploadText:'Upload payment receipt', uploadHint:'Image or PDF · Max 10MB',
+      submitBtn:'Submit Receipt →',
+      waBtn:'Contact us on WhatsApp',
+      waNotePayment:'Opens WhatsApp with your plan details pre-filled. Your account will be marked as pending automatically.',
+      noMethods:'Payment methods not configured yet',
+      noMethodsSub:'Please contact us via WhatsApp to arrange payment.',
+      errPlan:t.errPlan,
+      errFile:t.errFile,
+      errSize:t.errSize,
+      errWa:t.errWa,
+      dir:'ltr'
+    },
+    tr:{
+      badge:'🔓 Tam Erişimi Aç', title:'Planınızı seçin',
+      sub:'Bir plan seçin ve aşağıdaki yöntemlerden biriyle ödeme yapın. Hesabınız 24 saat içinde aktifleştirilecek.',
+      step1:'1 — Plan seçin', step2:'2 — Ödeme yöntemini seçin',
+      confirmTitle:'Talebiniz alındı!',
+      confirmSub:'Ödeme talebiniz gönderildi. Ekibimiz <strong>24 saat</strong> içinde hesabınızı inceleyip aktifleştirecek.',
+      pendingPill:'Aktivasyon bekleniyor',
+      reuploadLabel:'Makbuzu yeniden yükle', reuploadDefault:'Yanlış dosya? Yeni bir tane yükleyin',
+      reuploadDone:'✅ Yeni makbuz yüklendi — yakında inceleyeceğiz',
+      reuploadExisting:'✅ Makbuz zaten gönderildi — değiştirmek için yeniden yükleyin',
+      waFollowupLabel:'WhatsApp\'tan bize ulaşın', waFollowupDesc:'Ödemenizle ilgili sorularınız mı var?',
+      uploadText:'Ödeme makbuzunu yükle', uploadHint:'Görsel veya PDF · Maks 10MB',
+      submitBtn:'Makbuzu Gönder →',
+      waBtn:'WhatsApp\'tan bize ulaşın',
+      waNotePayment:'Plan bilgilerinizle WhatsApp açılır. Hesabınız otomatik olarak beklemede işaretlenir.',
+      noMethods:'Ödeme yöntemleri henüz yapılandırılmadı',
+      noMethodsSub:'Ödemeyi ayarlamak için lütfen WhatsApp üzerinden bize ulaşın.',
+      errPlan:'Lütfen önce bir plan seçin',
+      errFile:'Lütfen önce makbuzunuzu yükleyin',
+      errSize:'Dosya çok büyük — maksimum 10MB',
+      errWa:'WhatsApp yapılandırılmamış. Lütfen makbuz yüklemeyi kullanın.',
+      dir:'ltr'
+    }
+  };
+
+  let lang = 'en';
+  let t    = T.en;
+
+  function applyLang() {
+    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', t.dir);
+    const set = (id, val) => { const el = document.getElementById(id); if(el) el.innerHTML = val; };
+    set('pageBadge',       t.badge);
+    set('pageTitle',       t.title);
+    set('pageSubText',     t.sub);
+    set('step1Label',      t.step1);
+    set('step2Label',      t.step2);
+    set('confirmTitle',    t.confirmTitle);
+    set('confirmSub',      t.confirmSub);
+    set('pendingPillText', t.pendingPill);
+    set('reuploadLabel',   t.reuploadLabel);
+    set('reuploadStatus',  t.reuploadDefault);
+    set('waFollowupLabel', t.waFollowupLabel);
+    set('waFollowupDesc',  t.waFollowupDesc);
+  }
 
   // ── THEME ──────────────────────────────────────────────────────
   function applyTheme(theme) {
@@ -357,7 +474,7 @@
     const grid = document.getElementById('pmGrid');
 
     if (!methods.length) {
-      grid.innerHTML = `<div class="no-methods"><div class="no-methods-icon">💳</div><div style="font-size:14px;font-weight:600;margin-bottom:6px;">Payment methods not configured yet</div><div style="font-size:13px;">Please contact us via WhatsApp to arrange payment.</div></div>`;
+      grid.innerHTML = `<div class="no-methods"><div class="no-methods-icon">💳</div><div style="font-size:14px;font-weight:600;margin-bottom:6px;">${t.noMethods}</div><div style="font-size:13px;">${t.noMethodsSub}</div></div>`;
       return;
     }
 
@@ -384,9 +501,9 @@
     if (m.isWhatsapp) {
       return `
         <button class="wa-btn" onclick="doWhatsApp()">
-          <span>💬</span><span>Contact us on WhatsApp</span>
+          <span>💬</span><span>${t.waBtn}</span>
         </button>
-        <div class="wa-note">Opens WhatsApp with your plan details pre-filled. Your account will be marked as pending automatically.</div>`;
+        <div class="wa-note">${t.waNotePayment}</div>`;
     }
 
     const rows  = m.accountRows(m.data || {}).filter(r => r.value);
@@ -416,14 +533,14 @@
         <label class="upload-zone${selectedFiles[m.key]?' has-file':''}" id="zone_${m.key}" for="file_${m.key}">
           <input type="file" id="file_${m.key}" accept="image/*,.pdf" style="display:none;" onchange="handleFile(this,'${m.key}')">
           <div class="upload-icon">📄</div>
-          <div class="upload-text">Upload payment receipt</div>
-          <div class="upload-hint">Image or PDF · Max 10MB</div>
+          <div class="upload-text">${t.uploadText}</div>
+          <div class="upload-hint">${t.uploadHint}</div>
           <div class="upload-filename" id="fname_${m.key}">${selectedFiles[m.key]?'✅ '+selectedFiles[m.key].name:''}</div>
         </label>
         <div class="error-msg" id="err_${m.key}"></div>
         <button class="submit-btn" onclick="submitReceipt('${m.key}')">
           <div class="spinner-sm" id="spin_${m.key}"></div>
-          <span class="btn-text">Submit Receipt →</span>
+          <span class="btn-text">${t.submitBtn}</span>
         </button>`;
     }
 
@@ -452,7 +569,7 @@
     const file = input.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      showErr('err_' + key, 'File too large — maximum 10MB');
+      showErr('err_' + key, t.errSize);
       return;
     }
     selectedFiles[key] = file;
@@ -464,9 +581,9 @@
 
   // ── SUBMIT RECEIPT ─────────────────────────────────────────────
   async function submitReceipt(key) {
-    if (!selectedPlan) { showErr('errorMsg', 'Please select a plan first'); return; }
+    if (!selectedPlan) { showErr('errorMsg', t.errPlan); return; }
     const file = selectedFiles[key];
-    if (!file) { showErr('err_' + key, 'Please upload your receipt first'); return; }
+    if (!file) { showErr('err_' + key, t.errFile); return; }
 
     const spin = document.getElementById('spin_' + key);
     const btn  = spin?.parentElement;
@@ -541,7 +658,7 @@
 
   // ── WHATSAPP ───────────────────────────────────────────────────
   async function doWhatsApp() {
-    if (!selectedPlan) { showErr('errorMsg', 'Please select a plan first'); return; }
+    if (!selectedPlan) { showErr('errorMsg', t.errPlan); return; }
 
     const waNumber = (landingCfg?.whatsapp_number || '').replace(/\D/g, '');
     if (!waNumber) { showErr('errorMsg', 'WhatsApp not configured. Please use a receipt method.'); return; }
@@ -586,7 +703,7 @@
     const file = input.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      showErr('reuploadError', 'File too large — maximum 10MB'); return;
+      showErr('reuploadError', t.errSize); return;
     }
 
     const status = document.getElementById('reuploadStatus');
@@ -617,10 +734,10 @@
         }).eq('id', existing.id);
       }
 
-      status.textContent = '✅ New receipt uploaded — we\'ll review it shortly';
+      status.textContent = t.reuploadDone;
       status.style.color = 'var(--teal)';
     } catch(err) {
-      status.textContent = 'Wrong file? Upload a new one';
+      status.textContent = t.reuploadDefault;
       showErr('reuploadError', 'Upload failed: ' + err.message);
     }
   }
@@ -628,7 +745,7 @@
   // ── WHATSAPP FOLLOW-UP ─────────────────────────────────────────
   function waFollowup() {
     const waNumber = (landingCfg?.whatsapp_number || '').replace(/\D/g, '');
-    if (!waNumber) { showErr('reuploadError', 'WhatsApp not configured yet. Please wait for activation.'); return; }
+    if (!waNumber) { showErr('reuploadError', t.errWa); return; }
     const name = currentProfile?.full_name || 'Student';
     const msg  = encodeURIComponent(
       `Hi! I just submitted a payment request on Speaglish.\n\nName: ${name}\nMarket: ${market.toUpperCase()}\n\nI have a question about my payment.`
@@ -640,6 +757,11 @@
   async function init() {
     applyTheme(localStorage.getItem('sp_theme') || 'dark');
     market = localStorage.getItem('sp_market') || 'dz';
+
+    // Apply language from previous page
+    lang = localStorage.getItem('sp_lang') || 'en';
+    t    = T[lang] || T.en;
+    applyLang();
 
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
@@ -673,7 +795,7 @@
         .single();
       if (existingSub?.receipt_url) {
         const statusEl = document.getElementById('reuploadStatus');
-        if (statusEl) statusEl.textContent = '✅ Receipt already submitted — re-upload to replace it';
+        if (statusEl) statusEl.textContent = t.reuploadExisting;
       }
       showConfirmation();
       document.getElementById('loaderOverlay').classList.add('out');
