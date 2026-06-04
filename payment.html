@@ -509,6 +509,7 @@
       plan_type:      selectedPlan,
       amount:         priceMap[selectedPlan],
       currency:       currency,
+      market:         market,
       receipt_url:    publicUrl,
       receipt_path:   path,
       payment_method: key,
@@ -556,6 +557,7 @@
       student_id:     currentUser.id,
       status:         'pending',
       plan_type:      selectedPlan,
+      market:         market,
       payment_method: 'whatsapp',
       created_at:     new Date().toISOString(),
     });
