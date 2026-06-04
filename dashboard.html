@@ -400,7 +400,10 @@
     return false;
   }
 
+  let examsData = [];
+
   function renderExams(exams, prof) {
+    examsData = exams;
     const grid = document.getElementById('examsGrid');
     if (!exams || !exams.length) {
       grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">${t.noExams}</div></div>`;
@@ -408,18 +411,12 @@
     }
 
     const canStart = canStartExam(prof);
-    const status   = prof.subscription_status || 'trial';
-    const used     = prof.trial_tests_used || 0;
-    const trialMax = 3;
-
-    // Find best score per exam type for progress bar
     const bestScores = {};
     attempts.forEach(a => {
-      const key = a.exam_id;
-      if (!bestScores[key] || a.score > bestScores[key]) bestScores[key] = a.score;
+      if (!bestScores[a.exam_id] || a.score > bestScores[a.exam_id]) bestScores[a.exam_id] = a.score;
     });
 
-    grid.innerHTML = exams.map(ex => {
+    grid.innerHTML = exams.map((ex, idx) => {
       const color    = EXAM_COLORS[ex.type] || '#4169FF';
       const isFree   = ex.is_free;
       const locked   = !canStart && !isFree;
@@ -428,27 +425,27 @@
       const barColor = best >= 70 ? 'var(--teal)' : best >= 50 ? 'var(--gold)' : 'var(--red)';
       const tagLabel = isFree ? t.freeTag : (locked ? t.lockedTag : '');
       const tagClass = isFree ? 'exam-free-tag' : 'exam-lock-tag';
+      const clickFn  = locked ? 'openPaywall()' : `startExam('${ex.id}', examsData[${idx}])`;
 
       return `
-        <div class="exam-card${locked?' locked':''}" onclick="${locked ? 'openPaywall()' : 'startExam(\'' + ex.id + '\')'}">
+        <div class="exam-card${locked?' locked':''}" onclick="${clickFn}">
           <div class="exam-accent" style="background:${color};"></div>
           ${tagLabel ? `<div class="exam-tag ${tagClass}">${tagLabel}</div>` : '<div style="height:22px;"></div>'}
           <div class="exam-name">${ex.title || ex.type}</div>
           <div class="exam-meta">${ex.type} · ${ex.duration_minutes || 60} min · ${ex.difficulty_level || 'All levels'}</div>
-          ${best !== undefined ? `
-            <div class="exam-bar"><div class="exam-bar-fill" style="width:${barW};background:${barColor};"></div></div>
-          ` : '<div class="exam-bar"><div class="exam-bar-fill" style="width:0;background:var(--gold);"></div></div>'}
+          <div class="exam-bar"><div class="exam-bar-fill" style="width:${barW};background:${barColor};"></div></div>
           <div class="exam-footer">
             <span class="exam-qs" id="qs_${ex.id}"></span>
-            <button class="exam-start-btn ${locked?'exam-start-locked':'exam-start-active'}" onclick="event.stopPropagation();${locked ? 'openPaywall()' : 'startExam(\'' + ex.id + '\')'}">
+            <button class="exam-start-btn ${locked?'exam-start-locked':'exam-start-active'}" onclick="event.stopPropagation();${clickFn}">
               ${locked ? '🔒 ' + t.lockedBtn : t.startBtn + ' →'}
             </button>
           </div>
         </div>`;
     }).join('');
   }
-
-  function startExam(examId) {
+  function startExam(examId, examData) {
+    // Store full exam object so exam.html can read it
+    localStorage.setItem('sp_current_exam', JSON.stringify(examData));
     window.location.href = `exam.html?id=${examId}`;
   }
 

@@ -461,8 +461,23 @@
 
   // ─── LOAD EXAM ────────────────────────────────────────────────
   async function loadExam() {
-    const raw = localStorage.getItem('sp_current_exam');
-    examInfo  = raw ? JSON.parse(raw) : { id:'demo', title:'TCF — Demo', market:'dz', type:'TCF' };
+    const urlId = new URLSearchParams(window.location.search).get('id');
+    const raw   = localStorage.getItem('sp_current_exam');
+    let stored  = raw ? JSON.parse(raw) : null;
+
+    // If URL id doesn't match stored exam, ignore stored data
+    if (stored && urlId && stored.id !== urlId) stored = null;
+
+    if (stored) {
+      examInfo = stored;
+    } else if (urlId) {
+      // Load exam info from DB using URL param
+      const { data: examRow } = await sb.from('exams')
+        .select('*').eq('id', urlId).maybeSingle();
+      examInfo = examRow || { id: urlId, title: 'Exam', market: localStorage.getItem('sp_market') || 'dz', type: 'TCF' };
+    } else {
+      examInfo = { id: 'demo', title: 'TCF — Demo', market: 'dz', type: 'TCF' };
+    }
 
     // Try loading questions from DB
     let qs = [];
