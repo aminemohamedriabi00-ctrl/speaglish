@@ -7,229 +7,134 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --bg:#080B18; --card:#0E1120; --card2:#131626;
-      --border:#1C2240; --gold:#F0A500; --gold2:#FFD166;
-      --teal:#00C9A7; --red:#FF5757; --blue:#4169FF; --purple:#9B6DFF;
-      --text:#EEF2FF; --sub:#8896B8; --muted:#3D4A6A;
-      --ff:'Barlow',sans-serif; --fd:'Syne',sans-serif;
+    :root{
+      --bg:#080B18;--card:#0E1120;--card2:#131626;
+      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
+      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
+      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --nav-bg:rgba(8,11,24,.88);
+      --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;
+    }
+    [data-theme="light"]{
+      --bg:#F4F6FB;--card:#FFFFFF;--card2:#EDF0F7;
+      --border:#D4DAE8;--gold:#D4900A;--gold2:#B87A00;
+      --teal:#009982;--red:#D93636;--blue:#2952E3;--purple:#7B4FE0;
+      --text:#0D1120;--sub:#4A5578;--muted:#9AA3BA;
+      --nav-bg:rgba(244,246,251,.92);
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-    body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;}
-    body::before{
-      content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-      background:
-        radial-gradient(ellipse 60% 40% at 10% 10%,rgba(65,105,255,.07),transparent 70%),
-        radial-gradient(ellipse 50% 40% at 90% 90%,rgba(240,165,0,.05),transparent 70%);
-    }
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;transition:background .25s,color .25s;}
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 40% at 10% 10%,rgba(65,105,255,.07),transparent 70%),radial-gradient(ellipse 50% 40% at 90% 90%,rgba(240,165,0,.05),transparent 70%);}
 
-    /* ── NAV ─────────────────────────────────── */
-    nav{
-      position:sticky;top:0;z-index:50;
-      display:flex;align-items:center;justify-content:space-between;
-      padding:14px 28px;
-      background:rgba(8,11,24,.9);backdrop-filter:blur(16px);
-      border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap;
-    }
-    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-    .logo-mark{
-      width:32px;height:32px;
-      background:linear-gradient(135deg,var(--gold),#E8961A);
-      border-radius:8px;display:flex;align-items:center;justify-content:center;
-      font-family:var(--fd);font-weight:800;font-size:13px;color:#000;
-      overflow:hidden;flex-shrink:0;
-    }
-    .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;}
+    /* ── NAV ── */
+    .nav{position:sticky;top:0;z-index:40;background:var(--nav-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px;}
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto;}
+    .logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#E8961A);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:13px;color:#000;overflow:hidden;flex-shrink:0;}
+    .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--text);}
     .logo-text span{color:var(--gold);}
-    .nav-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+    .nav-name{font-size:13px;color:var(--sub);font-weight:500;}
+    .theme-btn{width:34px;height:34px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;}
+    .theme-btn:hover{color:var(--text);border-color:var(--gold);}
+    .signout-btn{padding:7px 14px;background:transparent;border:1px solid var(--border);color:var(--sub);border-radius:8px;font-family:var(--ff);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .signout-btn:hover{border-color:var(--red);color:var(--red);}
 
-    .lang-toggle{
-      display:flex;gap:3px;background:var(--card2);
-      border:1px solid var(--border);border-radius:8px;padding:3px;
-    }
-    .lang-btn{
-      background:transparent;border:none;color:var(--sub);
-      padding:4px 10px;border-radius:6px;cursor:pointer;
-      font-family:var(--ff);font-size:11px;font-weight:600;transition:all .2s;
-    }
-    .lang-btn.active{background:var(--border);color:var(--text);}
+    /* ── STATUS BANNER ── */
+    .status-banner{padding:12px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+    .banner-trial{background:rgba(240,165,0,.08);border-bottom:1px solid rgba(240,165,0,.2);}
+    .banner-pending{background:rgba(155,109,255,.08);border-bottom:1px solid rgba(155,109,255,.2);}
+    .banner-expired{background:rgba(255,87,87,.08);border-bottom:1px solid rgba(255,87,87,.2);}
+    .banner-active{display:none;}
+    .banner-icon{font-size:20px;flex-shrink:0;}
+    .banner-text{flex:1;font-size:13px;line-height:1.5;}
+    .banner-text strong{font-weight:700;}
+    .banner-btn{padding:8px 18px;border:none;border-radius:8px;font-family:var(--ff);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;text-decoration:none;display:inline-block;}
+    .banner-btn-gold{background:var(--gold);color:#000;}
+    .banner-btn-gold:hover{background:var(--gold2);}
 
-    .sub-badge{
-      font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;
-    }
-    .sub-trial{background:rgba(240,165,0,.15);color:var(--gold);border:1px solid rgba(240,165,0,.3);}
-    .sub-active{background:rgba(0,201,167,.15);color:var(--teal);border:1px solid rgba(0,201,167,.3);}
-    .sub-expired{background:rgba(255,87,87,.15);color:var(--red);border:1px solid rgba(255,87,87,.3);}
-    .sub-pending{background:rgba(155,109,255,.15);color:var(--purple);border:1px solid rgba(155,109,255,.3);}
+    /* ── PAGE ── */
+    .page{max-width:1100px;margin:0 auto;padding:32px 28px 60px;position:relative;z-index:1;}
 
-    .avatar{
-      width:34px;height:34px;border-radius:50%;
-      background:linear-gradient(135deg,var(--gold),var(--blue));
-      display:flex;align-items:center;justify-content:center;
-      font-family:var(--fd);font-weight:700;font-size:13px;color:#000;
-      cursor:pointer;flex-shrink:0;position:relative;
-    }
-
-    .dropdown{
-      position:absolute;top:44px;right:0;
-      background:var(--card);border:1px solid var(--border);
-      border-radius:12px;padding:6px;min-width:160px;
-      box-shadow:0 8px 32px rgba(0,0,0,.4);
-      display:none;z-index:100;
-    }
-    .dropdown.open{display:block;}
-    .dropdown-item{
-      display:flex;align-items:center;gap:10px;
-      padding:9px 12px;border-radius:8px;cursor:pointer;
-      font-size:13px;color:var(--sub);transition:all .15s;
-    }
-    .dropdown-item:hover{background:var(--card2);color:var(--text);}
-    .dropdown-divider{height:1px;background:var(--border);margin:4px 0;}
-
-    /* ── CONTENT ─────────────────────────────── */
-    .page{max-width:1040px;margin:0 auto;padding:32px 20px;position:relative;z-index:1;}
-
-    /* ── WELCOME ─────────────────────────────── */
-    .welcome{margin-bottom:28px;}
-    .welcome h1{font-family:var(--fd);font-size:26px;font-weight:700;margin-bottom:4px;}
-    .welcome p{font-size:14px;color:var(--sub);font-weight:300;}
-
-    /* ── UPGRADE BANNER ──────────────────────── */
-    .upgrade-banner{
-      background:linear-gradient(135deg,rgba(240,165,0,.12),rgba(65,105,255,.08));
-      border:1px solid rgba(240,165,0,.25);border-radius:14px;
-      padding:20px 24px;margin-bottom:24px;
-      display:flex;align-items:center;justify-content:space-between;
-      gap:16px;flex-wrap:wrap;
-    }
-    .upgrade-banner-left h3{font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:4px;}
-    .upgrade-banner-left p{font-size:13px;color:var(--sub);}
-    .btn{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:9px 22px;border-radius:10px;
-      font-family:var(--ff);font-size:13px;font-weight:600;
-      cursor:pointer;transition:all .2s;border:none;text-decoration:none;
-    }
-    .btn-primary{background:var(--gold);color:#000;}
-    .btn-primary:hover{background:var(--gold2);transform:translateY(-1px);}
-    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub);}
-    .btn-ghost:hover{border-color:var(--sub);color:var(--text);}
-
-    /* ── STATS ROW ───────────────────────────── */
-    .stats-row{
-      display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-      gap:12px;margin-bottom:28px;
-    }
-    .stat-card{
-      background:var(--card);border:1px solid var(--border);
-      border-radius:12px;padding:16px;
-    }
-    .stat-card-label{font-size:12px;color:var(--muted);margin-bottom:6px;}
-    .stat-card-value{font-family:var(--fd);font-size:22px;font-weight:700;}
-
-    /* ── SECTION TITLE ───────────────────────── */
-    .section-header{
-      display:flex;align-items:center;justify-content:space-between;
-      margin-bottom:16px;
-    }
+    /* ── SECTION HEADER ── */
+    .section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
     .section-title{font-family:var(--fd);font-size:17px;font-weight:700;}
-    .section-sub{font-size:12px;color:var(--muted);}
+    .section-link{font-size:12px;color:var(--gold);text-decoration:none;font-weight:600;}
+    .section-link:hover{color:var(--gold2);}
 
-    /* ── EXAM GRID ───────────────────────────── */
-    .exam-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
-      gap:12px;margin-bottom:32px;
-    }
-    .exam-card{
-      background:var(--card);border:1px solid var(--border);
-      border-radius:12px;padding:18px;
-      transition:all .25s;position:relative;overflow:hidden;
-    }
-    .exam-card.unlocked{cursor:pointer;}
-    .exam-card.unlocked:hover{transform:translateY(-2px);border-color:var(--card-color,var(--gold));}
-    .exam-card.locked{opacity:.6;}
-    .exam-card::before{
-      content:'';position:absolute;top:0;left:0;right:0;height:2px;
-      background:var(--card-color,var(--gold));
-      transform:scaleX(0);transition:transform .25s;
-    }
-    .exam-card.unlocked:hover::before{transform:scaleX(1);}
+    /* ── FOCUS CARD ── */
+    .focus-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin-bottom:32px;display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;}
+    .focus-icon{font-size:36px;flex-shrink:0;}
+    .focus-body{flex:1;min-width:200px;}
+    .focus-title{font-family:var(--fd);font-size:15px;font-weight:700;margin-bottom:8px;}
+    .focus-desc{font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:14px;}
+    .skill-tags{display:flex;gap:8px;flex-wrap:wrap;}
+    .skill-tag{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;}
+    .skill-weak{background:rgba(255,87,87,.12);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+    .skill-ok{background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.25);color:var(--gold);}
+    .skill-strong{background:rgba(0,201,167,.1);border:1px solid rgba(0,201,167,.25);color:var(--teal);}
+    .focus-lessons-btn{padding:9px 20px;background:var(--gold);color:#000;border:none;border-radius:8px;font-family:var(--ff);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block;white-space:nowrap;}
+    .focus-lessons-btn:hover{background:var(--gold2);}
+    .focus-empty{text-align:center;color:var(--muted);font-size:13px;padding:8px 0;}
 
-    .exam-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-    .exam-tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
-    .exam-free{
-      background:rgba(0,201,167,.15);color:var(--teal);
-      font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;
-      border:1px solid rgba(0,201,167,.3);
-    }
-    .exam-title{font-size:14px;font-weight:600;margin-bottom:5px;line-height:1.3;}
-    .exam-meta{font-size:12px;color:var(--muted);}
+    /* ── EXAMS GRID ── */
+    .exams-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:40px;}
+    .exam-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
+    .exam-card:hover{transform:translateY(-2px);border-color:var(--gold);}
+    .exam-card.locked{cursor:default;}
+    .exam-card.locked:hover{transform:none;border-color:var(--border);}
+    .exam-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:12px;}
+    .exam-free-tag{background:rgba(0,201,167,.12);border:1px solid rgba(0,201,167,.3);color:var(--teal);}
+    .exam-lock-tag{background:rgba(60,74,107,.3);border:1px solid var(--border);color:var(--muted);}
+    .exam-name{font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:6px;}
+    .exam-meta{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+    .exam-bar{height:3px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:14px;}
+    .exam-bar-fill{height:100%;border-radius:3px;transition:width .3s;}
+    .exam-footer{display:flex;align-items:center;justify-content:space-between;}
+    .exam-qs{font-size:11px;color:var(--muted);}
+    .exam-start-btn{padding:6px 16px;border:none;border-radius:8px;font-family:var(--ff);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+    .exam-start-active{background:var(--gold);color:#000;}
+    .exam-start-active:hover{background:var(--gold2);}
+    .exam-start-locked{background:var(--card2);color:var(--muted);cursor:not-allowed;}
+    .exam-accent{position:absolute;top:0;left:0;width:3px;height:100%;border-radius:3px 0 0 3px;}
 
-    .exam-action{
-      margin-top:14px;width:100%;padding:8px;border:none;
-      border-radius:8px;font-family:var(--ff);font-size:12px;
-      font-weight:600;cursor:pointer;transition:all .2s;
-    }
-    .exam-action-start{background:var(--gold);color:#000;}
-    .exam-action-start:hover{background:var(--gold2);}
-    .exam-action-locked{
-      background:var(--card2);color:var(--muted);cursor:not-allowed;
-      border:1px solid var(--border);
-    }
+    /* ── RESULTS ── */
+    .results-list{display:flex;flex-direction:column;gap:12px;}
+    .result-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+    .result-score-ring{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:16px;font-weight:800;flex-shrink:0;border:3px solid;}
+    .result-body{flex:1;min-width:180px;}
+    .result-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+    .result-meta{font-size:12px;color:var(--muted);margin-bottom:10px;}
+    .result-skills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+    .result-skill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:var(--card2);border:1px solid var(--border);}
+    .result-stats{display:flex;gap:14px;flex-wrap:wrap;}
+    .result-stat{font-size:11px;color:var(--muted);}
+    .result-stat span{color:var(--text);font-weight:600;}
+    .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+    .empty-icon{font-size:40px;margin-bottom:12px;}
+    .empty-text{font-size:14px;}
 
-    /* ── RECENT ATTEMPTS ─────────────────────── */
-    .attempts-list{display:flex;flex-direction:column;gap:10px;margin-bottom:32px;}
+    /* ── PAYWALL MODAL ── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;width:100%;max-width:400px;text-align:center;}
+    .modal-icon{font-size:44px;margin-bottom:16px;}
+    .modal-title{font-family:var(--fd);font-size:22px;font-weight:800;margin-bottom:8px;}
+    .modal-sub{font-size:14px;color:var(--sub);line-height:1.6;margin-bottom:24px;}
+    .modal-btn{display:block;width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:10px;font-family:var(--ff);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;margin-bottom:10px;}
+    .modal-btn:hover{background:var(--gold2);}
+    .modal-close{background:transparent;border:none;color:var(--muted);font-family:var(--ff);font-size:13px;cursor:pointer;padding:6px;}
+    .modal-close:hover{color:var(--text);}
 
-    .attempt-card{
-      background:var(--card);border:1px solid var(--border);
-      border-radius:10px;padding:14px 18px;
-      display:flex;align-items:center;gap:14px;
-      cursor:pointer;transition:border-color .2s;
-    }
-    .attempt-card:hover{border-color:var(--sub);}
-
-    .attempt-score{
-      width:48px;height:48px;border-radius:50%;flex-shrink:0;
-      display:flex;align-items:center;justify-content:center;
-      font-family:var(--fd);font-size:14px;font-weight:700;
-    }
-
-    .attempt-info{flex:1;}
-    .attempt-title{font-size:14px;font-weight:600;margin-bottom:2px;}
-    .attempt-meta{font-size:12px;color:var(--muted);}
-
-    .attempt-level{
-      font-size:12px;font-weight:700;padding:3px 10px;
-      border-radius:20px;flex-shrink:0;
-    }
-
-    /* ── EMPTY STATE ─────────────────────────── */
-    .empty-state{
-      background:var(--card);border:1px solid var(--border);
-      border-radius:12px;padding:40px;text-align:center;
-    }
-    .empty-icon{font-size:40px;margin-bottom:14px;}
-    .empty-title{font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:6px;}
-    .empty-sub{font-size:13px;color:var(--sub);}
-
-    /* ── LOADER ──────────────────────────────── */
-    .loader-overlay{
-      position:fixed;inset:0;background:var(--bg);z-index:400;
-      display:flex;align-items:center;justify-content:center;
-    }
+    /* ── LOADER ── */
+    .loader-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;align-items:center;justify-content:center;}
     .loader-overlay.out{display:none;}
-    .spinner{
-      width:36px;height:36px;border:2px solid var(--border);
-      border-top-color:var(--gold);border-radius:50%;
-      animation:spin .8s linear infinite;
-    }
+    .spinner{width:40px;height:40px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
-    @media(max-width:640px){
-      nav{padding:12px 16px;}
-      .page{padding:20px 14px;}
-      .lang-toggle{display:none;}
+    @media(max-width:600px){
+      .nav{padding:12px 16px;}
+      .page{padding:20px 16px 40px;}
+      .status-banner{padding:12px 16px;}
+      .focus-card{padding:16px;}
     }
   </style>
 </head>
@@ -238,81 +143,71 @@
 <div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
 
 <!-- Nav -->
-<nav>
+<nav class="nav">
   <a href="index.html" class="nav-logo">
     <div class="logo-mark" id="logoMark">Sp</div>
     <span class="logo-text">Speak<span>glish</span></span>
   </a>
-  <div class="nav-right">
-    <div class="lang-toggle">
-      <button class="lang-btn" id="btnAr" onclick="setLang('ar')">AR</button>
-      <button class="lang-btn" id="btnFr" onclick="setLang('fr')">FR</button>
-      <button class="lang-btn" id="btnEn" onclick="setLang('en')">EN</button>
-      <button class="lang-btn" id="btnTr" onclick="setLang('tr')">TR</button>
-    </div>
-    <div class="sub-badge" id="subBadge">Trial</div>
-    <div class="avatar" id="avatar" onclick="toggleDropdown()">
-      <span id="avatarLetter">?</span>
-      <div class="dropdown" id="dropdown">
-        <div class="dropdown-item" onclick="window.location.href='payment.html'">💳 <span id="ddUpgrade">Upgrade</span></div>
-        <div class="dropdown-divider"></div>
-        <div class="dropdown-item" onclick="signOut()">🚪 <span id="ddSignOut">Sign out</span></div>
-      </div>
-    </div>
-  </div>
+  <span class="nav-name" id="navName"></span>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+  <button class="signout-btn" onclick="signOut()" id="signOutBtn">Sign out</button>
 </nav>
+
+<!-- Status banner -->
+<div class="status-banner" id="statusBanner" style="display:none;">
+  <span class="banner-icon" id="bannerIcon"></span>
+  <span class="banner-text" id="bannerText"></span>
+  <a href="payment.html" class="banner-btn banner-btn-gold" id="bannerBtn" style="display:none;"></a>
+</div>
 
 <!-- Page -->
 <div class="page">
 
-  <!-- Welcome -->
-  <div class="welcome">
-    <h1 id="welcomeTitle">Hello 👋</h1>
-    <p id="welcomeSub">Continue your exam preparation</p>
+  <!-- Focus / Recommendation -->
+  <div class="section-hd">
+    <div class="section-title" id="focusTitle">📚 What to study next</div>
+    <a href="lessons.html" class="section-link" id="lessonsLink">Go to Lessons →</a>
   </div>
-
-  <!-- Upgrade Banner (shown for trial/expired) -->
-  <div class="upgrade-banner" id="upgradeBanner" style="display:none;">
-    <div class="upgrade-banner-left">
-      <h3 id="bannerTitle">🎯 Unlock Full Access</h3>
-      <p id="bannerSub">You have used <strong id="trialUsed">0</strong> of 3 free exams. Upgrade for unlimited access.</p>
+  <div class="focus-card" id="focusCard">
+    <div class="focus-icon">🎯</div>
+    <div class="focus-body">
+      <div class="focus-empty" id="focusEmpty">Take your first exam to get personalized recommendations.</div>
+      <div id="focusContent" style="display:none;">
+        <div class="focus-title" id="focusHeadline"></div>
+        <div class="focus-desc" id="focusDesc"></div>
+        <div class="skill-tags" id="skillTags"></div>
+      </div>
     </div>
-    <a href="payment.html" class="btn btn-primary" id="bannerBtn">Upgrade Now →</a>
-  </div>
-
-  <!-- Stats -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-card-label" id="statLabelExams">Exams taken</div>
-      <div class="stat-card-value" id="statExams" style="color:var(--blue);">0</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-card-label" id="statLabelAvg">Average score</div>
-      <div class="stat-card-value" id="statAvg" style="color:var(--gold);">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-card-label" id="statLabelBest">Best score</div>
-      <div class="stat-card-value" id="statBest" style="color:var(--teal);">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-card-label" id="statLabelSub">Subscription</div>
-      <div class="stat-card-value" id="statSub" style="font-size:14px;color:var(--sub);">Trial</div>
-    </div>
+    <a href="lessons.html" class="focus-lessons-btn" id="focusLessonsBtn" style="display:none;" id="focusBtn">View Lessons →</a>
   </div>
 
   <!-- Available Exams -->
-  <div class="section-header">
-    <div class="section-title" id="examsTitle">Available Exams</div>
-    <div class="section-sub" id="examsSub">1 free exam included</div>
+  <div class="section-hd">
+    <div class="section-title" id="examsTitle">📝 Available Exams</div>
   </div>
-  <div class="exam-grid" id="examGrid"></div>
-
-  <!-- Recent Attempts -->
-  <div class="section-header">
-    <div class="section-title" id="attemptsTitle">Recent Results</div>
+  <div class="exams-grid" id="examsGrid">
+    <!-- populated by JS -->
   </div>
-  <div id="attemptsList"></div>
 
+  <!-- Results History -->
+  <div class="section-hd">
+    <div class="section-title" id="resultsTitle">📊 Your Results</div>
+  </div>
+  <div class="results-list" id="resultsList">
+    <!-- populated by JS -->
+  </div>
+
+</div>
+
+<!-- Paywall modal -->
+<div class="modal-overlay" id="paywallModal">
+  <div class="modal">
+    <div class="modal-icon">🔒</div>
+    <div class="modal-title" id="paywallTitle">Unlock Full Access</div>
+    <div class="modal-sub" id="paywallSub">Your free trial has ended. Subscribe to continue taking exams and track your progress.</div>
+    <a href="payment.html" class="modal-btn" id="paywallBtn">Choose a Plan →</a>
+    <button class="modal-close" onclick="closePaywall()" id="paywallClose">Maybe later</button>
+  </div>
 </div>
 
 <script>
@@ -321,308 +216,395 @@
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
   );
 
-  // ─── EXAM DATA ────────────────────────────────────────────────
-  const EXAMS = {
-    dz:[
-      {id:'tcf-reading', title:'TCF — Compréhension Écrite', type:'TCF', skill:'Lecture', dur:60, count:45, color:'#4169FF', free:true},
-      {id:'tcf-listening', title:'TCF — Compréhension Orale', type:'TCF', skill:'Écoute', dur:40, count:39, color:'#00C9A7', free:false},
-      {id:'tef-reading', title:'TEF — Compréhension Écrite', type:'TEF', skill:'Lecture', dur:60, count:50, color:'#9B6DFF', free:false},
-      {id:'ielts-reading', title:'IELTS Academic — Reading', type:'IELTS', skill:'Reading', dur:60, count:40, color:'#F0A500', free:false},
-      {id:'delf-reading', title:'DELF B2 — Compréhension', type:'DELF', skill:'Lecture', dur:60, count:35, color:'#FF5757', free:false},
-    ],
-    tr:[
-      {id:'yds-main', title:'YDS — Yabancı Dil Sınavı', type:'YDS', skill:'İngilizce', dur:180, count:80, color:'#4169FF', free:true},
-      {id:'yokdil-main', title:'YÖKDİL — Academic English', type:'YÖKDİL', skill:'İngilizce', dur:180, count:80, color:'#00C9A7', free:false},
-      {id:'eyds-main', title:'e-YDS — Online Format', type:'e-YDS', skill:'İngilizce', dur:180, count:80, color:'#9B6DFF', free:false},
-      {id:'ielts-reading-tr', title:'IELTS Academic — Reading', type:'IELTS', skill:'Reading', dur:60, count:40, color:'#F0A500', free:false},
-      {id:'toefl-reading', title:'TOEFL iBT — Reading', type:'TOEFL', skill:'Reading', dur:54, count:30, color:'#FF5757', free:false},
-    ]
-  };
+  let profile  = null;
+  let attempts = [];
+  let market   = 'dz';
+  let lang     = 'en';
+  let t        = null;
 
-  // ─── TRANSLATIONS ─────────────────────────────────────────────
+  // ── TRANSLATIONS ──────────────────────────────────────────────
   const T = {
     ar:{
-      welcomeTitle:'مرحباً', welcomeSub:'واصل التحضير لامتحانك',
-      bannerTitle:'🎯 افتح الوصول الكامل',
-      examsTitle:'الامتحانات المتاحة', examsSub:'اختبار مجاني واحد مشمول',
-      attemptsTitle:'النتائج الأخيرة',
-      statLabelExams:'الامتحانات المجراة', statLabelAvg:'المعدل',
-      statLabelBest:'أفضل نتيجة', statLabelSub:'الاشتراك',
-      startBtn:'ابدأ', lockedBtn:'🔒 مقفل',
-      ddUpgrade:'ترقية الحساب', ddSignOut:'تسجيل الخروج',
-      noAttempts:'لم تجرِ أي امتحانات بعد',
-      noAttemptsSub:'اختر امتحاناً أعلاه وابدأ الآن',
-      subTrial:'تجربة مجانية', subActive:'نشط', subExpired:'منتهي الصلاحية', subPending:'في الانتظار',
+      focusTitle:'📚 ماذا تدرس بعد ذلك', lessonsLink:'الذهاب إلى الدروس ←',
+      examsTitle:'📝 الامتحانات المتاحة', resultsTitle:'📊 نتائجك',
+      focusEmpty:'أجرِ امتحانك الأول للحصول على توصيات شخصية.',
+      focusHeadline:'ركز على هذه المهارات', focusDesc:'بناءً على نتائجك الأخيرة، نوصي بالتركيز على:',
+      startBtn:'ابدأ', lockedBtn:'مقفل',
+      freeTag:'مجاني', lockedTag:'مقفل',
+      signOut:'تسجيل الخروج',
+      banner:{
+        trial:(n)=>`تجربة مجانية — استخدمت ${n} من 3 امتحانات`,
+        trialDone:'انتهت تجربتك المجانية — اشترك للمتابعة',
+        pending:'طلبك قيد المراجعة — سيتم التفعيل خلال 24 ساعة',
+        expired:'انتهت اشتراكك — جدد للمتابعة',
+      },
+      bannerBtn:{trial:'اشترك الآن',trialDone:'اختر خطة',pending:'',expired:'جدد الاشتراك'},
+      paywallTitle:'افتح الوصول الكامل',
+      paywallSub:'انتهت تجربتك المجانية. اشترك لمواصلة الامتحانات وتتبع تقدمك.',
+      paywallBtn:'اختر خطة ←', paywallClose:'ربما لاحقاً',
+      noExams:'لا توجد امتحانات متاحة حتى الآن.',
+      noResults:'لم تجرِ أي امتحانات بعد.',
+      questions:'سؤال', correct:'صحيح', time:'الوقت',
+      skills:{Reading:'القراءة',Writing:'الكتابة',Listening:'الاستماع',Grammar:'القواعد',Vocabulary:'المفردات',Speaking:'التحدث'},
       dir:'rtl'
     },
     fr:{
-      welcomeTitle:'Bonjour', welcomeSub:'Continuez votre préparation',
-      bannerTitle:'🎯 Débloquer l\'accès complet',
-      examsTitle:'Examens disponibles', examsSub:'1 test gratuit inclus',
-      attemptsTitle:'Résultats récents',
-      statLabelExams:'Examens passés', statLabelAvg:'Score moyen',
-      statLabelBest:'Meilleur score', statLabelSub:'Abonnement',
-      startBtn:'Commencer', lockedBtn:'🔒 Verrouillé',
-      ddUpgrade:'Passer au premium', ddSignOut:'Se déconnecter',
-      noAttempts:'Aucun examen passé pour l\'instant',
-      noAttemptsSub:'Choisissez un examen ci-dessus et commencez',
-      subTrial:'Essai gratuit', subActive:'Actif', subExpired:'Expiré', subPending:'En attente',
+      focusTitle:'📚 Quoi étudier ensuite', lessonsLink:'Aller aux leçons →',
+      examsTitle:'📝 Examens disponibles', resultsTitle:'📊 Vos résultats',
+      focusEmpty:'Passez votre premier examen pour obtenir des recommandations personnalisées.',
+      focusHeadline:'Concentrez-vous sur ces compétences', focusDesc:'D\'après vos derniers résultats, nous recommandons de travailler sur :',
+      startBtn:'Commencer', lockedBtn:'Verrouillé',
+      freeTag:'Gratuit', lockedTag:'Verrouillé',
+      signOut:'Se déconnecter',
+      banner:{
+        trial:(n)=>`Essai gratuit — ${n} examen(s) sur 3 utilisé(s)`,
+        trialDone:'Votre essai est terminé — abonnez-vous pour continuer',
+        pending:'Votre demande est en cours — activation sous 24h',
+        expired:'Votre abonnement a expiré — renouvelez pour continuer',
+      },
+      bannerBtn:{trial:'S\'abonner',trialDone:'Choisir un plan',pending:'',expired:'Renouveler'},
+      paywallTitle:'Accès complet',
+      paywallSub:'Votre essai gratuit est terminé. Abonnez-vous pour continuer les examens.',
+      paywallBtn:'Choisir un plan →', paywallClose:'Plus tard',
+      noExams:'Aucun examen disponible pour le moment.',
+      noResults:'Vous n\'avez pas encore passé d\'examens.',
+      questions:'questions', correct:'correct', time:'Temps',
+      skills:{Reading:'Lecture',Writing:'Écriture',Listening:'Écoute',Grammar:'Grammaire',Vocabulary:'Vocabulaire',Speaking:'Expression orale'},
       dir:'ltr'
     },
     en:{
-      welcomeTitle:'Hello', welcomeSub:'Continue your exam preparation',
-      bannerTitle:'🎯 Unlock Full Access',
-      examsTitle:'Available Exams', examsSub:'1 free exam included',
-      attemptsTitle:'Recent Results',
-      statLabelExams:'Exams taken', statLabelAvg:'Average score',
-      statLabelBest:'Best score', statLabelSub:'Subscription',
-      startBtn:'Start', lockedBtn:'🔒 Locked',
-      ddUpgrade:'Upgrade Plan', ddSignOut:'Sign out',
-      noAttempts:'No exams taken yet',
-      noAttemptsSub:'Pick an exam above and start now',
-      subTrial:'Free Trial', subActive:'Active', subExpired:'Expired', subPending:'Pending',
+      focusTitle:'📚 What to study next', lessonsLink:'Go to Lessons →',
+      examsTitle:'📝 Available Exams', resultsTitle:'📊 Your Results',
+      focusEmpty:'Take your first exam to get personalized recommendations.',
+      focusHeadline:'Focus on these skills', focusDesc:'Based on your latest results, we recommend working on:',
+      startBtn:'Start', lockedBtn:'Locked',
+      freeTag:'Free', lockedTag:'Locked',
+      signOut:'Sign out',
+      banner:{
+        trial:(n)=>`Free trial — ${n} of 3 exams used`,
+        trialDone:'Your free trial has ended — subscribe to continue',
+        pending:'Your request is under review — activation within 24h',
+        expired:'Your subscription has expired — renew to continue',
+      },
+      bannerBtn:{trial:'Subscribe',trialDone:'Choose a plan',pending:'',expired:'Renew'},
+      paywallTitle:'Unlock Full Access',
+      paywallSub:'Your free trial has ended. Subscribe to continue taking exams and track your progress.',
+      paywallBtn:'Choose a Plan →', paywallClose:'Maybe later',
+      noExams:'No exams available yet.',
+      noResults:'You haven\'t taken any exams yet.',
+      questions:'questions', correct:'correct', time:'Time',
+      skills:{Reading:'Reading',Writing:'Writing',Listening:'Listening',Grammar:'Grammar',Vocabulary:'Vocabulary',Speaking:'Speaking'},
       dir:'ltr'
     },
     tr:{
-      welcomeTitle:'Merhaba', welcomeSub:'Sınav hazırlığına devam et',
-      bannerTitle:'🎯 Tam Erişimi Aç',
-      examsTitle:'Mevcut Sınavlar', examsSub:'1 ücretsiz test dahil',
-      attemptsTitle:'Son Sonuçlar',
-      statLabelExams:'Girilen sınav', statLabelAvg:'Ortalama puan',
-      statLabelBest:'En iyi puan', statLabelSub:'Abonelik',
-      startBtn:'Başla', lockedBtn:'🔒 Kilitli',
-      ddUpgrade:'Planı Yükselt', ddSignOut:'Çıkış yap',
-      noAttempts:'Henüz sınava girilmedi',
-      noAttemptsSub:'Yukarıdan bir sınav seç ve başla',
-      subTrial:'Ücretsiz Deneme', subActive:'Aktif', subExpired:'Süresi Doldu', subPending:'Beklemede',
+      focusTitle:'📚 Sırada ne çalışmalısın', lessonsLink:'Derslere git →',
+      examsTitle:'📝 Mevcut Sınavlar', resultsTitle:'📊 Sonuçlarınız',
+      focusEmpty:'Kişisel öneriler almak için ilk sınavınıza girin.',
+      focusHeadline:'Bu becerilere odaklanın', focusDesc:'Son sonuçlarınıza göre şunlar üzerinde çalışmanızı öneriyoruz:',
+      startBtn:'Başla', lockedBtn:'Kilitli',
+      freeTag:'Ücretsiz', lockedTag:'Kilitli',
+      signOut:'Çıkış yap',
+      banner:{
+        trial:(n)=>`Ücretsiz deneme — 3 sınavdan ${n} tanesi kullanıldı`,
+        trialDone:'Ücretsiz denemeniz bitti — devam etmek için abone olun',
+        pending:'Talebiniz inceleniyor — 24 saat içinde aktifleştirilecek',
+        expired:'Aboneliğiniz sona erdi — devam etmek için yenileyin',
+      },
+      bannerBtn:{trial:'Abone ol',trialDone:'Plan seç',pending:'',expired:'Yenile'},
+      paywallTitle:'Tam Erişimi Aç',
+      paywallSub:'Ücretsiz denemeniz bitti. Sınavlara devam etmek için abone olun.',
+      paywallBtn:'Plan Seç →', paywallClose:'Belki sonra',
+      noExams:'Henüz mevcut sınav yok.',
+      noResults:'Henüz hiç sınava girmediniz.',
+      questions:'soru', correct:'doğru', time:'Süre',
+      skills:{Reading:'Okuma',Writing:'Yazma',Listening:'Dinleme',Grammar:'Dilbilgisi',Vocabulary:'Kelime',Speaking:'Konuşma'},
       dir:'ltr'
     }
   };
 
-  // ─── STATE ────────────────────────────────────────────────────
-  let lang    = localStorage.getItem('sp_lang') || 'en';
-  let market  = localStorage.getItem('sp_market') || 'dz';
-  let profile = null;
-  let t       = T[lang];
-
-  // ─── LANG ─────────────────────────────────────────────────────
-  function setLang(l) {
-    lang = l; t = T[l];
-    localStorage.setItem('sp_lang', l);
-    applyLang();
-    renderExams();
-    if (profile) renderAttempts();
+  // ── THEME ──────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+  function toggleTheme() {
+    const next = (localStorage.getItem('sp_theme') || 'dark') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('sp_theme', next);
+    applyTheme(next);
   }
 
-  function applyLang() {
-    document.documentElement.setAttribute('dir', t.dir);
-    document.documentElement.setAttribute('lang', lang);
-    setText('examsTitle', t.examsTitle);
-    setText('examsSub', t.examsSub);
-    setText('attemptsTitle', t.attemptsTitle);
-    setText('statLabelExams', t.statLabelExams);
-    setText('statLabelAvg', t.statLabelAvg);
-    setText('statLabelBest', t.statLabelBest);
-    setText('statLabelSub', t.statLabelSub);
-    setText('bannerTitle', t.bannerTitle);
-    setText('ddUpgrade', t.ddUpgrade);
-    setText('ddSignOut', t.ddSignOut);
-    ['ar','fr','en','tr'].forEach(c => {
-      const b = document.getElementById('btn'+c.charAt(0).toUpperCase()+c.slice(1));
-      if(b) b.classList.toggle('active', c === lang);
-    });
-    document.title = `Speaglish — ${t.examsTitle}`;
-  }
-
-  // ─── RENDER EXAMS ─────────────────────────────────────────────
-  function renderExams() {
-    const exams   = EXAMS[market] || EXAMS.dz;
-    const isActive = profile?.subscription_status === 'active';
-    const trialUsed = profile?.trial_tests_used || 0;
-
-    document.getElementById('examGrid').innerHTML = exams.map(e => {
-      const canAccess = isActive || (e.free && trialUsed < 3);
-      return `
-        <div class="exam-card ${canAccess ? 'unlocked' : 'locked'}"
-          style="--card-color:${e.color};"
-          ${canAccess ? `onclick="startExam('${e.id}','${e.title}')"` : ''}>
-          <div class="exam-card-top">
-            <span class="exam-tag"
-              style="background:${e.color}20;color:${e.color};border:1px solid ${e.color}30;">
-              ${e.type}
-            </span>
-            ${e.free ? `<span class="exam-free">FREE</span>` : ''}
-            ${!canAccess ? `<span style="color:var(--muted);font-size:14px;">🔒</span>` : ''}
-          </div>
-          <div class="exam-title">${e.title}</div>
-          <div class="exam-meta">${e.skill} · ${e.dur} min · ${e.count} Q</div>
-          <button class="exam-action ${canAccess ? 'exam-action-start' : 'exam-action-locked'}"
-            ${!canAccess ? 'disabled' : `onclick="event.stopPropagation();startExam('${e.id}','${e.title}')"`}>
-            ${canAccess ? t.startBtn + ' →' : t.lockedBtn}
-          </button>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function startExam(id, title) {
-    localStorage.setItem('sp_current_exam', JSON.stringify({ id, title, market }));
-    window.location.href = 'exam.html';
-  }
-
-  // ─── RENDER ATTEMPTS ──────────────────────────────────────────
-  function renderAttempts(attempts = []) {
-    const el = document.getElementById('attemptsList');
-    if (!attempts.length) {
-      el.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">📝</div>
-          <div class="empty-title">${t.noAttempts}</div>
-          <div class="empty-sub">${t.noAttemptsSub}</div>
-        </div>`;
-      return;
-    }
-    el.innerHTML = attempts.map(a => {
-      const pct   = a.score || 0;
-      const color = pct >= 70 ? 'var(--teal)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
-      const lvl   = pct >= 80 ? 'C1' : pct >= 65 ? 'B2' : pct >= 50 ? 'B1' : 'A2';
-      const date  = new Date(a.completed_at).toLocaleDateString();
-      return `
-        <div class="attempt-card" onclick="viewResult('${a.id}')">
-          <div class="attempt-score" style="background:${color}20;color:${color};border:1px solid ${color}40;">
-            ${pct}%
-          </div>
-          <div class="attempt-info">
-            <div class="attempt-title">${a.exam_title || a.exam_type}</div>
-            <div class="attempt-meta">${date} · ${a.correct_answers||0}/${a.total_questions||0} correct</div>
-          </div>
-          <span class="attempt-level" style="background:${color}20;color:${color};">${lvl}</span>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function viewResult(id) {
-    localStorage.setItem('sp_result_id', id);
-    window.location.href = 'results.html';
-  }
-
-  // ─── LOAD PROFILE & DATA ──────────────────────────────────────
-  async function loadData(userId) {
-    // Profile
-    const { data: p } = await sb.from('profiles')
-      .select('*').eq('id', userId).single();
-    profile = p || {};
-    market  = profile.market || localStorage.getItem('sp_market') || 'dz';
-    localStorage.setItem('sp_market', market);
-
-    // Welcome
-    const name = profile.full_name?.split(' ')[0] || '';
-    document.getElementById('welcomeTitle').textContent = `${t.welcomeTitle}${name ? ', ' + name : ''} 👋`;
-    document.getElementById('welcomeSub').textContent   = t.welcomeSub;
-
-    // Avatar
-    document.getElementById('avatarLetter').textContent =
-      (profile.full_name || '?').charAt(0).toUpperCase();
-
-    // Subscription badge
-    const status  = profile.subscription_status || 'trial';
-    const subEl   = document.getElementById('subBadge');
-    const subMap  = {
-      trial:   ['sub-trial',   t.subTrial],
-      active:  ['sub-active',  t.subActive],
-      expired: ['sub-expired', t.subExpired],
-      pending: ['sub-pending', t.subPending],
-    };
-    const [cls, label] = subMap[status] || subMap.trial;
-    subEl.className = `sub-badge ${cls}`;
-    subEl.textContent = label;
-    document.getElementById('statSub').textContent = label;
-
-    // Upgrade banner
-    const trialUsed = profile.trial_tests_used || 0;
-    if (status === 'trial' || status === 'expired') {
-      const banner = document.getElementById('upgradeBanner');
-      banner.style.display = 'flex';
-      document.getElementById('trialUsed').textContent = trialUsed;
-      document.getElementById('bannerTitle').textContent = t.bannerTitle;
-      document.getElementById('bannerSub').innerHTML =
-        status === 'expired'
-          ? `Your subscription has expired. Renew to continue.`
-          : `You have used <strong>${trialUsed}</strong> of 3 free exams. Upgrade for unlimited access.`;
-      document.getElementById('bannerBtn').textContent = 'Upgrade Now →';
-    }
-
-    // Attempts
-    const { data: attempts } = await sb
-      .from('exam_attempts')
-      .select('*')
-      .eq('student_id', userId)
-      .order('completed_at', { ascending: false })
-      .limit(5);
-
-    const all = attempts || [];
-
-    // Stats
-    document.getElementById('statExams').textContent = all.length;
-    if (all.length) {
-      const avg  = Math.round(all.reduce((s, a) => s + (a.score||0), 0) / all.length);
-      const best = Math.max(...all.map(a => a.score || 0));
-      document.getElementById('statAvg').textContent  = avg + '%';
-      document.getElementById('statBest').textContent = best + '%';
-    }
-
-    renderExams();
-    renderAttempts(all);
-
-    // Logo
-    try {
-      const { data: cfg } = await sb.from('landing_config')
-        .select('logo_url').eq('market', market).single();
-      if (cfg?.logo_url) {
-        document.getElementById('logoMark').innerHTML =
-          `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`;
-      }
-    } catch(e) {}
-  }
-
-  // ─── DROPDOWN ─────────────────────────────────────────────────
-  function toggleDropdown() {
-    document.getElementById('dropdown').classList.toggle('open');
-  }
-  document.addEventListener('click', e => {
-    if (!document.getElementById('avatar').contains(e.target)) {
-      document.getElementById('dropdown').classList.remove('open');
-    }
-  });
-
-  // ─── SIGN OUT ─────────────────────────────────────────────────
+  // ── SIGN OUT ───────────────────────────────────────────────────
   async function signOut() {
     await sb.auth.signOut();
     window.location.href = 'login.html';
   }
 
-  // ─── HELPERS ──────────────────────────────────────────────────
-  const setText = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
-  };
+  // ── STATUS BANNER ──────────────────────────────────────────────
+  function renderBanner(prof) {
+    const banner = document.getElementById('statusBanner');
+    const icon   = document.getElementById('bannerIcon');
+    const text   = document.getElementById('bannerText');
+    const btn    = document.getElementById('bannerBtn');
+    const status = prof.subscription_status || 'trial';
+    const used   = prof.trial_tests_used || 0;
 
-  // ─── INIT ─────────────────────────────────────────────────────
-  async function init() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) { window.location.href = 'login.html'; return; }
+    banner.style.display = 'flex';
 
-    // Redirect admin to admin panel
-    const { data: p } = await sb.from('profiles')
-      .select('role').eq('id', session.user.id).single();
-    if (p?.role === 'admin') {
-      window.location.href = 'admin-landing.html'; return;
+    if (status === 'active') {
+      banner.style.display = 'none';
+      return;
     }
 
+    if (status === 'trial') {
+      const remaining = 3 - used;
+      banner.className = 'status-banner banner-trial';
+      icon.textContent = '⏳';
+      text.innerHTML = `<strong>${t.banner.trial(used)}</strong> — ${remaining} remaining`;
+      if (remaining <= 0) {
+        text.innerHTML = `<strong>${t.banner.trialDone}</strong>`;
+        btn.textContent = t.bannerBtn.trialDone;
+        btn.style.display = 'inline-block';
+      } else {
+        btn.textContent = t.bannerBtn.trial;
+        btn.style.display = 'inline-block';
+      }
+    } else if (status === 'pending') {
+      banner.className = 'status-banner banner-pending';
+      icon.textContent = '🔄';
+      text.innerHTML = `<strong>${t.banner.pending}</strong>`;
+      btn.style.display = 'none';
+    } else if (status === 'expired') {
+      banner.className = 'status-banner banner-expired';
+      icon.textContent = '❌';
+      text.innerHTML = `<strong>${t.banner.expired}</strong>`;
+      btn.textContent = t.bannerBtn.expired;
+      btn.style.display = 'inline-block';
+    }
+  }
+
+  // ── EXAMS ──────────────────────────────────────────────────────
+  const EXAM_COLORS = {
+    TCF:'#4169FF',TEF:'#9B6DFF',IELTS:'#F0A500',YDS:'#4169FF',
+    'YÖKDİL':'#00C9A7','e-YDS':'#00C9A7',TOEFL:'#FF5757',TOEIC:'#F0A500',
+    DELF:'#FF7F50',DALF:'#FF5733','Cambridge B2':'#2196F3','Cambridge C1':'#1565C0',
+    CAPM:'#8B5CF6',PMP:'#7C3AED',PRINCE2:'#6D28D9','Scrum Master':'#059669',
+    'Six Sigma':'#DC2626',CISSP:'#B45309','AWS Cloud':'#D97706','Google Cloud':'#0EA5E9',
+    Custom:'#64748B',
+  };
+
+  function canStartExam(prof) {
+    const status = prof.subscription_status || 'trial';
+    if (status === 'active') return true;
+    if (status === 'trial') return (prof.trial_tests_used || 0) < 3;
+    return false;
+  }
+
+  function renderExams(exams, prof) {
+    const grid = document.getElementById('examsGrid');
+    if (!exams || !exams.length) {
+      grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">${t.noExams}</div></div>`;
+      return;
+    }
+
+    const canStart = canStartExam(prof);
+    const status   = prof.subscription_status || 'trial';
+    const used     = prof.trial_tests_used || 0;
+    const trialMax = 3;
+
+    // Find best score per exam type for progress bar
+    const bestScores = {};
+    attempts.forEach(a => {
+      const key = a.exam_id;
+      if (!bestScores[key] || a.score > bestScores[key]) bestScores[key] = a.score;
+    });
+
+    grid.innerHTML = exams.map(ex => {
+      const color    = EXAM_COLORS[ex.type] || '#4169FF';
+      const isFree   = ex.is_free;
+      const locked   = !canStart && !isFree;
+      const best     = bestScores[ex.id];
+      const barW     = best ? best + '%' : '0%';
+      const barColor = best >= 70 ? 'var(--teal)' : best >= 50 ? 'var(--gold)' : 'var(--red)';
+      const tagLabel = isFree ? t.freeTag : (locked ? t.lockedTag : '');
+      const tagClass = isFree ? 'exam-free-tag' : 'exam-lock-tag';
+
+      return `
+        <div class="exam-card${locked?' locked':''}" onclick="${locked ? 'openPaywall()' : `startExam('${ex.id}')`}">
+          <div class="exam-accent" style="background:${color};"></div>
+          ${tagLabel ? `<div class="exam-tag ${tagClass}">${tagLabel}</div>` : '<div style="height:22px;"></div>'}
+          <div class="exam-name">${ex.title || ex.type}</div>
+          <div class="exam-meta">${ex.type} · ${ex.duration_minutes || 60} min · ${ex.difficulty_level || 'All levels'}</div>
+          ${best !== undefined ? `
+            <div class="exam-bar"><div class="exam-bar-fill" style="width:${barW};background:${barColor};"></div></div>
+          ` : '<div class="exam-bar"><div class="exam-bar-fill" style="width:0;background:var(--gold);"></div></div>'}
+          <div class="exam-footer">
+            <span class="exam-qs">${ex.question_count || '—'} ${t.questions}</span>
+            <button class="exam-start-btn ${locked?'exam-start-locked':'exam-start-active'}" onclick="event.stopPropagation();${locked?'openPaywall()':``startExam('${ex.id}')``}">
+              ${locked ? '🔒 ' + t.lockedBtn : t.startBtn + ' →'}
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function startExam(examId) {
+    window.location.href = `exam.html?id=${examId}`;
+  }
+
+  // ── PAYWALL ────────────────────────────────────────────────────
+  function openPaywall() {
+    document.getElementById('paywallTitle').textContent = t.paywallTitle;
+    document.getElementById('paywallSub').textContent   = t.paywallSub;
+    document.getElementById('paywallBtn').textContent   = t.paywallBtn;
+    document.getElementById('paywallClose').textContent = t.paywallClose;
+    document.getElementById('paywallModal').classList.add('open');
+  }
+  function closePaywall() {
+    document.getElementById('paywallModal').classList.remove('open');
+  }
+
+  // ── RESULTS ───────────────────────────────────────────────────
+  function renderResults(attempts) {
+    const list = document.getElementById('resultsList');
+    if (!attempts || !attempts.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">${t.noResults}</div></div>`;
+      return;
+    }
+
+    list.innerHTML = attempts.map(a => {
+      const score    = a.score || 0;
+      const color    = score >= 70 ? 'var(--teal)' : score >= 50 ? 'var(--gold)' : 'var(--red)';
+      const date     = new Date(a.completed_at).toLocaleDateString();
+      const mins     = a.duration_seconds ? Math.round(a.duration_seconds / 60) + ' min' : '—';
+      const skills   = a.skill_scores ? Object.entries(a.skill_scores) : [];
+
+      return `
+        <div class="result-card">
+          <div class="result-score-ring" style="color:${color};border-color:${color};background:${color}15;">
+            ${score}%
+          </div>
+          <div class="result-body">
+            <div class="result-title">${a.exam_title || a.exam_type || 'Exam'}</div>
+            <div class="result-meta">${date}</div>
+            ${skills.length ? `
+              <div class="result-skills">
+                ${skills.map(([skill, sc]) => {
+                  const c = sc >= 70 ? 'var(--teal)' : sc >= 50 ? 'var(--gold)' : 'var(--red)';
+                  const label = t.skills[skill] || skill;
+                  return `<span class="result-skill" style="color:${c};border-color:${c}30;">${label}: ${sc}%</span>`;
+                }).join('')}
+              </div>` : ''}
+            <div class="result-stats">
+              <div class="result-stat">${t.correct}: <span>${a.correct_answers || 0}/${a.total_questions || 0}</span></div>
+              <div class="result-stat">${t.time}: <span>${mins}</span></div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── FOCUS / RECOMMENDATIONS ────────────────────────────────────
+  function renderFocus(attempts) {
+    if (!attempts || !attempts.length) return;
+
+    const latest = attempts[0];
+    const skills = latest.skill_scores ? Object.entries(latest.skill_scores) : [];
+
+    if (!skills.length) return;
+
+    const weak   = skills.filter(([,s]) => s < 60).sort((a,b) => a[1]-b[1]);
+    const ok     = skills.filter(([,s]) => s >= 60 && s < 80);
+    const strong = skills.filter(([,s]) => s >= 80);
+
+    document.getElementById('focusEmpty').style.display   = 'none';
+    document.getElementById('focusContent').style.display = 'block';
+    document.getElementById('focusLessonsBtn').style.display = 'inline-block';
+    document.getElementById('focusHeadline').textContent  = t.focusHeadline;
+    document.getElementById('focusDesc').textContent      = t.focusDesc;
+
+    const tags = document.getElementById('skillTags');
+    tags.innerHTML = [
+      ...weak.map(([s]) => `<span class="skill-tag skill-weak">⚠️ ${t.skills[s]||s}</span>`),
+      ...ok.map(([s])   => `<span class="skill-tag skill-ok">📈 ${t.skills[s]||s}</span>`),
+      ...strong.map(([s])=> `<span class="skill-tag skill-strong">✅ ${t.skills[s]||s}</span>`),
+    ].join('');
+  }
+
+  // ── APPLY LANG ─────────────────────────────────────────────────
+  function applyLang() {
+    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', t.dir);
+    const s = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+    s('focusTitle',   t.focusTitle);
+    s('lessonsLink',  t.lessonsLink);
+    s('examsTitle',   t.examsTitle);
+    s('resultsTitle', t.resultsTitle);
+    s('focusEmpty',   t.focusEmpty);
+    s('signOutBtn',   t.signOut);
+  }
+
+  // ── INIT ───────────────────────────────────────────────────────
+  async function init() {
+    applyTheme(localStorage.getItem('sp_theme') || 'dark');
+    market = localStorage.getItem('sp_market') || 'dz';
+    lang   = localStorage.getItem('sp_lang')   || 'en';
+    t      = T[lang] || T.en;
     applyLang();
-    await loadData(session.user.id);
-    document.getElementById('loaderOverlay').classList.add('out');
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'login.html'; return; }
+
+      // Load profile
+      const { data: prof } = await sb.from('profiles')
+        .select('*').eq('id', session.user.id).maybeSingle();
+      profile = prof;
+
+      // Admin redirect
+      if (prof?.role === 'admin') { window.location.href = 'admin-landing.html'; return; }
+
+      // Nav name
+      document.getElementById('navName').textContent = prof?.full_name || '';
+
+      // Logo
+      try {
+        const { data: cfg } = await sb.from('landing_config')
+          .select('logo_url').eq('market', market).maybeSingle();
+        if (cfg?.logo_url) {
+          const img = new Image();
+          img.onload = () => { document.getElementById('logoMark').innerHTML = `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`; };
+          img.src = cfg.logo_url;
+        }
+      } catch(e) {}
+
+      // Status banner
+      renderBanner(prof);
+
+      // Load exams
+      const { data: exams } = await sb.from('exams')
+        .select('id, title, type, duration_minutes, difficulty_level, is_free, is_active, question_count')
+        .eq('is_active', true)
+        .eq('market', market)
+        .order('is_free', { ascending: false });
+
+      // Load exam attempts
+      const { data: atts } = await sb.from('exam_attempts')
+        .select('*')
+        .eq('student_id', session.user.id)
+        .order('completed_at', { ascending: false })
+        .limit(20);
+      attempts = atts || [];
+
+      renderExams(exams || [], prof);
+      renderResults(attempts);
+      renderFocus(attempts);
+
+    } catch(err) {
+      console.error('Dashboard error:', err);
+    } finally {
+      document.getElementById('loaderOverlay').classList.add('out');
+    }
   }
 
   init();
