@@ -469,43 +469,73 @@
     if (!file) { showErr('err_' + key, 'Please upload your receipt first'); return; }
 
     const spin = document.getElementById('spin_' + key);
-    if (spin) { spin.style.display = 'block'; spin.parentElement.disabled = true; }
+    const btn  = spin?.parentElement;
+    if (spin) spin.style.display = 'block';
+    if (btn)  btn.disabled = true;
 
-    try {
-      const ext  = file.name.split('.').pop().toLowerCase();
-      const path = `${currentUser.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await sb.storage.from('receipts').upload(path, file, { upsert: false });
-      if (upErr) throw new Error('Upload failed: ' + upErr.message);
+    const errEl = document.getElementById('err_' + key);
+    if (errEl) { errEl.textContent = ''; errEl.classList.remove('show'); }
 
-      const { data: { publicUrl } } = sb.storage.from('receipts').getPublicUrl(path);
-      const cfg = landingCfg;
-      const currency = cfg?.currency || (market === 'tr' ? 'TRY' : 'DZD');
-      const priceMap = {
-        '1month':  cfg?.price_1month  || (market==='tr'?300:1500),
-        '3months': cfg?.price_3months || (market==='tr'?700:3500),
-        '6months': cfg?.price_6months || (market==='tr'?1200:5500),
-      };
+    // STEP 1: Upload file
+    const ext  = file.name.split('.').pop().toLowerCase();
+    const path = `${currentUser.id}/${Date.now()}.${ext}`;
 
-      await sb.from('subscriptions').insert({
-        student_id:     currentUser.id,
-        status:         'pending',
-        plan_type:      selectedPlan,
-        amount:         priceMap[selectedPlan],
-        currency:       currency,
-        receipt_url:    publicUrl,
-        receipt_path:   path,
-        payment_method: key,
-        created_at:     new Date().toISOString(),
-      });
+    const { data: uploadData, error: upErr } = await sb.storage
+      .from('receipts')
+      .upload(path, file, { upsert: true });
 
-      await sb.from('profiles').update({ subscription_status: 'pending' }).eq('id', currentUser.id);
-      showConfirmation();
-
-    } catch(err) {
-      showErr('err_' + key, err.message || 'Something went wrong. Please try again.');
-      const spinEl = document.getElementById('spin_' + key);
-      if (spinEl) { spinEl.style.display = 'none'; spinEl.parentElement.disabled = false; }
+    if (upErr) {
+      showErr('err_' + key, '❌ Upload failed: ' + upErr.message);
+      if (spin) spin.style.display = 'none';
+      if (btn)  btn.disabled = false;
+      return;
     }
+
+    // STEP 2: Get public URL (we store path for signed URL later)
+    const { data: { publicUrl } } = sb.storage.from('receipts').getPublicUrl(path);
+
+    // STEP 3: Insert subscriptions row
+    const cfg      = landingCfg;
+    const currency = cfg?.currency || (market === 'tr' ? 'TRY' : 'DZD');
+    const priceMap = {
+      '1month':  cfg?.price_1month  || (market==='tr'?300:1500),
+      '3months': cfg?.price_3months || (market==='tr'?700:3500),
+      '6months': cfg?.price_6months || (market==='tr'?1200:5500),
+    };
+
+    const { error: subErr } = await sb.from('subscriptions').insert({
+      student_id:     currentUser.id,
+      status:         'pending',
+      plan_type:      selectedPlan,
+      amount:         priceMap[selectedPlan],
+      currency:       currency,
+      receipt_url:    publicUrl,
+      receipt_path:   path,
+      payment_method: key,
+      created_at:     new Date().toISOString(),
+    });
+
+    if (subErr) {
+      showErr('err_' + key, '❌ Could not save subscription: ' + subErr.message);
+      if (spin) spin.style.display = 'none';
+      if (btn)  btn.disabled = false;
+      return;
+    }
+
+    // STEP 4: Update profile status
+    const { error: profErr } = await sb.from('profiles')
+      .update({ subscription_status: 'pending' })
+      .eq('id', currentUser.id);
+
+    if (profErr) {
+      showErr('err_' + key, '❌ Could not update profile: ' + profErr.message);
+      if (spin) spin.style.display = 'none';
+      if (btn)  btn.disabled = false;
+      return;
+    }
+
+    // All good
+    showConfirmation();
   }
 
   // ── WHATSAPP ───────────────────────────────────────────────────
