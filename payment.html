@@ -155,12 +155,36 @@
     <div class="confirm-title">Request received!</div>
     <div class="confirm-sub">
       Your payment request has been submitted. Our team will review and activate your account within <strong>24 hours</strong>.
-      You can close this page — we'll take care of the rest.
     </div>
     <div class="pending-pill">
       <span class="pending-dot"></span>
       Pending activation
     </div>
+
+    <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px;max-width:360px;margin-left:auto;margin-right:auto;">
+
+      <!-- Re-upload receipt -->
+      <label style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--card2);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        <input type="file" id="reuploadFile" accept="image/*,.pdf" style="display:none;" onchange="handleReupload(this)">
+        <span style="font-size:22px;">📎</span>
+        <div style="text-align:left;">
+          <div style="font-size:13px;font-weight:700;">Re-upload receipt</div>
+          <div style="font-size:12px;color:var(--muted);" id="reuploadStatus">Wrong file? Upload a new one</div>
+        </div>
+      </label>
+
+      <!-- WhatsApp follow-up -->
+      <button class="wa-btn" id="waFollowupBtn" onclick="waFollowup()" style="border-radius:12px;padding:14px 18px;justify-content:flex-start;gap:12px;">
+        <span style="font-size:22px;">💬</span>
+        <div style="text-align:left;">
+          <div style="font-size:13px;font-weight:700;">Contact us on WhatsApp</div>
+          <div style="font-size:12px;opacity:.8;">Questions about your payment?</div>
+        </div>
+      </button>
+
+    </div>
+
+    <div class="error-msg" id="reuploadError" style="margin-top:14px;max-width:360px;margin-left:auto;margin-right:auto;"></div>
   </div>
 
   <!-- Payment form -->
@@ -522,6 +546,60 @@
     document.getElementById('paymentForm').style.display = 'none';
     document.getElementById('confirmState').classList.add('show');
     window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  // ── RE-UPLOAD FROM CONFIRMATION SCREEN ────────────────────────
+  async function handleReupload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      showErr('reuploadError', 'File too large — maximum 10MB'); return;
+    }
+
+    const status = document.getElementById('reuploadStatus');
+    status.textContent = 'Uploading...';
+
+    try {
+      const ext  = file.name.split('.').pop().toLowerCase();
+      const path = `${currentUser.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await sb.storage.from('receipts').upload(path, file, { upsert: false });
+      if (upErr) throw new Error(upErr.message);
+
+      const { data: { publicUrl } } = sb.storage.from('receipts').getPublicUrl(path);
+
+      // Update the most recent pending subscription row with new receipt
+      const { data: existing } = await sb.from('subscriptions')
+        .select('id')
+        .eq('student_id', currentUser.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existing) {
+        await sb.from('subscriptions').update({
+          receipt_url: publicUrl,
+          updated_at:  new Date().toISOString(),
+        }).eq('id', existing.id);
+      }
+
+      status.textContent = '✅ New receipt uploaded — we\'ll review it shortly';
+      status.style.color = 'var(--teal)';
+    } catch(err) {
+      status.textContent = 'Wrong file? Upload a new one';
+      showErr('reuploadError', 'Upload failed: ' + err.message);
+    }
+  }
+
+  // ── WHATSAPP FOLLOW-UP ─────────────────────────────────────────
+  function waFollowup() {
+    const waNumber = (landingCfg?.whatsapp_number || '').replace(/\D/g, '');
+    if (!waNumber) { showErr('reuploadError', 'WhatsApp not configured yet. Please wait for activation.'); return; }
+    const name = currentProfile?.full_name || 'Student';
+    const msg  = encodeURIComponent(
+      `Hi! I just submitted a payment request on Speaglish.\n\nName: ${name}\nMarket: ${market.toUpperCase()}\n\nI have a question about my payment.`
+    );
+    window.open(`https://wa.me/${waNumber}?text=${msg}`, '_blank');
   }
 
   // ── INIT ───────────────────────────────────────────────────────
