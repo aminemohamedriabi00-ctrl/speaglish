@@ -218,9 +218,11 @@
   let currentProfile = null;
   let landingCfg     = null;
   let selectedPlan   = null;
-  let selectedFiles  = {};   // { methodKey: File }
+  let selectedFiles  = {};
   let market         = 'dz';
   let openMethod     = null;
+  let lang           = 'en';
+  let t              = null; // set in init before any function uses it
 
   const PLAN_DURATIONS = { '1month':30, '3months':90, '6months':180 };
   const PLAN_LABELS    = { '1month':'1 Month', '3months':'3 Months', '6months':'6 Months' };
@@ -320,9 +322,6 @@
       dir:'ltr'
     }
   };
-
-  let lang = 'en';
-  let t    = T.en;
 
   function applyLang() {
     document.documentElement.setAttribute('lang', lang);
@@ -474,7 +473,8 @@
     const grid = document.getElementById('pmGrid');
 
     if (!methods.length) {
-      grid.innerHTML = `<div class="no-methods"><div class="no-methods-icon">💳</div><div style="font-size:14px;font-weight:600;margin-bottom:6px;">${t.noMethods}</div><div style="font-size:13px;">${t.noMethodsSub}</div></div>`;
+      const tx2 = t || T.en;
+      grid.innerHTML = `<div class="no-methods"><div class="no-methods-icon">💳</div><div style="font-size:14px;font-weight:600;margin-bottom:6px;">${tx2.noMethods}</div><div style="font-size:13px;">${tx2.noMethodsSub}</div></div>`;
       return;
     }
 
@@ -498,12 +498,13 @@
   }
 
   function buildMethodBody(m, cfg) {
+    const tx = t || T.en; // fallback if t not yet set
     if (m.isWhatsapp) {
       return `
         <button class="wa-btn" onclick="doWhatsApp()">
-          <span>💬</span><span>${t.waBtn}</span>
+          <span>💬</span><span>${tx.waBtn}</span>
         </button>
-        <div class="wa-note">${t.waNotePayment}</div>`;
+        <div class="wa-note">${tx.waNotePayment}</div>`;
     }
 
     const rows  = m.accountRows(m.data || {}).filter(r => r.value);
@@ -533,14 +534,14 @@
         <label class="upload-zone${selectedFiles[m.key]?' has-file':''}" id="zone_${m.key}" for="file_${m.key}">
           <input type="file" id="file_${m.key}" accept="image/*,.pdf" style="display:none;" onchange="handleFile(this,'${m.key}')">
           <div class="upload-icon">📄</div>
-          <div class="upload-text">${t.uploadText}</div>
-          <div class="upload-hint">${t.uploadHint}</div>
+          <div class="upload-text">${tx.uploadText}</div>
+          <div class="upload-hint">${tx.uploadHint}</div>
           <div class="upload-filename" id="fname_${m.key}">${selectedFiles[m.key]?'✅ '+selectedFiles[m.key].name:''}</div>
         </label>
         <div class="error-msg" id="err_${m.key}"></div>
         <button class="submit-btn" onclick="submitReceipt('${m.key}')">
           <div class="spinner-sm" id="spin_${m.key}"></div>
-          <span class="btn-text">${t.submitBtn}</span>
+          <span class="btn-text">${tx.submitBtn}</span>
         </button>`;
     }
 
