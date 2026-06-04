@@ -13,6 +13,14 @@
       --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
       --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
       --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;
+
+    [data-theme="light"]{
+      --bg:#F4F6FB;--card:#FFFFFF;--card2:#EDF0F7;
+      --border:#D4DAE8;--gold:#D4900A;--gold2:#B87A00;
+      --teal:#009982;--red:#D93636;--blue:#2952E3;--purple:#7B4FE0;
+      --text:#0D1120;--sub:#4A5578;--muted:#9AA3BA;
+      --nav-bg:rgba(244,246,251,.92);
+    }
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
     body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;}
@@ -781,7 +789,24 @@
   const capitalize = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 
   // ─── INIT ─────────────────────────────────────────────────────
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    // If there's a theme button, update it
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+  function initTheme() {
+    // 1. Check localStorage preference
+    const saved = localStorage.getItem('sp_theme');
+    if (saved) { applyTheme(saved); return; }
+    // 2. Fall back to OS preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(prefersDark ? 'dark' : 'light');
+  }
+
   async function init() {
+    initTheme();
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
     userId = session.user.id;
