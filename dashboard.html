@@ -592,9 +592,6 @@
         .eq('market', market)
         .order('is_free', { ascending: false });
 
-      if (examsErr) console.error('Exams error:', examsErr.message);
-      console.log('Market:', market, '| Exams found:', exams?.length, exams);
-
       // Load exam attempts
       const { data: atts } = await sb.from('exam_attempts')
         .select('*')
