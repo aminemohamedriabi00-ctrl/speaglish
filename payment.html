@@ -493,6 +493,7 @@
         amount:         priceMap[selectedPlan],
         currency:       currency,
         receipt_url:    publicUrl,
+        receipt_path:   path,
         payment_method: key,
         created_at:     new Date().toISOString(),
       });
@@ -579,6 +580,7 @@
       if (existing) {
         await sb.from('subscriptions').update({
           receipt_url: publicUrl,
+          receipt_path: path,
           updated_at:  new Date().toISOString(),
         }).eq('id', existing.id);
       }
