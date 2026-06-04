@@ -493,7 +493,7 @@
             <div class="row-meta">${s.plan_type||'—'} · ${date} · ${market.toUpperCase()}</div>
           </div>
           ${s.receipt_url
-            ? `<a href="${s.receipt_url}" target="_blank" class="btn btn-ghost btn-sm">📎</a>`
+            ? `<a href="${s.receipt_url}" target="_blank" class="btn btn-ghost btn-sm">📎 Receipt</a>`
             : '<span style="font-size:11px;color:var(--muted);">No receipt</span>'}
           <span class="amount-badge">${s.amount?.toLocaleString()||'—'} ${s.currency||''}</span>
           <button class="btn btn-success btn-sm" onclick="openActivation('${s.id}')">Activate</button>
@@ -596,15 +596,7 @@
     if (!sub) return;
     const { data: prof } = await sb.from('profiles').select('full_name, market').eq('id', sub.student_id).single();
     currentSub = { ...sub, _name: prof?.full_name || 'Unknown', _market: prof?.market || 'dz', _profileOnly: false };
-
-    // Generate signed URL for receipt (valid 1 hour) if path exists
-    let receiptUrl = sub.receipt_url || null;
-    if (sub.receipt_path) {
-      const { data: signed } = await sb.storage.from('receipts').createSignedUrl(sub.receipt_path, 3600);
-      if (signed?.signedUrl) receiptUrl = signed.signedUrl;
-    }
-
-    _renderActivationModal(currentSub._name, currentSub._market, sub.plan_type, sub.amount, sub.currency, receiptUrl);
+    _renderActivationModal(currentSub._name, currentSub._market, sub.plan_type, sub.amount, sub.currency, sub.receipt_url);
   }
 
   async function openActivationForProfile(profileId, name, market) {
