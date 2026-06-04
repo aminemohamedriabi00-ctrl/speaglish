@@ -439,7 +439,7 @@
             <div class="exam-bar"><div class="exam-bar-fill" style="width:${barW};background:${barColor};"></div></div>
           ` : '<div class="exam-bar"><div class="exam-bar-fill" style="width:0;background:var(--gold);"></div></div>'}
           <div class="exam-footer">
-            <span class="exam-qs">${ex.question_count || '—'} ${t.questions}</span>
+            <span class="exam-qs" id="qs_${ex.id}"></span>
             <button class="exam-start-btn ${locked?'exam-start-locked':'exam-start-active'}" onclick="event.stopPropagation();${locked ? 'openPaywall()' : 'startExam(\'' + ex.id + '\')'}">
               ${locked ? '🔒 ' + t.lockedBtn : t.startBtn + ' →'}
             </button>
@@ -561,6 +561,10 @@
         .select('*').eq('id', session.user.id).maybeSingle();
       profile = prof;
 
+      // Use profile market — more reliable than localStorage
+      market = prof?.market || localStorage.getItem('sp_market') || 'dz';
+      localStorage.setItem('sp_market', market);
+
       // Admin redirect
       if (prof?.role === 'admin') { window.location.href = 'admin-landing.html'; return; }
 
@@ -581,12 +585,15 @@
       // Status banner
       renderBanner(prof);
 
-      // Load exams
-      const { data: exams } = await sb.from('exams')
-        .select('id, title, type, duration_minutes, difficulty_level, is_free, is_active, question_count')
+      // Load exams for this market
+      const { data: exams, error: examsErr } = await sb.from('exams')
+        .select('id, title, type, duration_minutes, difficulty_level, is_free, is_active')
         .eq('is_active', true)
         .eq('market', market)
         .order('is_free', { ascending: false });
+
+      if (examsErr) console.error('Exams error:', examsErr.message);
+      console.log('Market:', market, '| Exams found:', exams?.length, exams);
 
       // Load exam attempts
       const { data: atts } = await sb.from('exam_attempts')
@@ -599,6 +606,18 @@
       renderExams(exams || [], prof);
       renderResults(attempts);
       renderFocus(attempts);
+
+      // Load question counts separately (non-blocking)
+      if (exams?.length) {
+        for (const ex of exams) {
+          sb.from('questions').select('id', { count: 'exact', head: true })
+            .eq('exam_id', ex.id)
+            .then(({ count }) => {
+              const el = document.getElementById('qs_' + ex.id);
+              if (el && count !== null) el.textContent = `${count} ${t.questions}`;
+            });
+        }
+      }
 
     } catch(err) {
       console.error('Dashboard error:', err);
