@@ -430,7 +430,7 @@
       const tagClass = isFree ? 'exam-free-tag' : 'exam-lock-tag';
 
       return `
-        <div class="exam-card${locked?' locked':''}" onclick="${locked ? 'openPaywall()' : `startExam('${ex.id}')`}">
+        <div class="exam-card${locked?' locked':''}" onclick="${locked ? 'openPaywall()' : 'startExam(\'' + ex.id + '\')'}">
           <div class="exam-accent" style="background:${color};"></div>
           ${tagLabel ? `<div class="exam-tag ${tagClass}">${tagLabel}</div>` : '<div style="height:22px;"></div>'}
           <div class="exam-name">${ex.title || ex.type}</div>
@@ -440,7 +440,7 @@
           ` : '<div class="exam-bar"><div class="exam-bar-fill" style="width:0;background:var(--gold);"></div></div>'}
           <div class="exam-footer">
             <span class="exam-qs">${ex.question_count || '—'} ${t.questions}</span>
-            <button class="exam-start-btn ${locked?'exam-start-locked':'exam-start-active'}" onclick="event.stopPropagation();${locked?'openPaywall()':``startExam('${ex.id}')``}">
+            <button class="exam-start-btn ${locked?'exam-start-locked':'exam-start-active'}" onclick="event.stopPropagation();${locked ? 'openPaywall()' : 'startExam(\'' + ex.id + '\')'}">
               ${locked ? '🔒 ' + t.lockedBtn : t.startBtn + ' →'}
             </button>
           </div>
