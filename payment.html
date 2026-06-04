@@ -817,9 +817,15 @@
 
     } catch(err) {
       console.error('Init error:', err);
-      // Still show the form with defaults so page isn't stuck
-      buildPlans({});
-      buildPaymentMethods({});
+      // Show error visibly so we can diagnose
+      document.getElementById('loaderOverlay').innerHTML =
+        `<div style="text-align:center;padding:40px;max-width:400px;">
+          <div style="font-size:32px;margin-bottom:16px;">⚠️</div>
+          <div style="font-family:sans-serif;font-size:14px;color:#EEF2FF;margin-bottom:12px;">Loading error — please share this with support:</div>
+          <div style="background:#1C2240;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:#FF5757;word-break:break-all;">${err?.message || String(err)}</div>
+          <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#F0A500;color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Retry</button>
+        </div>`;
+      return;
     } finally {
       // Always hide loader no matter what
       document.getElementById('loaderOverlay').classList.add('out');
