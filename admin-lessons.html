@@ -364,8 +364,8 @@
           <div class="exam-check-grid" id="examChecks">
             ${EXAM_TYPES.map(e => {
               const checked = (lesson?.exam_types||[]).includes(e);
-              return `<label class="exam-check-item${checked?' checked':''}" onclick="toggleExamCheck(this)">
-                <input type="checkbox" value="${e}" ${checked?'checked':''}>
+              return `<label class="exam-check-item${checked?' checked':''}">
+                <input type="checkbox" value="${e}" ${checked?'checked':''} onchange="this.closest('.exam-check-item').classList.toggle('checked', this.checked)">
                 ${e}
               </label>`;
             }).join('')}
@@ -404,11 +404,6 @@
       </div>`;
 
     renderExercises();
-  }
-
-  function toggleExamCheck(label) {
-    label.classList.toggle('checked');
-    label.querySelector('input').checked = label.classList.contains('checked');
   }
 
   // ── EXERCISES ─────────────────────────────────────────────────
