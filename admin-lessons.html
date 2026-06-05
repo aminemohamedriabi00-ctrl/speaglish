@@ -170,7 +170,52 @@
   let filterSkill = 'all';
   let exercises   = [];
 
-  const SKILLS   = ['Reading','Writing','Listening','Grammar','Vocabulary','Speaking','General'];
+  const TOPIC_MAP = {
+    Reading:['Main idea','Supporting details','Inference','Author\'s purpose','Text structure','Vocabulary in context','True/False/Not Given','Matching headings','Summary completion','Skimming & Scanning'],
+    Writing:['Essay structure','Introduction writing','Conclusion writing','Argument development','Describing graphs/charts','Formal letters','Opinion essays','Coherence & Cohesion','Punctuation','Paraphrasing'],
+    Listening:['Main idea','Specific details','Speaker\'s attitude','Inference','Multiple speakers','Note completion','Monologue comprehension','Dialogue comprehension','Numbers & Dates'],
+    Grammar:[
+      'Present Simple','Present Continuous','Present Perfect','Present Perfect Continuous',
+      'Past Simple','Past Continuous','Past Perfect','Past Perfect Continuous',
+      'Future Simple (will)','Future Continuous','Future Perfect','Future with going to','Mixed tenses',
+      'Zero conditional','First conditional','Second conditional','Third conditional','Mixed conditional',
+      'Wishes & regrets (I wish / If only)','Subjunctive mood',
+      'Passive voice (simple)','Passive voice (continuous)','Passive voice (perfect)',
+      'Causative (have/get something done)',
+      'Reported statements','Reported questions','Reported commands','Tense backshift','Reporting verbs',
+      'Can / Could','May / Might','Must / Have to','Should / Ought to','Would',
+      'Need to / Needn\'t','Modal perfects (should have / could have)',
+      'Relative clauses (defining)','Relative clauses (non-defining)',
+      'Adverbial clauses (time)','Adverbial clauses (reason/result)',
+      'Adverbial clauses (concession)','Noun clauses','Cleft sentences','Inversions',
+      'Definite article (the)','Indefinite article (a/an)','Zero article',
+      'Quantifiers (some/any/much/many)','Determiners (each/every/both/either/neither)',
+      'Prepositions of time','Prepositions of place','Prepositions of movement',
+      'Prepositions after adjectives','Prepositions after verbs','Phrasal prepositions',
+      'Countable vs uncountable nouns','Plural forms (irregular)','Possessive forms',
+      'Reflexive pronouns','Indefinite pronouns','It vs There constructions',
+      'Comparatives','Superlatives','Gradable vs ungradable adjectives',
+      'Order of adjectives','Adverb position','Intensifiers & Mitigators',
+      'Infinitive vs gerund','Verb + object + infinitive','Verb + preposition + gerund',
+      'Bare infinitive','Perfect infinitive',
+      'Question formation','Tag questions','Negative questions','Indirect questions','Negation patterns',
+      'Word order','Ellipsis & substitution','Discourse markers (grammar)',
+      'Emphasis (do/does/did)','So/Neither/Nor responses','Parallel structure'
+    ],
+    Vocabulary:['Synonyms','Antonyms','Word formation','Collocations','Phrasal verbs','Idioms','Academic vocabulary','Business vocabulary','Prefixes & Suffixes','Context clues','Register (formal/informal)'],
+    Speaking:['Pronunciation','Fluency','Coherence','Topic development','Agreeing & Disagreeing','Describing images','Giving opinions','Discourse markers','Turn-taking','Monologue delivery'],
+    Professional:['Project lifecycle','Scope management','Schedule management','Cost management','Risk management','Stakeholder management','Agile fundamentals','Scrum framework','Sprint planning','Change management','Quality management','Communication management','Procurement','Leadership','Business analysis'],
+    General:['General comprehension','Mixed skills']
+  };
+  const SKILLS = Object.keys(TOPIC_MAP);
+
+  function updateLessonTopics(skillVal) {
+    const sel = document.getElementById('fTopic');
+    if (!sel) return;
+    const topics = TOPIC_MAP[skillVal] || [];
+    sel.innerHTML = '<option value="">— Select topic (optional) —</option>' +
+      topics.map(tp => `<option value="${tp}">${tp}</option>`).join('');
+  }
   const SKILL_COLORS = {Reading:'#4169FF',Writing:'#9B6DFF',Listening:'#00C9A7',Grammar:'#F0A500',Vocabulary:'#FF7F50',Speaking:'#FF5757',General:'#64748B'};
   const EXAM_TYPES = ['TCF','TEF','DELF','DALF','IELTS','TOEFL','TOEIC','Cambridge B2','Cambridge C1','YDS','YÖKDİL','e-YDS','CAPM','PMP','PRINCE2','Scrum Master','Six Sigma','CISSP','AWS Cloud','Google Cloud','Custom'];
 
@@ -281,9 +326,20 @@
           </div>
           <div class="field">
             <label>Skill *</label>
-            <select id="fSkill">
+            <select id="fSkill" onchange="updateLessonTopics(this.value)">
               ${SKILLS.map(s=>`<option value="${s}" ${lesson?.skill===s?'selected':''}>${s}</option>`).join('')}
             </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Topic <span style="font-size:10px;color:var(--muted);">(links to exam questions)</span></label>
+            <select id="fTopic">
+              <option value="">— Select topic —</option>
+              ${(TOPIC_MAP[lesson?.skill]||[]).map(tp=>`<option value="${tp}" ${lesson?.topic===tp?'selected':''}>${tp}</option>`).join('')}
+            </select>
+          </div>
+        </div>
           </div>
         </div>
         <div class="field-row">
@@ -422,6 +478,7 @@
       youtube_url: youtube||null, exercises,
       exam_types: examTypes, is_free: isFree,
       order_index: order, is_active: true,
+      topic: document.getElementById('fTopic')?.value || null,
     };
 
     let error;
