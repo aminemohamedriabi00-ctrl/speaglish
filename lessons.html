@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Lessons</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#080B18;--card:#0E1120;--card2:#131626;
+      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
+      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
+      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --nav-bg:rgba(8,11,24,.88);
+      --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;
+    }
+    [data-theme="light"]{
+      --bg:#F4F6FB;--card:#FFFFFF;--card2:#EDF0F7;
+      --border:#D4DAE8;--gold:#D4900A;--gold2:#B87A00;
+      --teal:#009982;--red:#D93636;--blue:#2952E3;--purple:#7B4FE0;
+      --text:#0D1120;--sub:#4A5578;--muted:#9AA3BA;
+      --nav-bg:rgba(244,246,251,.92);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;transition:background .25s,color .25s;}
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 40% at 10% 10%,rgba(65,105,255,.07),transparent 70%),radial-gradient(ellipse 50% 40% at 90% 90%,rgba(240,165,0,.05),transparent 70%);}
+
+    /* NAV */
+    .nav{position:sticky;top:0;z-index:40;background:var(--nav-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px;}
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto;}
+    .logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#E8961A);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:13px;color:#000;overflow:hidden;flex-shrink:0;}
+    .logo-text{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--text);}
+    .logo-text span{color:var(--gold);}
+    .theme-btn{width:34px;height:34px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;}
+    .theme-btn:hover{color:var(--text);border-color:var(--gold);}
+    .back-btn{padding:7px 14px;background:transparent;border:1px solid var(--border);color:var(--sub);border-radius:8px;font-family:var(--ff);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .2s;}
+    .back-btn:hover{border-color:var(--gold);color:var(--text);}
+
+    /* PAGE */
+    .page{max-width:960px;margin:0 auto;padding:32px 24px 60px;position:relative;z-index:1;}
+
+    /* HEADER */
+    .page-header{margin-bottom:28px;}
+    .page-title{font-family:var(--fd);font-size:26px;font-weight:800;margin-bottom:6px;}
+    .page-sub{font-size:14px;color:var(--sub);}
+
+    /* RECOMMENDED BANNER */
+    .rec-banner{
+      background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);
+      border-radius:14px;padding:16px 20px;margin-bottom:24px;
+      display:none;align-items:center;gap:14px;flex-wrap:wrap;
+    }
+    .rec-banner.show{display:flex;}
+    .rec-banner-icon{font-size:24px;}
+    .rec-banner-text{flex:1;font-size:13px;line-height:1.5;}
+    .rec-banner-text strong{color:var(--gold);}
+    .rec-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+    .rec-tag{padding:3px 12px;background:rgba(255,87,87,.12);border:1px solid rgba(255,87,87,.3);color:var(--red);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;}
+    .rec-tag:hover{background:rgba(255,87,87,.2);}
+
+    /* FILTERS */
+    .filters{display:flex;flex-direction:column;gap:12px;margin-bottom:24px;}
+    .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .filter-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;min-width:60px;}
+    .filter-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--sub);font-family:var(--ff);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .filter-btn:hover{border-color:var(--gold);color:var(--text);}
+    .filter-btn.active{background:var(--gold);border-color:var(--gold);color:#000;}
+    .filter-btn.recommended{border-color:var(--red);color:var(--red);}
+    .filter-btn.recommended.active{background:var(--red);border-color:var(--red);color:#fff;}
+
+    /* LESSONS GRID */
+    .lessons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+
+    /* LESSON CARD */
+    .lesson-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:all .25s;cursor:pointer;position:relative;}
+    .lesson-card:hover{transform:translateY(-2px);border-color:var(--gold);}
+    .lesson-card.locked{cursor:default;}
+    .lesson-card.locked:hover{transform:none;border-color:var(--border);}
+    .lesson-card.recommended-card{border-color:rgba(255,87,87,.4);}
+
+    .lesson-thumb{height:120px;background:var(--card2);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:40px;}
+    .lesson-thumb-img{width:100%;height:100%;object-fit:cover;}
+    .lesson-skill-badge{position:absolute;top:10px;left:10px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+    .lesson-rec-badge{position:absolute;top:10px;right:10px;padding:3px 10px;background:rgba(255,87,87,.9);color:#fff;border-radius:20px;font-size:10px;font-weight:700;}
+
+    .lesson-body{padding:16px;}
+    .lesson-title{font-family:var(--fd);font-size:14px;font-weight:700;margin-bottom:6px;line-height:1.4;}
+    .lesson-meta{font-size:11px;color:var(--muted);margin-bottom:12px;}
+    .lesson-tags{display:flex;gap:6px;flex-wrap:wrap;}
+    .lesson-exam-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--card2);border:1px solid var(--border);color:var(--muted);}
+
+    /* LOCK OVERLAY */
+    .lock-overlay{position:absolute;inset:0;background:rgba(8,11,24,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;}
+    [data-theme="light"] .lock-overlay{background:rgba(244,246,251,.9);}
+    .lock-icon{font-size:32px;}
+    .lock-text{font-size:12px;color:var(--sub);line-height:1.5;}
+    .lock-btn{padding:8px 18px;background:var(--gold);color:#000;border:none;border-radius:8px;font-family:var(--ff);font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;}
+
+    /* EMPTY */
+    .empty-state{text-align:center;padding:60px 20px;color:var(--muted);grid-column:1/-1;}
+    .empty-icon{font-size:44px;margin-bottom:14px;}
+    .empty-text{font-size:14px;}
+
+    /* LESSON MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:700px;margin:auto;animation:fadeUp .3s ease both;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+    .modal-header{padding:24px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+    .modal-title{font-family:var(--fd);font-size:20px;font-weight:800;line-height:1.3;}
+    .modal-close{background:var(--card2);border:1px solid var(--border);color:var(--sub);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+    .modal-close:hover{color:var(--text);border-color:var(--gold);}
+
+    .modal-tabs{display:flex;gap:4px;padding:16px 24px 0;border-bottom:1px solid var(--border);}
+    .modal-tab{padding:8px 18px;border-radius:8px 8px 0 0;font-family:var(--ff);font-size:13px;font-weight:600;cursor:pointer;background:transparent;border:none;color:var(--muted);transition:all .2s;}
+    .modal-tab.active{background:var(--card2);color:var(--text);}
+
+    .modal-body{padding:24px;}
+
+    /* Content tab */
+    .lesson-content{font-size:14px;line-height:1.8;color:var(--sub);}
+    .lesson-content h3{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text);margin:20px 0 10px;}
+    .lesson-content p{margin-bottom:14px;}
+    .lesson-content ul{padding-left:20px;margin-bottom:14px;}
+    .lesson-content li{margin-bottom:6px;}
+    .lesson-content .highlight{background:rgba(240,165,0,.1);border-left:3px solid var(--gold);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;}
+
+    /* YouTube */
+    .yt-frame{width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;margin-bottom:16px;background:#000;}
+    .yt-frame iframe{width:100%;height:100%;border:none;}
+
+    /* Quiz */
+    .quiz-title{font-family:var(--fd);font-size:15px;font-weight:700;margin-bottom:16px;}
+    .quiz-q{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+    .quiz-q-text{font-size:14px;font-weight:600;margin-bottom:12px;}
+    .quiz-option{
+      display:flex;align-items:center;gap:10px;padding:10px 14px;
+      border-radius:8px;border:1px solid var(--border);background:var(--bg);
+      font-size:13px;cursor:pointer;margin-bottom:8px;transition:all .2s;
+    }
+    .quiz-option:hover{border-color:var(--gold);}
+    .quiz-option.selected{border-color:var(--blue);background:rgba(65,105,255,.08);}
+    .quiz-option.correct{border-color:var(--teal);background:rgba(0,201,167,.1);color:var(--teal);}
+    .quiz-option.wrong{border-color:var(--red);background:rgba(255,87,87,.08);color:var(--red);}
+    .quiz-option-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;transition:all .2s;}
+    .quiz-option.selected .quiz-option-dot{background:var(--blue);border-color:var(--blue);}
+    .quiz-option.correct .quiz-option-dot{background:var(--teal);border-color:var(--teal);}
+    .quiz-option.wrong .quiz-option-dot{background:var(--red);border-color:var(--red);}
+    .quiz-explanation{font-size:12px;color:var(--sub);margin-top:8px;padding:8px 12px;background:var(--card);border-radius:6px;display:none;}
+    .quiz-explanation.show{display:block;}
+    .quiz-submit{width:100%;padding:12px;background:var(--gold);color:#000;border:none;border-radius:10px;font-family:var(--ff);font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;transition:all .2s;}
+    .quiz-submit:hover{background:var(--gold2);}
+    .quiz-result{text-align:center;padding:20px;background:var(--card2);border-radius:12px;margin-top:16px;display:none;}
+    .quiz-result.show{display:block;}
+    .quiz-score{font-family:var(--fd);font-size:32px;font-weight:800;}
+
+    /* Loader */
+    .loader-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;align-items:center;justify-content:center;}
+    .loader-overlay.out{display:none;}
+    .spinner{width:40px;height:40px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    @media(max-width:600px){
+      .nav{padding:12px 16px;}
+      .page{padding:20px 16px 40px;}
+      .lessons-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
+
+<nav class="nav">
+  <a href="dashboard.html" class="back-btn" id="backBtn">← Dashboard</a>
+  <a href="index.html" class="nav-logo">
+    <div class="logo-mark" id="logoMark">Sp</div>
+    <span class="logo-text">Speak<span>glish</span></span>
+  </a>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-title" id="pageTitle">📚 Lessons</div>
+    <div class="page-sub" id="pageSub">Targeted lessons to improve your weak areas</div>
+  </div>
+
+  <!-- Recommended banner -->
+  <div class="rec-banner" id="recBanner">
+    <div class="rec-banner-icon">🎯</div>
+    <div class="rec-banner-text">
+      <div id="recBannerText"></div>
+      <div class="rec-tags" id="recTags"></div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-row">
+      <span class="filter-label" id="skillLabel">Skill</span>
+      <div id="skillFilters"></div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label" id="examLabel">Exam</span>
+      <div id="examFilters"></div>
+    </div>
+  </div>
+
+  <!-- Lessons grid -->
+  <div class="lessons-grid" id="lessonsGrid"></div>
+
+</div>
+
+<!-- Lesson modal -->
+<div class="modal-overlay" id="lessonModal" onclick="handleModalClick(event)">
+  <div class="modal" id="modalInner">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-content" onclick="switchTab('content')" data-label="Lesson"></button>
+      <button class="modal-tab" id="tab-video" onclick="switchTab('video')" data-label="Video"></button>
+      <button class="modal-tab" id="tab-quiz" onclick="switchTab('quiz')" data-label="Practice"></button>
+    </div>
+    <div class="modal-body">
+      <div id="tabContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  let profile     = null;
+  let allLessons  = [];
+  let weakSkills  = [];
+  let market      = 'dz';
+  let lang        = 'en';
+  let t           = null;
+  let activeSkill = 'all';
+  let activeExam  = 'all';
+  let currentLesson = null;
+  let activeTab   = 'content';
+  let quizAnswers = {};
+
+  const SKILL_ICONS = {
+    Reading:'📖', Writing:'✍️', Listening:'🎧',
+    Grammar:'📐', Vocabulary:'💬', Speaking:'🎤', General:'📚'
+  };
+  const SKILL_COLORS = {
+    Reading:'#4169FF', Writing:'#9B6DFF', Listening:'#00C9A7',
+    Grammar:'#F0A500', Vocabulary:'#FF7F50', Speaking:'#FF5757', General:'#64748B'
+  };
+
+  // ── TRANSLATIONS ──────────────────────────────────────────────
+  const T = {
+    ar:{
+      pageTitle:'📚 الدروس', pageSub:'دروس مستهدفة لتحسين نقاط ضعفك',
+      backBtn:'← لوحة التحكم', skillLabel:'المهارة', examLabel:'الامتحان',
+      allSkills:'الكل', allExams:'الكل',
+      recBannerText:'بناءً على نتائجك، نوصي بالتركيز على:',
+      tabContent:'الدرس', tabVideo:'الفيديو', tabQuiz:'التدريب',
+      lockText:'اشترك لفتح جميع الدروس', lockBtn:'اشترك الآن',
+      noLessons:'لا توجد دروس متاحة بعد لهذا الفلتر.',
+      quizTitle:'تدريب عملي', submitQuiz:'تحقق من إجاباتي',
+      quizResult:(c,t)=>`${c} من ${t} صحيح`,
+      recTag:'موصى به', freeTag:'مجاني',
+      dir:'rtl'
+    },
+    fr:{
+      pageTitle:'📚 Leçons', pageSub:'Leçons ciblées pour améliorer vos points faibles',
+      backBtn:'← Tableau de bord', skillLabel:'Compétence', examLabel:'Examen',
+      allSkills:'Tout', allExams:'Tout',
+      recBannerText:'D\'après vos résultats, nous recommandons de travailler sur :',
+      tabContent:'Leçon', tabVideo:'Vidéo', tabQuiz:'Pratique',
+      lockText:'Abonnez-vous pour accéder à toutes les leçons', lockBtn:'S\'abonner',
+      noLessons:'Aucune leçon disponible pour ce filtre.',
+      quizTitle:'Exercices pratiques', submitQuiz:'Vérifier mes réponses',
+      quizResult:(c,t)=>`${c} sur ${t} correct`,
+      recTag:'Recommandé', freeTag:'Gratuit',
+      dir:'ltr'
+    },
+    en:{
+      pageTitle:'📚 Lessons', pageSub:'Targeted lessons to improve your weak areas',
+      backBtn:'← Dashboard', skillLabel:'Skill', examLabel:'Exam',
+      allSkills:'All', allExams:'All',
+      recBannerText:'Based on your results, we recommend focusing on:',
+      tabContent:'Lesson', tabVideo:'Video', tabQuiz:'Practice',
+      lockText:'Subscribe to unlock all lessons', lockBtn:'Subscribe Now',
+      noLessons:'No lessons available for this filter yet.',
+      quizTitle:'Practice exercises', submitQuiz:'Check my answers',
+      quizResult:(c,tot)=>`${c} of ${tot} correct`,
+      recTag:'Recommended', freeTag:'Free',
+      dir:'ltr'
+    },
+    tr:{
+      pageTitle:'📚 Dersler', pageSub:'Zayıf alanlarınızı geliştirmek için hedefli dersler',
+      backBtn:'← Kontrol Paneli', skillLabel:'Beceri', examLabel:'Sınav',
+      allSkills:'Tümü', allExams:'Tümü',
+      recBannerText:'Sonuçlarınıza göre şunlara odaklanmanızı öneriyoruz:',
+      tabContent:'Ders', tabVideo:'Video', tabQuiz:'Pratik',
+      lockText:'Tüm dersleri açmak için abone olun', lockBtn:'Abone Ol',
+      noLessons:'Bu filtre için henüz ders yok.',
+      quizTitle:'Pratik alıştırmalar', submitQuiz:'Cevaplarımı kontrol et',
+      quizResult:(c,tot)=>`${tot} sorudan ${c} doğru`,
+      recTag:'Önerilen', freeTag:'Ücretsiz',
+      dir:'ltr'
+    }
+  };
+
+  // ── THEME ──────────────────────────────────────────────────────
+  function initTheme() {
+    const saved = localStorage.getItem('sp_theme');
+    applyTheme(saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+  function toggleTheme() {
+    const next = (localStorage.getItem('sp_theme') || 'dark') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('sp_theme', next);
+    applyTheme(next);
+  }
+
+  // ── APPLY LANG ─────────────────────────────────────────────────
+  function applyLang() {
+    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', t.dir);
+    const s = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+    s('pageTitle', t.pageTitle); s('pageSub', t.pageSub);
+    s('backBtn',   t.backBtn);   s('skillLabel', t.skillLabel);
+    s('examLabel', t.examLabel);
+    document.querySelectorAll('.modal-tab').forEach(tab => {
+      const key = tab.id.replace('tab-', '');
+      tab.textContent = t['tab' + key.charAt(0).toUpperCase() + key.slice(1)] || tab.textContent;
+    });
+  }
+
+  // ── CAN ACCESS LESSON ──────────────────────────────────────────
+  function canAccess(lesson) {
+    const status = profile?.subscription_status || 'trial';
+    if (status === 'active') return true;
+    if (lesson.is_free) return true;
+    // Trial: can access lessons for their weak skills only
+    if (status === 'trial' && weakSkills.length) {
+      return weakSkills.some(ws => ws.toLowerCase() === lesson.skill.toLowerCase());
+    }
+    return false;
+  }
+
+  // ── BUILD FILTERS ──────────────────────────────────────────────
+  function buildFilters(lessons) {
+    const skills = ['all', ...new Set(lessons.map(l => l.skill).filter(Boolean))];
+    const exams  = ['all', ...new Set(lessons.flatMap(l => l.exam_types || []).filter(Boolean))];
+
+    const skillEl = document.getElementById('skillFilters');
+    skillEl.innerHTML = skills.map(s => {
+      const label = s === 'all' ? t.allSkills : s;
+      const isRec = weakSkills.map(w=>w.toLowerCase()).includes(s.toLowerCase());
+      return `<button class="filter-btn${s==='all'?' active':''}${isRec?' recommended':''}" 
+        data-skill="${s}" onclick="filterSkill('${s}', this)">${label}${isRec?' ⚠️':''}</button>`;
+    }).join('');
+
+    const examEl = document.getElementById('examFilters');
+    examEl.innerHTML = exams.map(e => {
+      const label = e === 'all' ? t.allExams : e;
+      return `<button class="filter-btn${e==='all'?' active':''}" 
+        data-exam="${e}" onclick="filterExam('${e}', this)">${label}</button>`;
+    }).join('');
+  }
+
+  function filterSkill(skill, btn) {
+    activeSkill = skill;
+    document.querySelectorAll('#skillFilters .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderLessons();
+  }
+
+  function filterExam(exam, btn) {
+    activeExam = exam;
+    document.querySelectorAll('#examFilters .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderLessons();
+  }
+
+  // ── RENDER LESSONS ─────────────────────────────────────────────
+  function renderLessons() {
+    const filtered = allLessons.filter(l => {
+      const skillMatch = activeSkill === 'all' || l.skill === activeSkill;
+      const examMatch  = activeExam  === 'all' || (l.exam_types || []).includes(activeExam);
+      return skillMatch && examMatch;
+    });
+
+    const grid = document.getElementById('lessonsGrid');
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">${t.noLessons}</div></div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(l => {
+      const accessible = canAccess(l);
+      const isRec      = weakSkills.map(w=>w.toLowerCase()).includes(l.skill.toLowerCase());
+      const color      = SKILL_COLORS[l.skill] || '#4169FF';
+      const icon       = SKILL_ICONS[l.skill]  || '📚';
+      const ytId       = extractYtId(l.youtube_url);
+      const thumb      = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null;
+
+      return `
+        <div class="lesson-card${accessible?'':' locked'}${isRec?' recommended-card':''}" 
+             onclick="${accessible ? `openLesson('${l.id}')` : 'openPaywall()'}">
+          <div class="lesson-thumb">
+            ${thumb 
+              ? `<img class="lesson-thumb-img" src="${thumb}" alt="" loading="lazy">` 
+              : `<span>${icon}</span>`}
+            <span class="lesson-skill-badge" style="background:${color}20;color:${color};border:1px solid ${color}40;">${l.skill}</span>
+            ${isRec ? `<span class="lesson-rec-badge">${t.recTag}</span>` : ''}
+          </div>
+          <div class="lesson-body">
+            <div class="lesson-title">${l.title}</div>
+            <div class="lesson-meta">${(l.exercises||[]).length} exercises${l.youtube_url?' · Video':''}</div>
+            <div class="lesson-tags">
+              ${(l.exam_types||[]).map(e=>`<span class="lesson-exam-tag">${e}</span>`).join('')}
+              ${l.is_free?`<span class="lesson-exam-tag" style="color:var(--teal);border-color:rgba(0,201,167,.3);">${t.freeTag}</span>`:''}
+            </div>
+          </div>
+          ${!accessible ? `
+            <div class="lock-overlay">
+              <div class="lock-icon">🔒</div>
+              <div class="lock-text">${t.lockText}</div>
+              <a href="payment.html" class="lock-btn" onclick="event.stopPropagation()">${t.lockBtn}</a>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // ── OPEN LESSON MODAL ──────────────────────────────────────────
+  function openLesson(id) {
+    currentLesson = allLessons.find(l => l.id === id);
+    if (!currentLesson) return;
+    quizAnswers = {};
+    document.getElementById('modalTitle').textContent = currentLesson.title;
+    switchTab('content');
+    document.getElementById('lessonModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('lessonModal').classList.remove('open');
+    document.body.style.overflow = '';
+    // Clear iframe to stop video
+    const iframe = document.querySelector('#lessonModal iframe');
+    if (iframe) iframe.src = iframe.src;
+  }
+
+  function handleModalClick(e) {
+    if (e.target === document.getElementById('lessonModal')) closeModal();
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    const body = document.getElementById('tabContent');
+
+    if (tab === 'content') {
+      const content = currentLesson.content || '<p>Lesson content coming soon.</p>';
+      body.innerHTML = `<div class="lesson-content">${content}</div>`;
+    } else if (tab === 'video') {
+      const ytId = extractYtId(currentLesson.youtube_url);
+      if (ytId) {
+        body.innerHTML = `
+          <div class="yt-frame">
+            <iframe src="https://www.youtube.com/embed/${ytId}?rel=0" allowfullscreen allow="autoplay"></iframe>
+          </div>`;
+      } else {
+        body.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">No video added yet for this lesson.</div>`;
+      }
+    } else if (tab === 'quiz') {
+      renderQuiz(body);
+    }
+  }
+
+  // ── QUIZ ──────────────────────────────────────────────────────
+  function renderQuiz(container) {
+    const exercises = currentLesson.exercises || [];
+    if (!exercises.length) {
+      container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">No exercises added yet for this lesson.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="quiz-title">${t.quizTitle}</div>
+      ${exercises.map((q, qi) => `
+        <div class="quiz-q" id="q_${qi}">
+          <div class="quiz-q-text">${qi+1}. ${q.question}</div>
+          ${(q.options||[]).map((opt, oi) => `
+            <div class="quiz-option" id="opt_${qi}_${oi}" onclick="selectAnswer(${qi}, ${oi}, '${(q.correct||'').replace(/'/g,"\\'")}')">
+              <div class="quiz-option-dot"></div>
+              <span>${opt}</span>
+            </div>`).join('')}
+          <div class="quiz-explanation" id="exp_${qi}">${q.explanation||''}</div>
+        </div>`).join('')}
+      <button class="quiz-submit" onclick="checkQuiz(${exercises.length})">${t.submitQuiz}</button>
+      <div class="quiz-result" id="quizResult"></div>`;
+  }
+
+  function selectAnswer(qi, oi, correct) {
+    // Remove previous selection for this question
+    document.querySelectorAll(`[id^="opt_${qi}_"]`).forEach(el => el.classList.remove('selected'));
+    document.getElementById(`opt_${qi}_${oi}`).classList.add('selected');
+    quizAnswers[qi] = { chosen: oi, correct };
+  }
+
+  function checkQuiz(total) {
+    let correct = 0;
+    const exercises = currentLesson.exercises || [];
+
+    exercises.forEach((q, qi) => {
+      const answer = quizAnswers[qi];
+      if (!answer) return;
+
+      const opts = document.querySelectorAll(`[id^="opt_${qi}_"]`);
+      opts.forEach(opt => {
+        const oi = parseInt(opt.id.split('_')[2]);
+        const optText = opt.querySelector('span').textContent;
+        if (optText === q.correct || q.correct === String(oi)) {
+          opt.classList.add('correct');
+        }
+      });
+
+      const chosenEl = document.getElementById(`opt_${qi}_${answer.chosen}`);
+      const chosenText = chosenEl?.querySelector('span').textContent;
+      const isCorrect = chosenText === q.correct || q.correct === String(answer.chosen);
+      if (isCorrect) {
+        correct++;
+      } else {
+        chosenEl?.classList.add('wrong');
+      }
+
+      // Show explanation
+      const expEl = document.getElementById(`exp_${qi}`);
+      if (expEl && q.explanation) expEl.classList.add('show');
+    });
+
+    const result = document.getElementById('quizResult');
+    const pct    = Math.round((correct / total) * 100);
+    const color  = pct >= 70 ? 'var(--teal)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
+    result.innerHTML = `
+      <div class="quiz-score" style="color:${color};">${pct}%</div>
+      <div style="font-size:13px;color:var(--sub);margin-top:6px;">${t.quizResult(correct, total)}</div>`;
+    result.classList.add('show');
+  }
+
+  // ── RECOMMENDED BANNER ─────────────────────────────────────────
+  function showRecBanner() {
+    if (!weakSkills.length) return;
+    const banner = document.getElementById('recBanner');
+    document.getElementById('recBannerText').textContent = t.recBannerText;
+    const tags = document.getElementById('recTags');
+    tags.innerHTML = weakSkills.map(s =>
+      `<span class="rec-tag" onclick="filterSkillByName('${s}')">${SKILL_ICONS[s]||'⚠️'} ${s}</span>`
+    ).join('');
+    banner.classList.add('show');
+  }
+
+  function filterSkillByName(skill) {
+    activeSkill = skill;
+    document.querySelectorAll('#skillFilters .filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.skill === skill);
+    });
+    renderLessons();
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+  }
+
+  // ── PAYWALL ────────────────────────────────────────────────────
+  function openPaywall() {
+    window.location.href = 'payment.html';
+  }
+
+  // ── HELPERS ────────────────────────────────────────────────────
+  function extractYtId(url) {
+    if (!url) return null;
+    const match = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+    return match ? match[1] : null;
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────
+  async function init() {
+    initTheme();
+    market = localStorage.getItem('sp_market') || 'dz';
+    lang   = localStorage.getItem('sp_lang')   || 'en';
+    t      = T[lang] || T.en;
+    applyLang();
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'login.html'; return; }
+
+      // Load profile
+      const { data: prof } = await sb.from('profiles')
+        .select('*').eq('id', session.user.id).maybeSingle();
+      profile = prof;
+      market  = prof?.market || market;
+
+      // Logo
+      try {
+        const { data: cfg } = await sb.from('landing_config')
+          .select('logo_url').eq('market', market).maybeSingle();
+        if (cfg?.logo_url) {
+          const img = new Image();
+          img.onload = () => { document.getElementById('logoMark').innerHTML = `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`; };
+          img.src = cfg.logo_url;
+        }
+      } catch(e) {}
+
+      // Get weak skills from last exam attempt
+      const { data: lastAttempt } = await sb.from('exam_attempts')
+        .select('skill_scores')
+        .eq('student_id', session.user.id)
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastAttempt?.skill_scores) {
+        weakSkills = Object.entries(lastAttempt.skill_scores)
+          .filter(([, score]) => score < 60)
+          .sort((a, b) => a[1] - b[1])
+          .map(([skill]) => skill);
+      }
+
+      // Load lessons
+      const { data: lessons } = await sb.from('lessons')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index');
+      allLessons = lessons || [];
+
+      buildFilters(allLessons);
+      showRecBanner();
+      renderLessons();
+
+      // Auto-filter to first weak skill if coming from results page
+      const focusSkill = sessionStorage.getItem('sp_focus_skill');
+      if (focusSkill) {
+        sessionStorage.removeItem('sp_focus_skill');
+        filterSkillByName(focusSkill);
+      }
+
+    } catch(err) {
+      console.error('Lessons error:', err);
+    } finally {
+      document.getElementById('loaderOverlay').classList.add('out');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

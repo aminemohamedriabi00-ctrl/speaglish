@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaglish — Lesson Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#080B18;--card:#0E1120;--card2:#131626;
+      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
+      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
+      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --nav-bg:rgba(8,11,24,.92);
+      --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;--sidebar:230px;
+    }
+    [data-theme="light"]{
+      --bg:#F4F6FB;--card:#FFFFFF;--card2:#EDF0F7;
+      --border:#D4DAE8;--gold:#D4900A;--gold2:#B87A00;
+      --teal:#009982;--red:#D93636;--blue:#2952E3;--purple:#7B4FE0;
+      --text:#0D1120;--sub:#4A5578;--muted:#9AA3BA;
+      --nav-bg:rgba(244,246,251,.92);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;display:flex;flex-direction:column;}
+
+    /* TOPBAR */
+    .topbar{position:sticky;top:0;z-index:40;background:var(--nav-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+    .topbar-left{display:flex;align-items:center;gap:14px;}
+    .logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),#E8961A);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:13px;color:#000;overflow:hidden;flex-shrink:0;}
+    .topbar-title{font-family:var(--fd);font-size:18px;font-weight:700;}
+    .topbar-right{display:flex;align-items:center;gap:8px;}
+    .theme-btn{width:34px;height:34px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;}
+    .theme-btn:hover{color:var(--text);border-color:var(--gold);}
+
+    /* LAYOUT */
+    .layout{display:grid;grid-template-columns:var(--sidebar) 1fr;min-height:calc(100vh - 64px);}
+    .sidebar{background:var(--card);border-right:1px solid var(--border);padding:20px 0;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .2s;text-decoration:none;}
+    .nav-item:hover{color:var(--text);background:var(--card2);}
+    .nav-item.active{color:var(--gold);background:rgba(240,165,0,.06);border-right:2px solid var(--gold);}
+    .nav-section{font-size:10px;font-weight:700;color:var(--muted);padding:16px 20px 6px;letter-spacing:1.5px;text-transform:uppercase;}
+    .icon{font-size:16px;}
+
+    /* MAIN */
+    .main{padding:28px;overflow-y:auto;}
+
+    /* BTN */
+    .btn{padding:9px 20px;border-radius:8px;font-family:var(--ff);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;}
+    .btn-primary{background:var(--gold);color:#000;}
+    .btn-primary:hover{background:var(--gold2);}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--sub);}
+    .btn-ghost:hover{border-color:var(--gold);color:var(--text);}
+    .btn-danger{background:rgba(255,87,87,.12);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+    .btn-danger:hover{background:rgba(255,87,87,.2);}
+    .btn-sm{padding:5px 12px;font-size:12px;}
+
+    /* LESSONS LIST */
+    .section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+    .section-title{font-family:var(--fd);font-size:18px;font-weight:700;}
+
+    .lesson-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:border-color .2s;}
+    .lesson-row:hover{border-color:var(--gold);}
+    .lesson-row-info{flex:1;}
+    .lesson-row-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+    .lesson-row-meta{font-size:12px;color:var(--muted);}
+    .lesson-skill-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+    .lesson-row-actions{display:flex;gap:8px;align-items:center;}
+    .toggle-wrap{display:flex;align-items:center;gap:6px;}
+    .toggle{position:relative;width:38px;height:22px;cursor:pointer;}
+    .toggle input{opacity:0;width:0;height:0;}
+    .toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:11px;transition:.3s;}
+    .toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:var(--sub);border-radius:50%;transition:.3s;}
+    .toggle input:checked + .toggle-slider{background:var(--gold);}
+    .toggle input:checked + .toggle-slider:before{transform:translateX(16px);background:#000;}
+
+    /* FORM */
+    .form-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px;}
+    .form-title{font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:20px;}
+    .field{margin-bottom:16px;}
+    .field label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:7px;letter-spacing:.3px;}
+    .field input,.field select,.field textarea{
+      width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+      padding:10px 14px;color:var(--text);font-family:var(--ff);font-size:13px;outline:none;
+      transition:border-color .2s;
+    }
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);}
+    .field textarea{min-height:120px;resize:vertical;}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .field-hint{font-size:11px;color:var(--muted);margin-top:5px;}
+
+    /* EXAM TYPE CHECKBOXES */
+    .exam-check-grid{display:flex;flex-wrap:wrap;gap:8px;}
+    .exam-check-item{display:flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;color:var(--sub);transition:all .2s;}
+    .exam-check-item:hover{border-color:var(--gold);color:var(--text);}
+    .exam-check-item input{display:none;}
+    .exam-check-item.checked{background:rgba(240,165,0,.1);border-color:var(--gold);color:var(--gold);}
+
+    /* EXERCISES */
+    .exercise-item{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+    .exercise-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .exercise-num{font-size:12px;font-weight:700;color:var(--muted);}
+    .options-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;animation:slideIn .3s ease;display:none;}
+    .toast.show{display:block;}
+    .toast-success{background:rgba(0,201,167,.15);border:1px solid rgba(0,201,167,.3);color:var(--teal);}
+    .toast-error{background:rgba(255,87,87,.15);border:1px solid rgba(255,87,87,.3);color:var(--red);}
+    @keyframes slideIn{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+    /* LOADER */
+    .loader-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;align-items:center;justify-content:center;}
+    .loader-overlay.out{display:none;}
+    .spinner{width:40px;height:40px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+    .empty-icon{font-size:44px;margin-bottom:14px;}
+  </style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loaderOverlay"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark" id="logoMark">Sp</div>
+    <div class="topbar-title">Lesson Manager</div>
+  </div>
+  <div class="topbar-right">
+    <a href="admin-landing.html" class="btn btn-ghost btn-sm">← Back</a>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="nav-section">Manage</div>
+    <div class="nav-item active" onclick="showView('list', this)"><span class="icon">📋</span> All Lessons</div>
+    <div class="nav-item" onclick="showView('new', this)"><span class="icon">➕</span> New Lesson</div>
+    <div class="nav-section">Filter</div>
+    <div class="nav-item" onclick="filterView('all', this)"><span class="icon">📚</span> All Skills</div>
+    <div class="nav-item" onclick="filterView('Reading', this)"><span class="icon">📖</span> Reading</div>
+    <div class="nav-item" onclick="filterView('Writing', this)"><span class="icon">✍️</span> Writing</div>
+    <div class="nav-item" onclick="filterView('Listening', this)"><span class="icon">🎧</span> Listening</div>
+    <div class="nav-item" onclick="filterView('Grammar', this)"><span class="icon">📐</span> Grammar</div>
+    <div class="nav-item" onclick="filterView('Vocabulary', this)"><span class="icon">💬</span> Vocabulary</div>
+    <div class="nav-item" onclick="filterView('Speaking', this)"><span class="icon">🎤</span> Speaking</div>
+  </div>
+
+  <!-- Main -->
+  <div class="main" id="mainArea">
+    <!-- Populated by JS -->
+  </div>
+</div>
+
+<script>
+  const sb = supabase.createClient(
+    'https://iugggbzgrucopvxkgzry.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0'
+  );
+
+  let allLessons  = [];
+  let editingId   = null;
+  let filterSkill = 'all';
+  let exercises   = [];
+
+  const SKILLS   = ['Reading','Writing','Listening','Grammar','Vocabulary','Speaking','General'];
+  const SKILL_COLORS = {Reading:'#4169FF',Writing:'#9B6DFF',Listening:'#00C9A7',Grammar:'#F0A500',Vocabulary:'#FF7F50',Speaking:'#FF5757',General:'#64748B'};
+  const EXAM_TYPES = ['TCF','TEF','DELF','DALF','IELTS','TOEFL','TOEIC','Cambridge B2','Cambridge C1','YDS','YÖKDİL','e-YDS','CAPM','PMP','PRINCE2','Scrum Master','Six Sigma','CISSP','AWS Cloud','Google Cloud','Custom'];
+
+  // ── THEME ──────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+  function toggleTheme() {
+    const next = (localStorage.getItem('sp_theme') || 'dark') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('sp_theme', next);
+    applyTheme(next);
+  }
+
+  // ── TOAST ─────────────────────────────────────────────────────
+  function toast(msg, type='success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast toast-${type} show`;
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  // ── NAV ───────────────────────────────────────────────────────
+  function showView(view, el) {
+    if (el) {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+    if (view === 'list') renderList();
+    else if (view === 'new') renderForm(null);
+  }
+
+  function filterView(skill, el) {
+    filterSkill = skill;
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    if (el) el.classList.add('active');
+    renderList();
+  }
+
+  // ── LIST VIEW ─────────────────────────────────────────────────
+  function renderList() {
+    const filtered = filterSkill === 'all' ? allLessons
+      : allLessons.filter(l => l.skill === filterSkill);
+
+    const main = document.getElementById('mainArea');
+
+    if (!filtered.length) {
+      main.innerHTML = `
+        <div class="section-hd">
+          <div class="section-title">Lessons</div>
+          <button class="btn btn-primary" onclick="showView('new', null)">+ New Lesson</button>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">📚</div>
+          <div style="font-size:14px;margin-bottom:16px;">No lessons yet. Create your first one.</div>
+          <button class="btn btn-primary" onclick="showView('new', null)">+ New Lesson</button>
+        </div>`;
+      return;
+    }
+
+    main.innerHTML = `
+      <div class="section-hd">
+        <div class="section-title">Lessons (${filtered.length})</div>
+        <button class="btn btn-primary" onclick="showView('new', null)">+ New Lesson</button>
+      </div>
+      ${filtered.map(l => {
+        const color = SKILL_COLORS[l.skill] || '#64748B';
+        return `
+          <div class="lesson-row">
+            <div class="lesson-skill-dot" style="background:${color};"></div>
+            <div class="lesson-row-info">
+              <div class="lesson-row-title">${l.title}</div>
+              <div class="lesson-row-meta">${l.skill} · ${(l.exam_types||[]).join(', ')||'All'} · ${(l.exercises||[]).length} exercises${l.youtube_url?' · 📹':''}</div>
+            </div>
+            <div class="lesson-row-actions">
+              <div class="toggle-wrap">
+                <label class="toggle" title="${l.is_active?'Active':'Inactive'}">
+                  <input type="checkbox" ${l.is_active?'checked':''} onchange="toggleActive('${l.id}', this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="editLesson('${l.id}')">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteLesson('${l.id}')">Delete</button>
+            </div>
+          </div>`;
+      }).join('')}`;
+  }
+
+  // ── FORM VIEW ─────────────────────────────────────────────────
+  function renderForm(lesson) {
+    editingId = lesson?.id || null;
+    exercises = lesson?.exercises ? JSON.parse(JSON.stringify(lesson.exercises)) : [];
+
+    const main = document.getElementById('mainArea');
+    main.innerHTML = `
+      <div class="section-hd">
+        <div class="section-title">${editingId ? 'Edit Lesson' : 'New Lesson'}</div>
+        <button class="btn btn-ghost" onclick="showView('list', null)">← Cancel</button>
+      </div>
+
+      <div class="form-card">
+        <div class="form-title">Basic Info</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Lesson Title *</label>
+            <input type="text" id="fTitle" value="${lesson?.title||''}" placeholder="e.g. Understanding TCF Reading Passages">
+          </div>
+          <div class="field">
+            <label>Skill *</label>
+            <select id="fSkill">
+              ${SKILLS.map(s=>`<option value="${s}" ${lesson?.skill===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Market</label>
+            <select id="fMarket">
+              <option value="dz" ${lesson?.market==='dz'||!lesson?.market?'selected':''}>🇩🇿 Algeria</option>
+              <option value="tr" ${lesson?.market==='tr'?'selected':''}>🇹🇷 Turkey</option>
+              <option value="both" ${lesson?.market==='both'?'selected':''}>Both markets</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Order index</label>
+            <input type="number" id="fOrder" value="${lesson?.order_index||0}" min="0">
+          </div>
+        </div>
+        <div class="field">
+          <label>Exam Types (select all that apply)</label>
+          <div class="exam-check-grid" id="examChecks">
+            ${EXAM_TYPES.map(e => {
+              const checked = (lesson?.exam_types||[]).includes(e);
+              return `<label class="exam-check-item${checked?' checked':''}" onclick="toggleExamCheck(this)">
+                <input type="checkbox" value="${e}" ${checked?'checked':''}>
+                ${e}
+              </label>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="field">
+          <label>
+            <input type="checkbox" id="fIsFree" ${lesson?.is_free?'checked':''} style="width:auto;margin-right:6px;">
+            Mark as Free (visible to trial students regardless of their skills)
+          </label>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-title">Lesson Content</div>
+        <div class="field">
+          <label>Explanation (HTML supported)</label>
+          <textarea id="fContent" placeholder="<h3>Key Concepts</h3><p>Explanation here...</p><ul><li>Point 1</li></ul><div class='highlight'>💡 Tip: ...</div>">${lesson?.content||''}</textarea>
+          <div class="field-hint">Supports HTML tags: &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;. Use &lt;div class='highlight'&gt; for tip boxes.</div>
+        </div>
+        <div class="field">
+          <label>YouTube URL</label>
+          <input type="url" id="fYoutube" value="${lesson?.youtube_url||''}" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-title">Practice Exercises</div>
+        <div id="exercisesList"></div>
+        <button class="btn btn-ghost" onclick="addExercise()">+ Add Exercise</button>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+        <button class="btn btn-ghost" onclick="showView('list', null)">Cancel</button>
+        <button class="btn btn-primary" onclick="saveLesson()">💾 Save Lesson</button>
+      </div>`;
+
+    renderExercises();
+  }
+
+  function toggleExamCheck(label) {
+    label.classList.toggle('checked');
+    label.querySelector('input').checked = label.classList.contains('checked');
+  }
+
+  // ── EXERCISES ─────────────────────────────────────────────────
+  function renderExercises() {
+    const list = document.getElementById('exercisesList');
+    if (!list) return;
+    if (!exercises.length) { list.innerHTML = '<div style="font-size:13px;color:var(--muted);margin-bottom:16px;">No exercises yet.</div>'; return; }
+
+    list.innerHTML = exercises.map((ex, i) => `
+      <div class="exercise-item">
+        <div class="exercise-hd">
+          <span class="exercise-num">Question ${i+1}</span>
+          <button class="btn btn-danger btn-sm" onclick="removeExercise(${i})">Remove</button>
+        </div>
+        <div class="field">
+          <label>Question</label>
+          <input type="text" value="${ex.question||''}" oninput="exercises[${i}].question=this.value" placeholder="What is the main idea of the passage?">
+        </div>
+        <div class="options-grid">
+          ${['A','B','C','D'].map((opt, oi) => `
+            <div class="field">
+              <label>Option ${opt}</label>
+              <input type="text" value="${ex.options?.[oi]||''}" oninput="exercises[${i}].options[${oi}]=this.value" placeholder="Option ${opt}">
+            </div>`).join('')}
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Correct Answer</label>
+            <select oninput="exercises[${i}].correct=this.value">
+              ${['A','B','C','D'].map((opt, oi) => {
+                const optText = ex.options?.[oi] || '';
+                return `<option value="${optText}" ${ex.correct===optText?'selected':''}>${opt}: ${optText||'(empty)'}</option>`;
+              }).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>Explanation (optional)</label>
+            <input type="text" value="${ex.explanation||''}" oninput="exercises[${i}].explanation=this.value" placeholder="Why this answer is correct...">
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function addExercise() {
+    exercises.push({ question:'', options:['','','',''], correct:'', explanation:'' });
+    renderExercises();
+  }
+
+  function removeExercise(i) {
+    exercises.splice(i, 1);
+    renderExercises();
+  }
+
+  // ── SAVE ──────────────────────────────────────────────────────
+  async function saveLesson() {
+    const title   = document.getElementById('fTitle')?.value.trim();
+    const skill   = document.getElementById('fSkill')?.value;
+    const market  = document.getElementById('fMarket')?.value;
+    const content = document.getElementById('fContent')?.value.trim();
+    const youtube = document.getElementById('fYoutube')?.value.trim();
+    const order   = parseInt(document.getElementById('fOrder')?.value) || 0;
+    const isFree  = document.getElementById('fIsFree')?.checked;
+
+    if (!title) { toast('Please enter a lesson title', 'error'); return; }
+
+    const examTypes = [...document.querySelectorAll('#examChecks input:checked')].map(i => i.value);
+
+    const payload = {
+      title, skill, market, content: content||null,
+      youtube_url: youtube||null, exercises,
+      exam_types: examTypes, is_free: isFree,
+      order_index: order, is_active: true,
+    };
+
+    let error;
+    if (editingId) {
+      ({ error } = await sb.from('lessons').update(payload).eq('id', editingId));
+    } else {
+      ({ error } = await sb.from('lessons').insert(payload));
+    }
+
+    if (error) { toast('Save failed: ' + error.message, 'error'); return; }
+
+    toast(editingId ? '✅ Lesson updated' : '✅ Lesson created');
+    await loadLessons();
+    showView('list', null);
+  }
+
+  // ── EDIT / DELETE / TOGGLE ────────────────────────────────────
+  function editLesson(id) {
+    const lesson = allLessons.find(l => l.id === id);
+    if (lesson) renderForm(lesson);
+  }
+
+  async function deleteLesson(id) {
+    if (!confirm('Delete this lesson? This cannot be undone.')) return;
+    const { error } = await sb.from('lessons').delete().eq('id', id);
+    if (error) { toast('Delete failed', 'error'); return; }
+    toast('🗑 Lesson deleted');
+    await loadLessons();
+    renderList();
+  }
+
+  async function toggleActive(id, active) {
+    await sb.from('lessons').update({ is_active: active }).eq('id', id);
+    const l = allLessons.find(l => l.id === id);
+    if (l) l.is_active = active;
+    toast(active ? '✅ Lesson activated' : 'Lesson deactivated');
+  }
+
+  // ── LOAD ──────────────────────────────────────────────────────
+  async function loadLessons() {
+    const { data } = await sb.from('lessons').select('*').order('order_index');
+    allLessons = data || [];
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────
+  async function init() {
+    const saved = localStorage.getItem('sp_theme');
+    applyTheme(saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'login.html'; return; }
+
+      const { data: prof } = await sb.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+      if (prof?.role !== 'admin') { window.location.href = 'dashboard.html'; return; }
+
+      try {
+        const market = localStorage.getItem('sp_market') || 'dz';
+        const { data: cfg } = await sb.from('landing_config').select('logo_url').eq('market', market).maybeSingle();
+        if (cfg?.logo_url) {
+          const img = new Image();
+          img.onload = () => { document.getElementById('logoMark').innerHTML = `<img src="${cfg.logo_url}" style="width:100%;height:100%;object-fit:contain;">`; };
+          img.src = cfg.logo_url;
+        }
+      } catch(e) {}
+
+      await loadLessons();
+      renderList();
+    } catch(err) {
+      console.error(err);
+    } finally {
+      document.getElementById('loaderOverlay').classList.add('out');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
