@@ -174,8 +174,9 @@
   <div class="topbar">
     <div class="topbar-title" id="topbarTitle">Exam Builder</div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <button class="btn btn-ghost" id="backBtn" style="display:none;" onclick="showExamsList()">← Back</button>
-      <button class="btn btn-ghost btn-sm" onclick="downloadTemplate()">📥 Excel Template</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadTemplate()">📥 Questions Template</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadBulkTemplate()">📥 Bulk Exam Template</button>
+      <button class="btn btn-ghost btn-sm" onclick="openBulkImport()">📦 Bulk Import</button>
       <button class="btn btn-primary" onclick="openCreateExam()">+ New Exam</button>
       <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
     </div>
@@ -906,6 +907,178 @@
     toast('Template downloaded ✅', 'success');
   }
 
+  // ─── BULK EXAM TEMPLATE ───────────────────────────────────────
+  function downloadBulkTemplate() {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Exams
+    const examSheet = XLSX.utils.aoa_to_sheet([
+      ['title','type','market','duration_minutes','difficulty_level','is_free','skill'],
+      ['TCF Compréhension Écrite','TCF','dz','60','B1-B2','FALSE','Reading'],
+      ['YDS Grammar Practice','YDS','tr','45','B2-C1','TRUE','Grammar'],
+    ]);
+    examSheet['!cols'] = Array(7).fill({wch:22});
+    XLSX.utils.book_append_sheet(wb, examSheet, 'Exams');
+
+    // Sheet 2: Questions
+    const qSheet = XLSX.utils.aoa_to_sheet([
+      ['exam_title','question','option_a','option_b','option_c','option_d','correct','explanation','skill','topic','difficulty'],
+      ['TCF Compréhension Écrite','The author implies that technology...','Has replaced teachers','Has both benefits and risks','Is harmful','Has no effect','B','Balanced language = both sides.','Reading','Inference','medium'],
+      ['YDS Grammar Practice','Choose the correct form: She ___ here for 5 years.','has lived','is living','lived','will live','A','Present Perfect for duration up to now.','Grammar','Present Perfect','easy'],
+    ]);
+    qSheet['!cols'] = Array(11).fill({wch:22});
+    XLSX.utils.book_append_sheet(wb, qSheet, 'Questions');
+
+    XLSX.writeFile(wb, 'speaglish_bulk_exam_template.xlsx');
+    toast('Bulk template downloaded ✅', 'success');
+  }
+
+  // ─── BULK IMPORT MODAL ────────────────────────────────────────
+  let bulkExams = [];
+  let bulkQuestions = [];
+
+  function openBulkImport() {
+    document.getElementById('bulkModal').style.display = 'flex';
+  }
+  function closeBulkImport() {
+    document.getElementById('bulkModal').style.display = 'none';
+    clearBulkPreview();
+  }
+  function clearBulkPreview() {
+    bulkExams = []; bulkQuestions = [];
+    document.getElementById('bulkPreview').style.display = 'none';
+    document.getElementById('bulkFile').value = '';
+  }
+
+  function handleBulkUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+
+      // Find sheets case-insensitively
+      const examSheetName = wb.SheetNames.find(n => n.toLowerCase().includes('exam')) || wb.SheetNames[0];
+      const qSheetName    = wb.SheetNames.find(n => n.toLowerCase().includes('question')) || wb.SheetNames[1];
+
+      if (!examSheetName) { toast('Could not find Exams sheet', 'error'); return; }
+
+      const examRows = XLSX.utils.sheet_to_json(wb.Sheets[examSheetName], {defval:''});
+      const qRows    = qSheetName ? XLSX.utils.sheet_to_json(wb.Sheets[qSheetName], {defval:''}) : [];
+
+      const get = (row, ...keys) => {
+        for (const k of keys) {
+          const match = Object.keys(row).find(rk => rk.toLowerCase().replace(/\s/g,'') === k.toLowerCase().replace(/\s/g,''));
+          if (match && row[match] !== '') return String(row[match]).trim();
+        }
+        return '';
+      };
+
+      bulkExams = examRows.map(r => ({
+        title:            get(r,'title','name','exam'),
+        type:             get(r,'type','examtype'),
+        market:           get(r,'market') || 'dz',
+        duration_minutes: parseInt(get(r,'duration','duration_minutes','durationminutes')) || 60,
+        difficulty_level: get(r,'difficulty','difficulty_level','difficultylevel') || 'B1-B2',
+        is_free:          get(r,'is_free','isfree','free','').toLowerCase() === 'true',
+        is_active:        true,
+        skill:            get(r,'skill') || '',
+      })).filter(r => r.title);
+
+      bulkQuestions = qRows.map((r, i) => ({
+        _exam_title:   get(r,'exam_title','examtitle','exam','for_exam','forexam'),
+        order_index:   i,
+        type:          'mcq',
+        question_text: get(r,'question','question_text','questiontext','q','text'),
+        option_a:      get(r,'option_a','optiona','a','answer a'),
+        option_b:      get(r,'option_b','optionb','b','answer b'),
+        option_c:      get(r,'option_c','optionc','c','answer c'),
+        option_d:      get(r,'option_d','optiond','d','answer d'),
+        correct_answer:get(r,'correct','correct_answer','correctanswer','answer').toUpperCase(),
+        explanation:   get(r,'explanation','explain','why'),
+        skill:         get(r,'skill','Skill'),
+        topic:         get(r,'topic','Topic'),
+        category:      get(r,'category','cat') || get(r,'skill','topic'),
+        difficulty:    get(r,'difficulty','level') || 'medium',
+      })).filter(r => r.question_text && r._exam_title);
+
+      if (!bulkExams.length) { toast('No valid exams found. Check the Exams sheet headers.', 'error'); return; }
+
+      // Show preview
+      document.getElementById('bulkSummary').textContent =
+        `Found ${bulkExams.length} exam(s) and ${bulkQuestions.length} question(s) ready to import`;
+
+      document.getElementById('bulkExamList').innerHTML = bulkExams.map(ex => `
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;font-size:13px;">
+          <div>
+            <strong>${ex.title}</strong>
+            <span style="color:var(--muted);margin-left:8px;">${ex.type} · ${ex.market.toUpperCase()} · ${ex.duration_minutes}min · ${ex.difficulty_level}</span>
+          </div>
+          <div style="color:var(--sub);">
+            ${bulkQuestions.filter(q => q._exam_title === ex.title).length} questions
+          </div>
+        </div>`).join('');
+
+      const sampleQs = bulkQuestions.slice(0,5);
+      document.getElementById('bulkQTable').innerHTML = `
+        <thead><tr style="background:var(--card2);">
+          <th style="padding:8px;text-align:left;">Exam</th>
+          <th style="padding:8px;text-align:left;">Question</th>
+          <th style="padding:8px;text-align:left;">Correct</th>
+          <th style="padding:8px;text-align:left;">Skill → Topic</th>
+        </tr></thead>
+        <tbody>
+          ${sampleQs.map(q => `<tr style="border-top:1px solid var(--border);">
+            <td style="padding:8px;color:var(--muted);">${q._exam_title.substring(0,20)}</td>
+            <td style="padding:8px;">${q.question_text.substring(0,50)}${q.question_text.length>50?'...':''}</td>
+            <td style="padding:8px;"><span style="background:rgba(0,201,167,.1);color:var(--teal);padding:2px 8px;border-radius:4px;font-weight:700;">${q.correct_answer}</span></td>
+            <td style="padding:8px;color:var(--sub);">${q.skill}${q.topic?' → '+q.topic:''}</td>
+          </tr>`).join('')}
+          ${bulkQuestions.length>5 ? `<tr><td colspan="4" style="padding:8px;text-align:center;color:var(--muted);">...and ${bulkQuestions.length-5} more questions</td></tr>` : ''}
+        </tbody>`;
+
+      document.getElementById('bulkPreview').style.display = 'block';
+      toast(`Preview ready — ${bulkExams.length} exams, ${bulkQuestions.length} questions`, 'success');
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function executeBulkImport() {
+    if (!bulkExams.length) return;
+    const btn     = document.getElementById('bulkImportBtn');
+    const btnText = document.getElementById('bulkBtnText');
+    btn.disabled  = true;
+    let examsDone = 0, qsDone = 0;
+
+    for (const exam of bulkExams) {
+      btnText.textContent = `Creating exam ${++examsDone}/${bulkExams.length}...`;
+
+      // Insert exam
+      const { data: newExam, error } = await sb.from('exams').insert(exam).select('id,title').single();
+      if (error) { toast('Exam insert failed: ' + error.message, 'error'); btn.disabled = false; return; }
+
+      // Find questions for this exam
+      const qs = bulkQuestions
+        .filter(q => q._exam_title === exam.title)
+        .map(({ _exam_title, ...q }) => ({ ...q, exam_id: newExam.id }));
+
+      if (qs.length) {
+        btnText.textContent = `Importing ${qs.length} questions for "${exam.title}"...`;
+        for (let i = 0; i < qs.length; i += 50) {
+          const { error: qErr } = await sb.from('questions').insert(qs.slice(i, i+50));
+          if (qErr) { toast('Question insert failed: ' + qErr.message, 'error'); btn.disabled = false; return; }
+          qsDone += Math.min(50, qs.length - i);
+        }
+      }
+    }
+
+    toast(`✅ Imported ${examsDone} exams and ${qsDone} questions!`, 'success');
+    btn.disabled = false;
+    btnText.textContent = 'Import All →';
+    closeBulkImport();
+    await loadExams();
+  }
+
   // ─── THEME ────────────────────────────────────────────────────
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -956,5 +1129,48 @@
 
   init();
 </script>
+<!-- Bulk Import Modal -->
+<div class="modal-overlay" id="bulkModal" style="display:none;align-items:center;justify-content:center;padding:20px;">
+  <div class="modal" style="max-width:700px;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:24px 24px 0;">
+      <div style="font-family:var(--fd);font-size:18px;font-weight:700;">📦 Bulk Import Exams + Questions</div>
+      <button onclick="closeBulkImport()" style="background:var(--card2);border:1px solid var(--border);color:var(--sub);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div style="background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);border-radius:10px;padding:14px;font-size:13px;color:var(--sub);margin-bottom:20px;line-height:1.6;">
+        <strong style="color:var(--gold);">How it works:</strong> Download the template, fill it in, upload it back.<br>
+        <strong>Sheet 1 "Exams"</strong> — one row per exam.<br>
+        <strong>Sheet 2 "Questions"</strong> — one row per question. Use the exact exam title from Sheet 1 in the <code>exam_title</code> column to link them.
+      </div>
+
+      <label class="import-zone" for="bulkFile" style="margin:0 0 16px 0;">
+        <input type="file" id="bulkFile" accept=".xlsx,.xls" style="display:none;" onchange="handleBulkUpload(this)">
+        <div class="import-icon">📊</div>
+        <div class="import-text">Click to upload bulk Excel file</div>
+        <div class="import-hint">Must have "Exams" and "Questions" sheets</div>
+      </label>
+
+      <div id="bulkPreview" style="display:none;">
+        <div style="font-family:var(--fd);font-size:14px;font-weight:700;margin-bottom:12px;" id="bulkSummary"></div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px;">EXAMS TO CREATE</div>
+        <div id="bulkExamList" style="margin-bottom:16px;"></div>
+
+        <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:8px;">QUESTIONS SAMPLE (first 5)</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;" id="bulkQTable"></table>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+          <button class="btn btn-ghost" onclick="clearBulkPreview()">Clear</button>
+          <button class="btn btn-primary" id="bulkImportBtn" onclick="executeBulkImport()">
+            <span id="bulkBtnText">Import All →</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
