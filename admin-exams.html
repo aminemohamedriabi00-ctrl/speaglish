@@ -377,8 +377,25 @@
     </div>
     <div class="field-row">
       <div>
-        <label>Category</label>
-        <input type="text" id="qCategory" placeholder="Compréhension">
+        <label>Skill</label>
+        <select id="qSkill" onchange="updateTopicDropdown(this.value)" style="margin-bottom:0;">
+          <option value="">— Skill —</option>
+          <option>Reading</option><option>Writing</option><option>Listening</option>
+          <option>Grammar</option><option>Vocabulary</option><option>Speaking</option>
+          <option>Professional</option><option>General</option>
+        </select>
+      </div>
+      <div>
+        <label>Topic</label>
+        <select id="qTopic" style="margin-bottom:0;">
+          <option value="">— Select skill first —</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div>
+        <label>Category <span style="font-size:10px;color:var(--muted);">(optional override)</span></label>
+        <input type="text" id="qCategory" placeholder="Auto-filled from skill/topic">
       </div>
       <div>
         <label>Difficulty</label>
@@ -428,6 +445,107 @@
       grid.innerHTML = `<div style="grid-column:1/-1;"><div class="empty"><div class="empty-icon">📝</div>No exams yet — create your first exam</div></div>`;
       return;
     }
+
+
+  // ─── TOPIC MAP ────────────────────────────────────────────────
+  const TOPIC_MAP = {
+    Reading: [
+      'Main idea','Supporting details','Inference','Author's purpose',
+      'Text structure','Vocabulary in context','True/False/Not Given',
+      'Matching headings','Summary completion','Skimming & Scanning'
+    ],
+    Writing: [
+      'Essay structure','Introduction writing','Conclusion writing',
+      'Argument development','Describing graphs/charts','Formal letters',
+      'Opinion essays','Coherence & Cohesion','Punctuation','Paraphrasing'
+    ],
+    Listening: [
+      'Main idea','Specific details','Speaker's attitude','Inference',
+      'Multiple speakers','Note completion','Monologue comprehension',
+      'Dialogue comprehension','Numbers & Dates'
+    ],
+    Grammar: [
+      // Tenses & Aspect
+      'Present Simple','Present Continuous','Present Perfect',
+      'Present Perfect Continuous','Past Simple','Past Continuous',
+      'Past Perfect','Past Perfect Continuous','Future Simple (will)',
+      'Future Continuous','Future Perfect','Future with going to','Mixed tenses',
+      // Conditionals
+      'Zero conditional','First conditional','Second conditional',
+      'Third conditional','Mixed conditional','Wishes & regrets (I wish / If only)',
+      'Subjunctive mood',
+      // Passive & Causative
+      'Passive voice (simple)','Passive voice (continuous)',
+      'Passive voice (perfect)','Causative (have/get something done)',
+      // Reported Speech
+      'Reported statements','Reported questions','Reported commands',
+      'Tense backshift','Reporting verbs',
+      // Modals
+      'Can / Could','May / Might','Must / Have to','Should / Ought to',
+      'Would','Need to / Needn't','Modal perfects (should have / could have)',
+      // Clauses
+      'Relative clauses (defining)','Relative clauses (non-defining)',
+      'Adverbial clauses (time)','Adverbial clauses (reason/result)',
+      'Adverbial clauses (concession)','Noun clauses',
+      'Cleft sentences','Inversions',
+      // Articles & Determiners
+      'Definite article (the)','Indefinite article (a/an)','Zero article',
+      'Quantifiers (some/any/much/many)',
+      'Determiners (each/every/both/either/neither)',
+      // Prepositions
+      'Prepositions of time','Prepositions of place','Prepositions of movement',
+      'Prepositions after adjectives','Prepositions after verbs',
+      'Phrasal prepositions',
+      // Nouns & Pronouns
+      'Countable vs uncountable nouns','Plural forms (irregular)',
+      'Possessive forms','Reflexive pronouns','Indefinite pronouns',
+      'It vs There constructions',
+      // Adjectives & Adverbs
+      'Comparatives','Superlatives','Gradable vs ungradable adjectives',
+      'Order of adjectives','Adverb position','Intensifiers & Mitigators',
+      // Verb Patterns
+      'Infinitive vs gerund','Verb + object + infinitive',
+      'Verb + preposition + gerund','Bare infinitive','Perfect infinitive',
+      // Questions & Negation
+      'Question formation','Tag questions','Negative questions',
+      'Indirect questions','Negation patterns',
+      // Other
+      'Word order','Ellipsis & substitution','Discourse markers (grammar)',
+      'Emphasis (do/does/did)','So/Neither/Nor responses','Parallel structure'
+    ],
+    Vocabulary: [
+      'Synonyms','Antonyms','Word formation','Collocations',
+      'Phrasal verbs','Idioms','Academic vocabulary','Business vocabulary',
+      'Prefixes & Suffixes','Context clues','Register (formal/informal)'
+    ],
+    Speaking: [
+      'Pronunciation','Fluency','Coherence','Topic development',
+      'Agreeing & Disagreeing','Describing images','Giving opinions',
+      'Discourse markers','Turn-taking','Monologue delivery'
+    ],
+    Professional: [
+      'Project lifecycle','Scope management','Schedule management',
+      'Cost management','Risk management','Stakeholder management',
+      'Agile fundamentals','Scrum framework','Sprint planning',
+      'Change management','Quality management','Communication management',
+      'Procurement','Leadership','Business analysis'
+    ],
+    General: ['General comprehension','Mixed skills']
+  };
+
+  const ALL_SKILLS = Object.keys(TOPIC_MAP);
+
+  function getTopicsFor(skill) {
+    return TOPIC_MAP[skill] || TOPIC_MAP['General'];
+  }
+
+  function updateTopicDropdown(skillVal) {
+    const sel = document.getElementById('qTopic');
+    if (!sel) return;
+    const topics = getTopicsFor(skillVal);
+    sel.innerHTML = '<option value="">— Select topic —</option>' +
+      topics.map(tp => `<option value="${tp}">${tp}</option>`).join('');
+  }
 
     const colors = {
       TCF:'#4169FF',TEF:'#9B6DFF',IELTS:'#F0A500',YDS:'#4169FF',
@@ -515,7 +633,7 @@
       <div class="q-row">
         <div class="q-num">${i+1}</div>
         <div class="q-text" title="${q.question_text}">${q.question_text.substring(0,100)}${q.question_text.length>100?'...':''}</div>
-        <span class="q-cat">${q.category||'—'}</span>
+        <span class="q-cat">${q.skill ? q.skill + (q.topic ? ' → ' + q.topic : '') : (q.category||'—')}</span>
         <span style="font-size:11px;color:var(--muted);margin-left:4px;">${q.correct_answer||''}</span>
         <button class="btn btn-danger btn-sm" style="margin-left:8px;" onclick="deleteQuestion('${q.id}')">🗑</button>
       </div>`).join('');
@@ -633,6 +751,8 @@
           correct_answer: get('correct','correctanswer','answer','correct answer').toUpperCase(),
           explanation:    get('explanation','explain','why','reason'),
           audio_url:      get('audio','audiofile','audio file') || null,
+          skill:          get('skill','Skill') || '',
+          topic:          get('topic','Topic') || '',
           category:       get('category','cat','topic','skill'),
           difficulty:     get('difficulty','level','diff') || 'medium',
           exam_id:        currentExam.id,
@@ -706,7 +826,10 @@
     document.getElementById('qC').value = '';
     document.getElementById('qD').value = '';
     document.getElementById('qExplanation').value = '';
-    document.getElementById('qCategory').value = '';
+    document.getElementById('qCategory').value   = '';
+    document.getElementById('qSkill').value      = '';
+    document.getElementById('qTopic').value      = '';
+    updateTopicDropdown('');
     document.getElementById('qAudio').value = '';
     document.getElementById('questionModal').classList.add('open');
   }
@@ -734,7 +857,10 @@
       option_d:       document.getElementById('qD').value.trim(),
       correct_answer: document.getElementById('qCorrect').value,
       explanation:    document.getElementById('qExplanation').value.trim(),
-      category:       document.getElementById('qCategory').value.trim(),
+      category:       document.getElementById('qCategory').value.trim() ||
+                      [document.getElementById('qSkill').value, document.getElementById('qTopic').value].filter(Boolean).join(' → '),
+      skill:          document.getElementById('qSkill').value,
+      topic:          document.getElementById('qTopic').value,
       difficulty:     document.getElementById('qDifficulty').value,
       audio_url:      document.getElementById('qAudio').value.trim() || null,
     };
