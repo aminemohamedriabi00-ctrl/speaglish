@@ -538,6 +538,20 @@
 
     document.getElementById('page').innerHTML = html;
 
+    // Wire lessons buttons to pass weakest skill focus
+    document.querySelectorAll('a[href="lessons.html"]').forEach(link => {
+      link.addEventListener('click', () => {
+        if (weakCats.length) sessionStorage.setItem('sp_focus_skill', weakCats[0]);
+      });
+    });
+    // Also wire the top nav lessons button
+    const topLessons = document.getElementById('lessonsBtn');
+    if (topLessons) {
+      topLessons.addEventListener('click', () => {
+        if (weakCats.length) sessionStorage.setItem('sp_focus_skill', weakCats[0]);
+      });
+    }
+
     // Animate bars and score
     requestAnimationFrame(() => {
       setTimeout(() => {
