@@ -6,6 +6,7 @@
   <title>Speaglish — Lesson Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root{
       --bg:#080B18;--card:#0E1120;--card2:#131626;
@@ -132,6 +133,8 @@
     <div class="topbar-title">Lesson Manager</div>
   </div>
   <div class="topbar-right">
+    <button class="btn btn-ghost btn-sm" onclick="downloadLessonTemplate()">📥 Bulk Template</button>
+    <button class="btn btn-ghost btn-sm" onclick="openBulkLessons()">📦 Bulk Import</button>
     <a href="admin-landing.html" class="btn btn-ghost btn-sm">← Back</a>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
   </div>
@@ -556,5 +559,169 @@
 
   init();
 </script>
+<!-- Bulk Lessons Modal -->
+<div id="bulkLessonModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:680px;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:24px 24px 0;">
+      <div style="font-family:var(--fd);font-size:18px;font-weight:700;">📦 Bulk Import Lessons</div>
+      <button onclick="closeBulkLessons()" style="background:var(--card2);border:1px solid var(--border);color:var(--sub);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div style="background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);border-radius:10px;padding:14px;font-size:13px;color:var(--sub);margin-bottom:20px;line-height:1.6;">
+        <strong style="color:var(--gold);">Two sheets:</strong><br>
+        <strong>Sheet 1 "Lessons"</strong> — one row per lesson (title, skill, topic, market, youtube_url, content, is_free)<br>
+        <strong>Sheet 2 "Exercises"</strong> — one row per exercise. Use <code>lesson_title</code> column to link to Sheet 1.
+      </div>
+      <label style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;display:block;margin-bottom:16px;" for="bulkLessonFile">
+        <input type="file" id="bulkLessonFile" accept=".xlsx,.xls" style="display:none;" onchange="handleBulkLessons(this)">
+        <div style="font-size:28px;margin-bottom:8px;">📊</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Click to upload Excel file</div>
+        <div style="font-size:12px;color:var(--muted);">Must have "Lessons" and "Exercises" sheets</div>
+      </label>
+      <div id="bulkLessonPreview" style="display:none;">
+        <div style="font-family:var(--fd);font-size:14px;font-weight:700;margin-bottom:12px;" id="bulkLessonSummary"></div>
+        <div id="bulkLessonList" style="margin-bottom:16px;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn btn-ghost" onclick="clearBulkLessons()">Clear</button>
+          <button class="btn btn-primary" id="bulkLessonBtn" onclick="executeBulkLessons()">Import All →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── BULK LESSON TEMPLATE ─────────────────────────────────────
+  function downloadLessonTemplate() {
+    const wb = XLSX.utils.book_new();
+
+    const lessonSheet = XLSX.utils.aoa_to_sheet([
+      ['title','skill','topic','market','youtube_url','content','is_free'],
+      ['Understanding Passive Voice','Grammar','Passive voice (simple)','dz','https://www.youtube.com/watch?v=example','<h3>What is Passive Voice?</h3><p>In passive voice, the subject receives the action...</p>','FALSE'],
+      ['TCF Reading Strategies','Reading','Skimming & Scanning','dz','https://www.youtube.com/watch?v=example2','<h3>Skimming</h3><p>Read quickly to get the main idea...</p>','TRUE'],
+    ]);
+    lessonSheet['!cols'] = Array(7).fill({wch:28});
+    XLSX.utils.book_append_sheet(wb, lessonSheet, 'Lessons');
+
+    const exerciseSheet = XLSX.utils.aoa_to_sheet([
+      ['lesson_title','question','option_a','option_b','option_c','option_d','correct','explanation'],
+      ['Understanding Passive Voice','The letter ___ by John.','writes','is written','was writing','written','B','Passive: subject + is/was + past participle.'],
+      ['Understanding Passive Voice','Which sentence is passive?','She reads books.','Books are read by her.','She is reading.','She read books.','B','"are read by" = passive structure.'],
+      ['TCF Reading Strategies','Skimming means...','Reading every word','Reading for specific info','Getting the gist quickly','Translating the text','C','Skimming = fast reading for main idea.'],
+    ]);
+    exerciseSheet['!cols'] = Array(8).fill({wch:28});
+    XLSX.utils.book_append_sheet(wb, exerciseSheet, 'Exercises');
+
+    XLSX.writeFile(wb, 'speaglish_bulk_lessons_template.xlsx');
+  }
+
+  let bulkLessonsData = [];
+  let bulkExercisesData = [];
+
+  function openBulkLessons() {
+    document.getElementById('bulkLessonModal').style.display = 'flex';
+  }
+  function closeBulkLessons() {
+    document.getElementById('bulkLessonModal').style.display = 'none';
+    clearBulkLessons();
+  }
+  function clearBulkLessons() {
+    bulkLessonsData = []; bulkExercisesData = [];
+    document.getElementById('bulkLessonPreview').style.display = 'none';
+    document.getElementById('bulkLessonFile').value = '';
+  }
+
+  function handleBulkLessons(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+
+      const lsName = wb.SheetNames.find(n => n.toLowerCase().includes('lesson')) || wb.SheetNames[0];
+      const exName = wb.SheetNames.find(n => n.toLowerCase().includes('exercise')) || wb.SheetNames[1];
+
+      const lessonRows   = XLSX.utils.sheet_to_json(wb.Sheets[lsName], {defval:''});
+      const exerciseRows = exName ? XLSX.utils.sheet_to_json(wb.Sheets[exName], {defval:''}) : [];
+
+      const get = (row, ...keys) => {
+        for (const k of keys) {
+          const match = Object.keys(row).find(rk => rk.toLowerCase().replace(/\s/g,'') === k.toLowerCase().replace(/\s/g,''));
+          if (match && row[match] !== '') return String(row[match]).trim();
+        }
+        return '';
+      };
+
+      bulkLessonsData = lessonRows.map(r => ({
+        title:       get(r,'title','name'),
+        skill:       get(r,'skill'),
+        topic:       get(r,'topic') || null,
+        market:      get(r,'market') || 'dz',
+        youtube_url: get(r,'youtube_url','youtube','video','url') || null,
+        content:     get(r,'content','text','explanation') || null,
+        is_free:     get(r,'is_free','isfree','free').toLowerCase() === 'true',
+        is_active:   true,
+        order_index: 0,
+        exercises:   [], // filled below
+      })).filter(r => r.title && r.skill);
+
+      bulkExercisesData = exerciseRows.map(r => ({
+        _lesson_title: get(r,'lesson_title','lessontitle','lesson','for_lesson'),
+        question:      get(r,'question','q','question_text'),
+        options:       [
+          get(r,'option_a','optiona','a'),
+          get(r,'option_b','optionb','b'),
+          get(r,'option_c','optionc','c'),
+          get(r,'option_d','optiond','d'),
+        ],
+        correct:       get(r,'correct','correct_answer','answer'),
+        explanation:   get(r,'explanation','explain','why'),
+      })).filter(r => r.question && r._lesson_title);
+
+      // Attach exercises to lessons
+      bulkLessonsData.forEach(l => {
+        l.exercises = bulkExercisesData
+          .filter(ex => ex._lesson_title === l.title)
+          .map(({ _lesson_title, ...ex }) => ex);
+      });
+
+      if (!bulkLessonsData.length) { alert('No valid lessons found. Check the Lessons sheet headers.'); return; }
+
+      document.getElementById('bulkLessonSummary').textContent =
+        `Found ${bulkLessonsData.length} lesson(s) and ${bulkExercisesData.length} exercise(s)`;
+
+      document.getElementById('bulkLessonList').innerHTML = bulkLessonsData.map(l => `
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;font-size:13px;">
+          <div>
+            <strong>${l.title}</strong>
+            <span style="color:var(--muted);margin-left:8px;">${l.skill}${l.topic?' → '+l.topic:''} · ${l.market.toUpperCase()}</span>
+          </div>
+          <div style="color:var(--sub);">${l.exercises.length} exercises${l.youtube_url?' · 📹':''}</div>
+        </div>`).join('');
+
+      document.getElementById('bulkLessonPreview').style.display = 'block';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function executeBulkLessons() {
+    if (!bulkLessonsData.length) return;
+    const btn = document.getElementById('bulkLessonBtn');
+    btn.disabled = true;
+    let done = 0;
+
+    for (const lesson of bulkLessonsData) {
+      btn.textContent = `Importing ${++done}/${bulkLessonsData.length}...`;
+      const { error } = await sb.from('lessons').insert(lesson);
+      if (error) { alert('Failed: ' + error.message); btn.disabled = false; return; }
+    }
+
+    alert(`✅ ${done} lessons imported successfully!`);
+    btn.disabled = false;
+    btn.textContent = 'Import All →';
+    closeBulkLessons();
+    await loadLessons();
+    renderList();
+  }
+</script>
 </body>
-</html>
