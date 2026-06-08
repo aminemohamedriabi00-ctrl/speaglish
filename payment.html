@@ -849,7 +849,7 @@
       const { data: exams } = await sb.from('exams')
         .select('id, title, type, duration_minutes, difficulty_level, is_free, is_active')
         .eq('is_active', true)
-        .eq('market', market)
+        .in('market', [market, 'both'])
         .order('type');
 
       let access = [];

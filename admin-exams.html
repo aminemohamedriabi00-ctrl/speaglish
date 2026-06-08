@@ -303,6 +303,7 @@
         <select id="examMarket">
           <option value="dz">🇩🇿 Algeria</option>
           <option value="tr">🇹🇷 Turkey</option>
+          <option value="both">🌍 Both markets</option>
         </select>
       </div>
     </div>
@@ -586,7 +587,8 @@
     grid.innerHTML = exams.map(e => {
       const color = colors[e.type] || '#4169FF';
       const qCount = countMap[e.id] || 0;
-      const mktFlag = e.market === 'tr' ? '🇹🇷' : '🇩🇿';
+      const mktFlag = e.market === 'tr' ? '🇹🇷' : e.market === 'both' ? '🌍' : '🇩🇿';
+      const mktLabel = e.market === 'both' ? 'BOTH' : e.market?.toUpperCase();
       return `
         <div class="exam-card">
           <div class="exam-card-top">
@@ -597,7 +599,7 @@
             </div>
           </div>
           <div class="exam-title">${e.title}</div>
-          <div class="exam-meta">${mktFlag} ${e.market?.toUpperCase()} · ${e.skill} · ${e.duration_minutes} min · ${e.difficulty_level}</div>
+          <div class="exam-meta">${mktFlag} ${mktLabel} · ${e.skill} · ${e.duration_minutes} min · ${e.difficulty_level}</div>
           <div class="exam-stats">
             <div class="exam-stat"><div class="exam-stat-num">${qCount}</div><div class="exam-stat-label">Questions</div></div>
             <div class="exam-stat"><div class="exam-stat-num" style="color:${e.is_free?'var(--teal)':'var(--muted)'};">${e.is_free?'Free':'Paid'}</div><div class="exam-stat-label">Access</div></div>
@@ -949,6 +951,7 @@
       ['title','type','market','duration_minutes','difficulty_level','is_free','skill'],
       ['TCF Compréhension Écrite','TCF','dz','60','B1-B2','FALSE','Reading'],
       ['YDS Grammar Practice','YDS','tr','45','B2-C1','TRUE','Grammar'],
+      ['IELTS Academic Reading','IELTS','both','60','B2-C1','FALSE','Reading'],
     ]);
     examSheet['!cols'] = Array(7).fill({wch:22});
     XLSX.utils.book_append_sheet(wb, examSheet, 'Exams');

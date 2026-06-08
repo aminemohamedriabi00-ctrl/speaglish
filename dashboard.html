@@ -77,6 +77,16 @@
 
     /* ── EXAMS GRID ── */
     .exams-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:40px;}
+    /* Category chooser */
+    .cats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:40px;}
+    .cat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 20px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
+    .cat-card:hover{transform:translateY(-2px);border-color:var(--gold);}
+    .cat-accent{position:absolute;top:0;left:0;width:100%;height:4px;}
+    .cat-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:16px;margin-bottom:14px;}
+    .cat-name{font-family:var(--fd);font-size:17px;font-weight:700;margin-bottom:4px;}
+    .cat-count{font-size:12px;color:var(--muted);}
+    .cat-back{background:transparent;border:1px solid var(--border);color:var(--sub);padding:6px 14px;border-radius:8px;font-family:var(--ff);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .cat-back:hover{border-color:var(--gold);color:var(--text);}
     .exam-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
     .exam-card:hover{transform:translateY(-2px);border-color:var(--gold);}
     .exam-card.locked{cursor:default;}
@@ -184,8 +194,12 @@
   <!-- Available Exams -->
   <div class="section-hd">
     <div class="section-title" id="examsTitle">📝 Available Exams</div>
+    <button class="cat-back" id="catBack" onclick="showCategories()" style="display:none;">← <span id="catBackLabel">All categories</span></button>
   </div>
-  <div class="exams-grid" id="examsGrid">
+  <!-- Category chooser (shown first) -->
+  <div class="cats-grid" id="catsGrid"></div>
+  <!-- Exams within a chosen category -->
+  <div class="exams-grid" id="examsGrid" style="display:none;">
     <!-- populated by JS -->
   </div>
 
@@ -228,6 +242,7 @@
     ar:{
       focusTitle:'📚 ماذا تدرس بعد ذلك', lessonsLink:'الذهاب إلى الدروس ←',
       examsTitle:'📝 الامتحانات المتاحة', resultsTitle:'📊 نتائجك',
+      examOne:'امتحان', examMany:'امتحانات', allCategories:'كل الفئات',
       focusEmpty:'أجرِ امتحانك الأول للحصول على توصيات شخصية.',
       focusHeadline:'ركز على هذه المهارات', focusDesc:'بناءً على نتائجك الأخيرة، نوصي بالتركيز على:',
       startBtn:'ابدأ', lockedBtn:'مقفل',
@@ -253,6 +268,7 @@
     fr:{
       focusTitle:'📚 Quoi étudier ensuite', lessonsLink:'Aller aux leçons →',
       examsTitle:'📝 Examens disponibles', resultsTitle:'📊 Vos résultats',
+      examOne:'examen', examMany:'examens', allCategories:'Toutes les catégories',
       focusEmpty:'Passez votre premier examen pour obtenir des recommandations personnalisées.',
       focusHeadline:'Concentrez-vous sur ces compétences', focusDesc:'D\'après vos derniers résultats, nous recommandons de travailler sur :',
       startBtn:'Commencer', lockedBtn:'Verrouillé',
@@ -278,6 +294,7 @@
     en:{
       focusTitle:'📚 What to study next', lessonsLink:'Go to Lessons →',
       examsTitle:'📝 Available Exams', resultsTitle:'📊 Your Results',
+      examOne:'exam', examMany:'exams', allCategories:'All categories',
       focusEmpty:'Take your first exam to get personalized recommendations.',
       focusHeadline:'Focus on these skills', focusDesc:'Based on your latest results, we recommend working on:',
       startBtn:'Start', lockedBtn:'Locked',
@@ -303,6 +320,7 @@
     tr:{
       focusTitle:'📚 Sırada ne çalışmalısın', lessonsLink:'Derslere git →',
       examsTitle:'📝 Mevcut Sınavlar', resultsTitle:'📊 Sonuçlarınız',
+      examOne:'sınav', examMany:'sınav', allCategories:'Tüm kategoriler',
       focusEmpty:'Kişisel öneriler almak için ilk sınavınıza girin.',
       focusHeadline:'Bu becerilere odaklanın', focusDesc:'Son sonuçlarınıza göre şunlar üzerinde çalışmanızı öneriyoruz:',
       startBtn:'Başla', lockedBtn:'Kilitli',
@@ -425,6 +443,74 @@
   }
 
   let examsData = [];
+  let allExams  = [];      // full list for this market (+ both)
+  let curProfile = null;   // remembered for re-render on category change
+
+  // Category = exam type. Build the chooser grid.
+  function renderCategories(exams, prof) {
+    allExams  = exams || [];
+    curProfile = prof;
+    const grid = document.getElementById('catsGrid');
+    const examsGrid = document.getElementById('examsGrid');
+    const back = document.getElementById('catBack');
+
+    if (!allExams.length) {
+      grid.style.display = 'grid';
+      examsGrid.style.display = 'none';
+      back.style.display = 'none';
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📝</div><div class="empty-text">${t.noExams}</div></div>`;
+      return;
+    }
+
+    // Group by type, preserving a stable order
+    const groups = {};
+    allExams.forEach(ex => {
+      const cat = ex.type || 'Other';
+      (groups[cat] = groups[cat] || []).push(ex);
+    });
+
+    grid.innerHTML = Object.keys(groups).map(cat => {
+      const color = EXAM_COLORS[cat] || '#4169FF';
+      const count = groups[cat].length;
+      const initials = cat.length <= 4 ? cat : cat.slice(0,3);
+      return `
+        <div class="cat-card" onclick="showCategory('${cat.replace(/'/g,"\\'")}')">
+          <div class="cat-accent" style="background:${color};"></div>
+          <div class="cat-icon" style="background:${color}22;color:${color};">${initials}</div>
+          <div class="cat-name">${cat}</div>
+          <div class="cat-count">${count} ${count === 1 ? (t.examOne || 'exam') : (t.examMany || 'exams')}</div>
+        </div>`;
+    }).join('');
+
+    showCategories(); // ensure we start on the chooser
+  }
+
+  function showCategory(cat) {
+    const subset = allExams.filter(ex => (ex.type || 'Other') === cat);
+    document.getElementById('catsGrid').style.display = 'none';
+    document.getElementById('examsGrid').style.display = 'grid';
+    const back = document.getElementById('catBack');
+    back.style.display = 'inline-block';
+    document.getElementById('catBackLabel').textContent = t.allCategories || 'All categories';
+    document.getElementById('examsTitle').textContent = '📝 ' + cat;
+    renderExams(subset, curProfile);
+    // Lazy-load question counts now that the qs_<id> spans exist
+    subset.forEach(ex => {
+      sb.from('questions').select('id', { count: 'exact', head: true })
+        .eq('exam_id', ex.id)
+        .then(({ count }) => {
+          const el = document.getElementById('qs_' + ex.id);
+          if (el && count !== null) el.textContent = `${count} ${t.questions}`;
+        });
+    });
+  }
+
+  function showCategories() {
+    document.getElementById('catsGrid').style.display = 'grid';
+    document.getElementById('examsGrid').style.display = 'none';
+    document.getElementById('catBack').style.display = 'none';
+    document.getElementById('examsTitle').textContent = t.examsTitle || '📝 Available Exams';
+  }
 
   function renderExams(exams, prof) {
     examsData = exams;
@@ -644,7 +730,7 @@
       const { data: exams, error: examsErr } = await sb.from('exams')
         .select('id, title, type, duration_minutes, difficulty_level, is_free, is_active')
         .eq('is_active', true)
-        .eq('market', market)
+        .in('market', [market, 'both'])
         .order('is_free', { ascending: false });
 
       // Load exam attempts
@@ -663,21 +749,12 @@
         examAccess = acc || [];
       } catch(e) { examAccess = []; }
 
-      renderExams(exams || [], prof);
+      renderCategories(exams || [], prof);
       renderResults(attempts);
       renderFocus(attempts);
 
-      // Load question counts separately (non-blocking)
-      if (exams?.length) {
-        for (const ex of exams) {
-          sb.from('questions').select('id', { count: 'exact', head: true })
-            .eq('exam_id', ex.id)
-            .then(({ count }) => {
-              const el = document.getElementById('qs_' + ex.id);
-              if (el && count !== null) el.textContent = `${count} ${t.questions}`;
-            });
-        }
-      }
+      // Question counts loaded lazily when a category is opened (see loadQuestionCounts)
+      window._allExamsForCounts = exams || [];
 
     } catch(err) {
       console.error('Dashboard error:', err);
