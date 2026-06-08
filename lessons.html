@@ -242,6 +242,7 @@
   let profile     = null;
   let allLessons  = [];
   let weakSkills  = [];
+  let hasTakenExam = false;
   let market      = 'dz';
   let lang        = 'en';
   let t           = null;
@@ -266,7 +267,7 @@
       pageTitle:'📚 الدروس', pageSub:'دروس مستهدفة لتحسين نقاط ضعفك',
       backBtn:'← لوحة التحكم', skillLabel:'المهارة', examLabel:'الامتحان',
       allSkills:'الكل', allExams:'الكل',
-      recBannerText:'بناءً على نتائجك، نوصي بالتركيز على:',
+      recBannerText:'هذه الدروس مختارة بناءً على أخطائك. ركّز على:', noWeakLessons:'لا توجد دروس بعد للمجالات التي أخطأت فيها.',
       tabContent:'الدرس', tabVideo:'الفيديو', tabQuiz:'التدريب',
       lockText:'اشترك لفتح جميع الدروس', lockBtn:'اشترك الآن',
       noLessons:'لا توجد دروس متاحة بعد لهذا الفلتر.',
@@ -279,7 +280,7 @@
       pageTitle:'📚 Leçons', pageSub:'Leçons ciblées pour améliorer vos points faibles',
       backBtn:'← Tableau de bord', skillLabel:'Compétence', examLabel:'Examen',
       allSkills:'Tout', allExams:'Tout',
-      recBannerText:'D\'après vos résultats, nous recommandons de travailler sur :',
+      recBannerText:'Ces leçons sont choisies selon vos erreurs. Concentrez-vous sur :', noWeakLessons:'Aucune leçon pour le moment sur les points manqués.',
       tabContent:'Leçon', tabVideo:'Vidéo', tabQuiz:'Pratique',
       lockText:'Abonnez-vous pour accéder à toutes les leçons', lockBtn:'S\'abonner',
       noLessons:'Aucune leçon disponible pour ce filtre.',
@@ -292,7 +293,7 @@
       pageTitle:'📚 Lessons', pageSub:'Targeted lessons to improve your weak areas',
       backBtn:'← Dashboard', skillLabel:'Skill', examLabel:'Exam',
       allSkills:'All', allExams:'All',
-      recBannerText:'Based on your results, we recommend focusing on:',
+      recBannerText:'These lessons are picked from your mistakes. Focus on:', noWeakLessons:'No lessons yet for the areas you missed — check back soon.',
       tabContent:'Lesson', tabVideo:'Video', tabQuiz:'Practice',
       lockText:'Subscribe to unlock all lessons', lockBtn:'Subscribe Now',
       noLessons:'No lessons available for this filter yet.',
@@ -305,7 +306,7 @@
       pageTitle:'📚 Dersler', pageSub:'Zayıf alanlarınızı geliştirmek için hedefli dersler',
       backBtn:'← Kontrol Paneli', skillLabel:'Beceri', examLabel:'Sınav',
       allSkills:'Tümü', allExams:'Tümü',
-      recBannerText:'Sonuçlarınıza göre şunlara odaklanmanızı öneriyoruz:',
+      recBannerText:'Bu dersler hatalarınıza göre seçildi. Şuna odaklanın:', noWeakLessons:'Eksik olduğunuz alanlar için henüz ders yok.',
       tabContent:'Ders', tabVideo:'Video', tabQuiz:'Pratik',
       lockText:'Tüm dersleri açmak için abone olun', lockBtn:'Abone Ol',
       noLessons:'Bu filtre için henüz ders yok.',
@@ -346,6 +347,20 @@
     });
   }
 
+  // A lesson is "for a mistake" if a weak category matches its topic or skill.
+  function matchesWeak(lesson) {
+    if (!weakSkills.length) return true; // nothing to restrict by
+    const weak = weakSkills.map(w => String(w).toLowerCase().trim());
+    const topic = (lesson.topic || '').toLowerCase().trim();
+    const skill = (lesson.skill || '').toLowerCase().trim();
+    return (topic && weak.includes(topic)) || (skill && weak.includes(skill));
+  }
+
+  // Hard restriction is ON when the student has taken an exam and has weak areas.
+  function restrictionOn() {
+    return hasTakenExam && weakSkills.length > 0;
+  }
+
   // ── CAN ACCESS LESSON ──────────────────────────────────────────
   function canAccess(lesson) {
     const status = profile?.subscription_status || 'trial';
@@ -360,16 +375,25 @@
 
   // ── BUILD FILTERS ──────────────────────────────────────────────
   function buildFilters(lessons) {
-    const skills = ['all', ...new Set(lessons.map(l => l.skill).filter(Boolean))];
-    const exams  = ['all', ...new Set(lessons.flatMap(l => l.exam_types || []).filter(Boolean))];
+    const restrict = restrictionOn();
+    // Under restriction, only show skills the student actually needs.
+    const relevant = restrict ? lessons.filter(matchesWeak) : lessons;
+    const skills = restrict
+      ? [...new Set(relevant.map(l => l.skill).filter(Boolean))]
+      : ['all', ...new Set(lessons.map(l => l.skill).filter(Boolean))];
+    const exams  = ['all', ...new Set(relevant.flatMap(l => l.exam_types || []).filter(Boolean))];
 
     const skillEl = document.getElementById('skillFilters');
-    skillEl.innerHTML = skills.map(s => {
+    skillEl.innerHTML = skills.map((s, i) => {
       const label = s === 'all' ? t.allSkills : s;
-      const isRec = weakSkills.map(w=>w.toLowerCase()).includes(s.toLowerCase());
-      return `<button class="filter-btn${s==='all'?' active':''}${isRec?' recommended':''}" 
+      const isRec = weakSkills.map(w=>String(w).toLowerCase()).includes(String(s).toLowerCase());
+      // When restricted, default-activate the first chip (there's no 'all').
+      const isActive = restrict ? i === 0 : s === 'all';
+      return `<button class="filter-btn${isActive?' active':''}${isRec?' recommended':''}" 
         data-skill="${s}" onclick="filterSkill('${s}', this)">${label}${isRec?' ⚠️':''}</button>`;
     }).join('');
+    // Keep activeSkill consistent with what's shown.
+    if (restrict) activeSkill = skills.length ? skills[0] : 'all';
 
     const examEl = document.getElementById('examFilters');
     examEl.innerHTML = exams.map(e => {
@@ -395,7 +419,10 @@
 
   // ── RENDER LESSONS ─────────────────────────────────────────────
   function renderLessons() {
+    const restrict = restrictionOn();
     const filtered = allLessons.filter(l => {
+      // Base restriction: only lessons for the student's mistakes.
+      if (restrict && !matchesWeak(l)) return false;
       const skillMatch = activeSkill === 'all' || l.skill === activeSkill;
       const examMatch  = activeExam  === 'all' || (l.exam_types || []).includes(activeExam);
       return skillMatch && examMatch;
@@ -403,7 +430,10 @@
 
     const grid = document.getElementById('lessonsGrid');
     if (!filtered.length) {
-      grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">${t.noLessons}</div></div>`;
+      const msg = restrict
+        ? (t.noWeakLessons || 'No lessons yet for the areas you missed — great job, or check back soon.')
+        : t.noLessons;
+      grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">${msg}</div></div>`;
       return;
     }
 
@@ -623,20 +653,32 @@
         }
       } catch(e) {}
 
-      // Get weak skills from last exam attempt
-      const { data: lastAttempt } = await sb.from('exam_attempts')
-        .select('skill_scores')
+      // Cumulative weak areas across ALL exam attempts.
+      // Prefer the persisted weak_categories; fall back to skill_scores.
+      const { data: allAttempts } = await sb.from('exam_attempts')
+        .select('weak_categories, skill_scores, completed_at')
         .eq('student_id', session.user.id)
-        .order('completed_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('completed_at', { ascending: false });
 
-      if (lastAttempt?.skill_scores) {
-        weakSkills = Object.entries(lastAttempt.skill_scores)
-          .filter(([, score]) => score < 60)
-          .sort((a, b) => a[1] - b[1])
-          .map(([skill]) => skill);
-      }
+      const weakSet = new Set();
+      (allAttempts || []).forEach(a => {
+        if (Array.isArray(a.weak_categories)) {
+          a.weak_categories.forEach(c => c && weakSet.add(String(c)));
+        } else if (a.skill_scores) {
+          Object.entries(a.skill_scores)
+            .filter(([, s]) => s < 60)
+            .forEach(([skill]) => weakSet.add(skill));
+        }
+      });
+
+      // If the results page just handed us a fresh set, merge it in instantly.
+      try {
+        const fresh = JSON.parse(sessionStorage.getItem('sp_weak_cats') || '[]');
+        fresh.forEach(c => c && weakSet.add(String(c)));
+      } catch(e) {}
+
+      weakSkills = [...weakSet];
+      hasTakenExam = (allAttempts || []).length > 0;
 
       // Load lessons
       const { data: lessons } = await sb.from('lessons')

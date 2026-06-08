@@ -314,6 +314,16 @@
     return cats;
   }
 
+  // Save the weak categories of this attempt for cumulative recommendations.
+  async function persistWeakCategories(attemptId, weakCats) {
+    if (!attemptId || !weakCats) return;
+    try {
+      await sb.from('exam_attempts')
+        .update({ weak_categories: weakCats })
+        .eq('id', attemptId);
+    } catch (e) { /* column may not exist yet; ignore */ }
+  }
+
   // ─── RENDER PAGE ──────────────────────────────────────────────
   function renderResults(result) {
     const {score, correct, total, timeTaken, questions, answers, examType, examTitle} = result;
@@ -323,6 +333,10 @@
     const weakCats   = Object.entries(cats)
       .filter(([,v]) => v.total > 0 && Math.round(v.correct/v.total*100) < 60)
       .map(([k]) => k);
+
+    // Persist the weak categories onto this attempt so the Lessons page can
+    // build a cumulative picture across all exams (fire-and-forget).
+    persistWeakCategories(result.attemptId, weakCats);
 
     // Message
     const msg = score >= 75
@@ -538,9 +552,10 @@
 
     document.getElementById('page').innerHTML = html;
 
-    // Wire lessons buttons to pass weakest skill focus
+    // Wire lessons buttons to pass the student's weak categories
     document.querySelectorAll('a[href="lessons.html"]').forEach(link => {
       link.addEventListener('click', () => {
+        sessionStorage.setItem('sp_weak_cats', JSON.stringify(weakCats));
         if (weakCats.length) sessionStorage.setItem('sp_focus_skill', weakCats[0]);
       });
     });
@@ -548,6 +563,7 @@
     const topLessons = document.getElementById('lessonsBtn');
     if (topLessons) {
       topLessons.addEventListener('click', () => {
+        sessionStorage.setItem('sp_weak_cats', JSON.stringify(weakCats));
         if (weakCats.length) sessionStorage.setItem('sp_focus_skill', weakCats[0]);
       });
     }
