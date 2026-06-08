@@ -50,6 +50,17 @@
 
     /* Plan cards */
     .plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;}
+    .exams-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:32px;}
+    .exam-pick{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+    .exam-pick:hover{border-color:var(--gold);transform:translateY(-2px);}
+    .exam-pick.selected{border-color:var(--gold);background:rgba(240,165,0,.06);}
+    .exam-pick .ep-accent{position:absolute;top:0;left:0;width:3px;height:100%;}
+    .exam-pick .ep-type{font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+    .exam-pick .ep-name{font-family:var(--fd);font-size:14px;font-weight:700;line-height:1.3;margin-bottom:6px;}
+    .exam-pick .ep-meta{font-size:11px;color:var(--muted);}
+    .exam-pick .ep-check{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .2s;}
+    .exam-pick.selected .ep-check{background:var(--gold);border-color:var(--gold);color:#000;}
+    .exam-pick .ep-owned{font-size:10px;font-weight:700;color:var(--teal);margin-top:6px;}
     @media(max-width:520px){.plans-grid{grid-template-columns:1fr;}}
     .plan-card{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:22px 18px;text-align:center;cursor:pointer;transition:all .25s;position:relative;}
     .plan-card:hover{border-color:var(--gold);transform:translateY(-2px);}
@@ -197,12 +208,16 @@
 
     <div class="error-msg" id="errorMsg"></div>
 
-    <!-- Step 1: Plan -->
-    <div class="step-label">1 — Pick a plan</div>
+    <!-- Step 1: Exam -->
+    <div class="step-label" id="step0Label">1 — Choose your exam</div>
+    <div class="exams-grid" id="examPickGrid"></div>
+
+    <!-- Step 2: Plan -->
+    <div class="step-label" id="step1Label">2 — Pick an access duration</div>
     <div class="plans-grid" id="plansGrid"></div>
 
-    <!-- Step 2: Payment method -->
-    <div class="step-label">2 — Choose how to pay</div>
+    <!-- Step 3: Payment method -->
+    <div class="step-label" id="step2Label">3 — Choose how to pay</div>
     <div class="pm-grid" id="pmGrid"></div>
 
   </div>
@@ -218,6 +233,8 @@
   let currentProfile = null;
   let landingCfg     = null;
   let selectedPlan   = null;
+  let selectedExam   = null;   // the exam being purchased
+  let examsList      = [];     // exams available in this market
   let selectedFiles  = {};
   let market         = 'dz';
   let openMethod     = null;
@@ -232,7 +249,8 @@
     ar:{
       badge:'🔓 فتح الوصول الكامل', title:'اختر خطتك',
       sub:'اختر خطة وادفع بإحدى الطرق أدناه. سيتم تفعيل حسابك خلال 24 ساعة.',
-      step1:'1 — اختر الخطة', step2:'2 — اختر طريقة الدفع',
+      step0:'1 — اختر الامتحان', step1:'2 — اختر مدة الوصول', step2:'3 — اختر طريقة الدفع',
+      errExam:'يرجى اختيار امتحان أولاً', ownedTag:'نشط', titleFor:'افتح', noExams:'لا توجد امتحانات متاحة بعد.',
       confirmTitle:'تم استلام الطلب!',
       confirmSub:'تم إرسال طلب الدفع. سيقوم فريقنا بمراجعة وتفعيل حسابك خلال <strong>24 ساعة</strong>.',
       pendingPill:'في انتظار التفعيل',
@@ -255,7 +273,8 @@
     fr:{
       badge:'🔓 Accès complet', title:'Choisissez votre plan',
       sub:'Sélectionnez un plan et payez via l\'une des méthodes ci-dessous. Votre compte sera activé sous 24h.',
-      step1:'1 — Choisir un plan', step2:'2 — Choisir le mode de paiement',
+      step0:'1 — Choisir l\'examen', step1:'2 — Choisir la durée d\'accès', step2:'3 — Choisir le mode de paiement',
+      errExam:'Veuillez choisir un examen d\'abord', ownedTag:'Actif', titleFor:'Débloquer', noExams:'Aucun examen disponible pour le moment.',
       confirmTitle:'Demande reçue !',
       confirmSub:'Votre demande de paiement a été soumise. Notre équipe examinera et activera votre compte dans les <strong>24 heures</strong>.',
       pendingPill:'En attente d\'activation',
@@ -278,7 +297,8 @@
     en:{
       badge:'🔓 Unlock Full Access', title:'Choose your plan',
       sub:'Select a plan and pay using any of the methods below. Your account will be activated within 24h.',
-      step1:'1 — Pick a plan', step2:'2 — Choose how to pay',
+      step0:'1 — Choose your exam', step1:'2 — Pick an access duration', step2:'3 — Choose how to pay',
+      errExam:'Please choose an exam first', ownedTag:'Active', titleFor:'Unlock', noExams:'No exams available yet.',
       confirmTitle:'Request received!',
       confirmSub:'Your payment request has been submitted. Our team will review and activate your account within <strong>24 hours</strong>.',
       pendingPill:'Pending activation',
@@ -301,7 +321,8 @@
     tr:{
       badge:'🔓 Tam Erişimi Aç', title:'Planınızı seçin',
       sub:'Bir plan seçin ve aşağıdaki yöntemlerden biriyle ödeme yapın. Hesabınız 24 saat içinde aktifleştirilecek.',
-      step1:'1 — Plan seçin', step2:'2 — Ödeme yöntemini seçin',
+      step0:'1 — Sınav seçin', step1:'2 — Erişim süresi seçin', step2:'3 — Ödeme yöntemini seçin',
+      errExam:'Lütfen önce bir sınav seçin', ownedTag:'Aktif', titleFor:'Kilidi aç', noExams:'Henüz mevcut sınav yok.',
       confirmTitle:'Talebiniz alındı!',
       confirmSub:'Ödeme talebiniz gönderildi. Ekibimiz <strong>24 saat</strong> içinde hesabınızı inceleyip aktifleştirecek.',
       pendingPill:'Aktivasyon bekleniyor',
@@ -330,6 +351,7 @@
     set('pageBadge',       t.badge);
     set('pageTitle',       t.title);
     set('pageSubText',     t.sub);
+    set('step0Label',      t.step0);
     set('step1Label',      t.step1);
     set('step2Label',      t.step2);
     set('confirmTitle',    t.confirmTitle);
@@ -351,6 +373,46 @@
     const next = (localStorage.getItem('sp_theme') || 'dark') === 'dark' ? 'light' : 'dark';
     localStorage.setItem('sp_theme', next);
     applyTheme(next);
+  }
+
+  // ── EXAM PICKER ────────────────────────────────────────────────
+  const EXAM_COLORS = {
+    TCF:'#4169FF',TEF:'#9B6DFF',IELTS:'#F0A500',YDS:'#4169FF',
+    'YÖKDİL':'#00C9A7','e-YDS':'#00C9A7',TOEFL:'#FF5757',TOEIC:'#F0A500',
+    DELF:'#FF7F50',DALF:'#FF5733','Cambridge B2':'#2196F3','Cambridge C1':'#1565C0',
+    Custom:'#64748B',
+  };
+
+  function buildExamPicker(exams) {
+    const grid = document.getElementById('examPickGrid');
+    if (!exams || !exams.length) {
+      grid.innerHTML = `<div class="no-methods" style="grid-column:1/-1;">${t.noExams || 'No exams available yet.'}</div>`;
+      return;
+    }
+    grid.innerHTML = exams.map((ex) => {
+      const color = EXAM_COLORS[ex.type] || '#4169FF';
+      const owned = ex._owned;
+      return `
+        <div class="exam-pick" id="exampick_${ex.id}" onclick="selectExam('${ex.id}')">
+          <div class="ep-accent" style="background:${color};"></div>
+          <div class="ep-check">✓</div>
+          <div class="ep-type">${ex.type || 'Exam'}</div>
+          <div class="ep-name">${ex.title || ex.type}</div>
+          <div class="ep-meta">${ex.duration_minutes || 60} min · ${ex.difficulty_level || 'All levels'}</div>
+          ${owned ? `<div class="ep-owned">✓ ${t.ownedTag || 'Active'}</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function selectExam(examId) {
+    selectedExam = examsList.find(e => e.id === examId) || null;
+    document.querySelectorAll('.exam-pick').forEach(c => c.classList.remove('selected'));
+    const card = document.getElementById('exampick_' + examId);
+    if (card) card.classList.add('selected');
+    if (selectedExam) {
+      const titleEl = document.getElementById('pageTitle');
+      if (titleEl) titleEl.textContent = (t.titleFor || 'Unlock') + ' ' + (selectedExam.title || selectedExam.type);
+    }
   }
 
   // ── PLAN CARDS ─────────────────────────────────────────────────
@@ -582,6 +644,7 @@
 
   // ── SUBMIT RECEIPT ─────────────────────────────────────────────
   async function submitReceipt(key) {
+    if (!selectedExam) { showErr('errorMsg', t.errExam || 'Please choose an exam first'); return; }
     if (!selectedPlan) { showErr('errorMsg', t.errPlan); return; }
     const file = selectedFiles[key];
     if (!file) { showErr('err_' + key, t.errFile); return; }
@@ -612,7 +675,7 @@
     // STEP 2: Get public URL (we store path for signed URL later)
     const { data: { publicUrl } } = sb.storage.from('landing-assets').getPublicUrl(path);
 
-    // STEP 3: Insert subscriptions row
+    // STEP 3: Insert exam_access row (pending review by admin)
     const cfg      = landingCfg;
     const currency = cfg?.currency || (market === 'tr' ? 'TRY' : 'DZD');
     const priceMap = {
@@ -621,10 +684,12 @@
       '6months': cfg?.price_6months || (market==='tr'?1200:5500),
     };
 
-    const { error: subErr } = await sb.from('subscriptions').insert({
+    const { error: accErr } = await sb.from('exam_access').insert({
       student_id:     currentUser.id,
+      exam_id:        selectedExam.id,
       status:         'pending',
       plan_type:      selectedPlan,
+      access_days:    PLAN_DURATIONS[selectedPlan],
       amount:         priceMap[selectedPlan],
       currency:       currency,
       market:         market,
@@ -634,20 +699,8 @@
       created_at:     new Date().toISOString(),
     });
 
-    if (subErr) {
-      showErr('err_' + key, '❌ Could not save subscription: ' + subErr.message);
-      if (spin) spin.style.display = 'none';
-      if (btn)  btn.disabled = false;
-      return;
-    }
-
-    // STEP 4: Update profile status
-    const { error: profErr } = await sb.from('profiles')
-      .update({ subscription_status: 'pending' })
-      .eq('id', currentUser.id);
-
-    if (profErr) {
-      showErr('err_' + key, '❌ Could not update profile: ' + profErr.message);
+    if (accErr) {
+      showErr('err_' + key, '❌ Could not save request: ' + accErr.message);
       if (spin) spin.style.display = 'none';
       if (btn)  btn.disabled = false;
       return;
@@ -659,6 +712,7 @@
 
   // ── WHATSAPP ───────────────────────────────────────────────────
   async function doWhatsApp() {
+    if (!selectedExam) { showErr('errorMsg', t.errExam || 'Please choose an exam first'); return; }
     if (!selectedPlan) { showErr('errorMsg', t.errPlan); return; }
 
     const waNumber = (landingCfg?.whatsapp_number || '').replace(/\D/g, '');
@@ -666,20 +720,22 @@
 
     const name      = currentProfile?.full_name || 'Student';
     const planLabel = PLAN_LABELS[selectedPlan];
+    const examName  = selectedExam.title || selectedExam.type;
     const msg = encodeURIComponent(
-      `Hi! I'd like to subscribe to Speaglish.\n\nName: ${name}\nPlan: ${planLabel}\nMarket: ${market.toUpperCase()}\n\nPlease let me know the payment details.`
+      `Hi! I'd like to unlock an exam on Speaglish.\n\nName: ${name}\nExam: ${examName}\nAccess: ${planLabel}\nMarket: ${market.toUpperCase()}\n\nPlease let me know the payment details.`
     );
 
-    // Create pending record
-    await sb.from('subscriptions').insert({
+    // Create pending exam_access record
+    await sb.from('exam_access').insert({
       student_id:     currentUser.id,
+      exam_id:        selectedExam.id,
       status:         'pending',
       plan_type:      selectedPlan,
+      access_days:    PLAN_DURATIONS[selectedPlan],
       market:         market,
       payment_method: 'whatsapp',
       created_at:     new Date().toISOString(),
     });
-    await sb.from('profiles').update({ subscription_status: 'pending' }).eq('id', currentUser.id);
 
     window.open(`https://wa.me/${waNumber}?text=${msg}`, '_blank');
     showConfirmation();
@@ -718,8 +774,8 @@
 
       const { data: { publicUrl } } = sb.storage.from('landing-assets').getPublicUrl(path);
 
-      // Update the most recent pending subscription row with new receipt
-      const { data: existing } = await sb.from('subscriptions')
+      // Update the most recent pending exam_access row with new receipt
+      const { data: existing } = await sb.from('exam_access')
         .select('id')
         .eq('student_id', currentUser.id)
         .eq('status', 'pending')
@@ -728,7 +784,7 @@
         .single();
 
       if (existing) {
-        await sb.from('subscriptions').update({
+        await sb.from('exam_access').update({
           receipt_url: publicUrl,
           receipt_path: path,
           updated_at:  new Date().toISOString(),
@@ -789,32 +845,41 @@
         img.src = cfg.logo_url;
       }
 
-      // Already active — no need to pay
-      if (profile?.subscription_status === 'active') {
-        window.location.href = 'dashboard.html';
-        return;
-      }
+      // Load exams for this market + the student's current access
+      const { data: exams } = await sb.from('exams')
+        .select('id, title, type, duration_minutes, difficulty_level, is_free, is_active')
+        .eq('is_active', true)
+        .eq('market', market)
+        .order('type');
 
-      // Already pending — show confirmation
-      if (profile?.subscription_status === 'pending') {
-        const { data: existingSub } = await sb.from('subscriptions')
-          .select('receipt_url, plan_type')
-          .eq('student_id', currentUser.id)
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (existingSub?.receipt_url) {
-          const statusEl = document.getElementById('reuploadStatus');
-          if (statusEl) statusEl.textContent = t.reuploadExisting;
-        }
-        showConfirmation();
-        return;
-      }
+      let access = [];
+      try {
+        const { data: acc } = await sb.from('exam_access')
+          .select('exam_id, status, expires_at')
+          .eq('student_id', currentUser.id);
+        access = acc || [];
+      } catch(e) { access = []; }
 
-      // Show payment form
+      const now = Date.now();
+      // Only paid exams need buying; mark which are already active
+      examsList = (exams || [])
+        .filter(ex => !ex.is_free)
+        .map(ex => {
+          const active = access.find(a => a.exam_id === ex.id && a.status === 'active' &&
+            (!a.expires_at || new Date(a.expires_at).getTime() > now));
+          return { ...ex, _owned: !!active };
+        });
+
+      // Build the form
+      buildExamPicker(examsList);
       buildPlans(cfg || {});
       buildPaymentMethods(cfg || {});
+
+      // Preselect exam from ?exam= in the URL (passed by the dashboard)
+      const urlExam = new URLSearchParams(window.location.search).get('exam');
+      if (urlExam && examsList.some(e => e.id === urlExam)) {
+        selectExam(urlExam);
+      }
 
     } catch(err) {
       console.error('Init error:', err);

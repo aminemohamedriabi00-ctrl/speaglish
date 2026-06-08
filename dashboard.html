@@ -218,6 +218,7 @@
 
   let profile  = null;
   let attempts = [];
+  let examAccess = [];
   let market   = 'dz';
   let lang     = 'en';
   let t        = null;
@@ -231,6 +232,7 @@
       focusHeadline:'ركز على هذه المهارات', focusDesc:'بناءً على نتائجك الأخيرة، نوصي بالتركيز على:',
       startBtn:'ابدأ', lockedBtn:'مقفل',
       freeTag:'مجاني', lockedTag:'مقفل',
+      accessUntil:'حتى', pendingTag:'قيد المراجعة', expiredTag:'منتهي', renewBtn:'تجديد', unlockBtn:'فتح',
       signOut:'تسجيل الخروج',
       banner:{
         trial:(n)=>`تجربة مجانية — استخدمت ${n} من 3 امتحانات`,
@@ -255,6 +257,7 @@
       focusHeadline:'Concentrez-vous sur ces compétences', focusDesc:'D\'après vos derniers résultats, nous recommandons de travailler sur :',
       startBtn:'Commencer', lockedBtn:'Verrouillé',
       freeTag:'Gratuit', lockedTag:'Verrouillé',
+      accessUntil:'Jusqu\'au', pendingTag:'En attente', expiredTag:'Expiré', renewBtn:'Renouveler', unlockBtn:'Débloquer',
       signOut:'Se déconnecter',
       banner:{
         trial:(n)=>`Essai gratuit — ${n} examen(s) sur 3 utilisé(s)`,
@@ -279,6 +282,7 @@
       focusHeadline:'Focus on these skills', focusDesc:'Based on your latest results, we recommend working on:',
       startBtn:'Start', lockedBtn:'Locked',
       freeTag:'Free', lockedTag:'Locked',
+      accessUntil:'Access until', pendingTag:'Pending', expiredTag:'Expired', renewBtn:'Renew', unlockBtn:'Unlock',
       signOut:'Sign out',
       banner:{
         trial:(n)=>`Free trial — ${n} of 3 exams used`,
@@ -303,6 +307,7 @@
       focusHeadline:'Bu becerilere odaklanın', focusDesc:'Son sonuçlarınıza göre şunlar üzerinde çalışmanızı öneriyoruz:',
       startBtn:'Başla', lockedBtn:'Kilitli',
       freeTag:'Ücretsiz', lockedTag:'Kilitli',
+      accessUntil:'Şu tarihe kadar', pendingTag:'İncelemede', expiredTag:'Süresi doldu', renewBtn:'Yenile', unlockBtn:'Kilidi aç',
       signOut:'Çıkış yap',
       banner:{
         trial:(n)=>`Ücretsiz deneme — 3 sınavdan ${n} tanesi kullanıldı`,
@@ -400,6 +405,25 @@
     return false;
   }
 
+  // Per-exam access: free exams are always open; otherwise the student
+  // must have an active, non-expired exam_access row for that exam.
+  function accessForExam(examId) {
+    const now = Date.now();
+    const rows = examAccess.filter(a => a.exam_id === examId);
+    // active + not expired
+    const active = rows.find(a => a.status === 'active' &&
+      (!a.expires_at || new Date(a.expires_at).getTime() > now));
+    if (active) return { state:'active', expires_at: active.expires_at };
+    // active but expired
+    const expired = rows.find(a => a.status === 'active' &&
+      a.expires_at && new Date(a.expires_at).getTime() <= now);
+    if (expired) return { state:'expired', expires_at: expired.expires_at };
+    // pending payment review
+    const pending = rows.find(a => a.status === 'pending');
+    if (pending) return { state:'pending' };
+    return { state:'none' };
+  }
+
   let examsData = [];
 
   function renderExams(exams, prof) {
@@ -410,22 +434,50 @@
       return;
     }
 
-    const canStart = canStartExam(prof);
     const bestScores = {};
     attempts.forEach(a => {
       if (!bestScores[a.exam_id] || a.score > bestScores[a.exam_id]) bestScores[a.exam_id] = a.score;
     });
 
+    const fmtDate = (iso) => {
+      try { return new Date(iso).toLocaleDateString(lang === 'ar' ? 'ar' : lang, { day:'numeric', month:'short' }); }
+      catch(e){ return ''; }
+    };
+
     grid.innerHTML = exams.map((ex, idx) => {
       const color    = EXAM_COLORS[ex.type] || '#4169FF';
       const isFree   = ex.is_free;
-      const locked   = !canStart && !isFree;
+      const acc      = isFree ? { state:'active' } : accessForExam(ex.id);
+      const unlocked = acc.state === 'active';
+      const locked   = !unlocked;
       const best     = bestScores[ex.id];
       const barW     = best ? best + '%' : '0%';
       const barColor = best >= 70 ? 'var(--teal)' : best >= 50 ? 'var(--gold)' : 'var(--red)';
-      const tagLabel = isFree ? t.freeTag : (locked ? t.lockedTag : '');
-      const tagClass = isFree ? 'exam-free-tag' : 'exam-lock-tag';
-      const clickFn  = locked ? 'openPaywall()' : `startExam('${ex.id}', examsData[${idx}])`;
+
+      // Tag + button label by state
+      let tagLabel = '', tagClass = 'exam-lock-tag', btnLabel = '', clickFn = '';
+      if (isFree) {
+        tagLabel = t.freeTag; tagClass = 'exam-free-tag';
+        btnLabel = t.startBtn + ' →';
+        clickFn  = `startExam('${ex.id}', examsData[${idx}])`;
+      } else if (acc.state === 'active') {
+        tagLabel = acc.expires_at ? `${t.accessUntil || 'Access until'} ${fmtDate(acc.expires_at)}` : '';
+        tagClass = 'exam-free-tag';
+        btnLabel = t.startBtn + ' →';
+        clickFn  = `startExam('${ex.id}', examsData[${idx}])`;
+      } else if (acc.state === 'pending') {
+        tagLabel = t.pendingTag || 'Pending'; tagClass = 'exam-lock-tag';
+        btnLabel = '⏳ ' + (t.pendingTag || 'Pending');
+        clickFn  = `goBuy('${ex.id}')`;
+      } else if (acc.state === 'expired') {
+        tagLabel = t.expiredTag || 'Expired'; tagClass = 'exam-lock-tag';
+        btnLabel = '🔄 ' + (t.renewBtn || 'Renew');
+        clickFn  = `goBuy('${ex.id}')`;
+      } else {
+        tagLabel = t.lockedTag; tagClass = 'exam-lock-tag';
+        btnLabel = '🔒 ' + (t.unlockBtn || t.lockedBtn);
+        clickFn  = `goBuy('${ex.id}')`;
+      }
 
       return `
         <div class="exam-card${locked?' locked':''}" onclick="${clickFn}">
@@ -437,12 +489,18 @@
           <div class="exam-footer">
             <span class="exam-qs" id="qs_${ex.id}"></span>
             <button class="exam-start-btn ${locked?'exam-start-locked':'exam-start-active'}" onclick="event.stopPropagation();${clickFn}">
-              ${locked ? '🔒 ' + t.lockedBtn : t.startBtn + ' →'}
+              ${btnLabel}
             </button>
           </div>
         </div>`;
     }).join('');
   }
+
+  // Route to the payment page for a specific exam
+  function goBuy(examId) {
+    window.location.href = `payment.html?exam=${encodeURIComponent(examId)}`;
+  }
+
   function startExam(examId, examData) {
     // Store full exam object so exam.html can read it
     localStorage.setItem('sp_current_exam', JSON.stringify(examData));
@@ -596,6 +654,14 @@
         .order('completed_at', { ascending: false })
         .limit(20);
       attempts = atts || [];
+
+      // Load per-exam access (active, non-expired purchases)
+      try {
+        const { data: acc } = await sb.from('exam_access')
+          .select('exam_id, status, expires_at')
+          .eq('student_id', session.user.id);
+        examAccess = acc || [];
+      } catch(e) { examAccess = []; }
 
       renderExams(exams || [], prof);
       renderResults(attempts);
