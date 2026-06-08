@@ -7,20 +7,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* ── TV5MONDE-inspired palette ─────────────
+       Primary: deep petrol teal  Accents: coral + sunshine yellow */
     :root{
-      --bg:#080B18;--card:#0E1120;--card2:#131626;
-      --border:#1C2240;--gold:#F0A500;--gold2:#FFD166;
-      --teal:#00C9A7;--red:#FF5757;--blue:#4169FF;--purple:#9B6DFF;
-      --text:#EEF2FF;--sub:#8896B8;--muted:#3D4A6A;
+      --bg:#0A1F2B;--card:#0F2B38;--card2:#143542;
+      --border:#1E4452;--gold:#FFC93C;--gold2:#FFD96B;
+      --teal:#19C3B2;--red:#FF6B6B;--blue:#2DB6C9;--purple:#FF8A6B;
+      --text:#EAF6F8;--sub:#92B3BC;--muted:#4E6A75;
+      --primary:#19C3B2;--accent:#FF7E5F;
       --ff:'Barlow',sans-serif;--fd:'Syne',sans-serif;
-
-    [data-theme="light"]{
-      --bg:#F4F6FB;--card:#FFFFFF;--card2:#EDF0F7;
-      --border:#D4DAE8;--gold:#D4900A;--gold2:#B87A00;
-      --teal:#009982;--red:#D93636;--blue:#2952E3;--purple:#7B4FE0;
-      --text:#0D1120;--sub:#4A5578;--muted:#9AA3BA;
-      --nav-bg:rgba(244,246,251,.92);
     }
+    [data-theme="light"]{
+      --bg:#F3F7F8;--card:#FFFFFF;--card2:#EAF3F4;
+      --border:#D6E4E7;--gold:#E0A000;--gold2:#C98A00;
+      --teal:#0E9F90;--red:#E54B4B;--blue:#1597AB;--purple:#E5663F;
+      --text:#0C2730;--sub:#4C6670;--muted:#9BB1B7;
+      --primary:#0E9F90;--accent:#E5663F;
+      --nav-bg:rgba(243,247,248,.92);
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
     body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;}
@@ -50,7 +53,7 @@
 
     .intro-card{
       background:var(--card);border:1px solid var(--border);
-      border-radius:20px;padding:36px;width:100%;max-width:520px;
+      border-radius:24px;padding:36px;width:100%;max-width:520px;
     }
 
     .intro-type-tag{
@@ -140,6 +143,13 @@
     .exam-progress{font-size:13px;color:var(--sub);}
     .exam-progress span{color:var(--text);font-weight:600;}
 
+    .theme-btn{
+      background:var(--card2);border:1px solid var(--border);
+      border-radius:50%;width:36px;height:36px;cursor:pointer;
+      font-size:15px;line-height:1;flex-shrink:0;transition:all .2s;
+    }
+    .theme-btn:hover{border-color:var(--primary);}
+
     /* Question nav grid */
     .q-nav{
       background:var(--card2);border-bottom:1px solid var(--border);
@@ -148,13 +158,12 @@
     }
 
     .q-dot{
-      width:32px;height:32px;border-radius:6px;
+      width:32px;height:32px;border-radius:8px;
       border:1px solid var(--border);background:var(--bg);
       color:var(--muted);font-size:11px;font-weight:700;
-      cursor:pointer;transition:all .15s;
+      cursor:default;transition:all .15s;
       display:flex;align-items:center;justify-content:center;
     }
-    .q-dot:hover{border-color:var(--sub);color:var(--text);}
     .q-dot.current{background:var(--blue);border-color:var(--blue);color:#fff;}
     .q-dot.answered{background:rgba(0,201,167,.15);border-color:var(--teal);color:var(--teal);}
     .q-dot.flagged{background:rgba(240,165,0,.15);border-color:var(--gold);color:var(--gold);}
@@ -173,7 +182,7 @@
     /* Question card */
     .q-card{
       background:var(--card);border:1px solid var(--border);
-      border-radius:12px;padding:22px;margin-bottom:16px;
+      border-radius:18px;padding:24px;margin-bottom:16px;
     }
 
     .q-meta{
@@ -208,32 +217,68 @@
     .audio-play-btn:hover{background:var(--gold2);}
     audio{flex:1;min-width:0;}
 
+    /* Image block */
+    .image-wrap{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:10px;padding:14px;margin-bottom:16px;
+      display:flex;flex-direction:column;align-items:center;gap:10px;
+    }
+    .image-wrap img{
+      max-width:100%;height:auto;border-radius:8px;display:block;
+      cursor:zoom-in;
+    }
+    .image-caption{font-size:12px;color:var(--sub);text-align:center;}
+
+    /* Reading passage / paragraph block */
+    .passage-wrap{
+      background:var(--bg);border:1px solid var(--border);
+      border-left:3px solid var(--gold);
+      border-radius:10px;padding:16px 18px;margin-bottom:16px;
+    }
+    .passage-label{
+      font-size:11px;font-weight:700;letter-spacing:1px;
+      text-transform:uppercase;color:var(--gold);margin-bottom:8px;
+    }
+    .passage-text{
+      font-size:14px;line-height:1.85;color:var(--text);
+      white-space:pre-wrap;
+    }
+
+    /* Image lightbox */
+    .img-lightbox{
+      position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;
+      display:none;align-items:center;justify-content:center;padding:20px;
+      cursor:zoom-out;
+    }
+    .img-lightbox.open{display:flex;}
+    .img-lightbox img{max-width:95%;max-height:95%;border-radius:8px;}
+
     /* Options */
     .options{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
 
     .option{
-      background:var(--bg);border:1px solid var(--border);
-      border-radius:10px;padding:13px 16px;
+      background:var(--bg);border:1.5px solid var(--border);
+      border-radius:14px;padding:14px 18px;
       display:flex;align-items:center;gap:12px;
       cursor:pointer;transition:all .2s;
       font-size:14px;color:var(--sub);
       user-select:none;
     }
-    .option:hover{border-color:var(--sub);color:var(--text);}
+    .option:hover{border-color:var(--primary);color:var(--text);}
     .option.selected{
-      background:rgba(65,105,255,.1);
-      border-color:var(--blue);color:var(--text);
+      background:color-mix(in srgb, var(--primary) 12%, transparent);
+      border-color:var(--primary);color:var(--text);
     }
 
     .option-letter{
-      width:28px;height:28px;border-radius:50%;
-      border:1px solid var(--border);
+      width:30px;height:30px;border-radius:50%;
+      border:1.5px solid var(--border);
       display:flex;align-items:center;justify-content:center;
-      font-size:11px;font-weight:700;color:var(--muted);
+      font-size:12px;font-weight:700;color:var(--muted);
       flex-shrink:0;transition:all .2s;
     }
     .option.selected .option-letter{
-      background:var(--blue);border-color:var(--blue);color:#fff;
+      background:var(--primary);border-color:var(--primary);color:#fff;
     }
 
     /* Writing task */
@@ -344,8 +389,8 @@
 
     <div class="intro-tips">
       <div class="intro-tips-title" id="tipsTitle">💡 Tips</div>
-      <div class="intro-tip" id="tip1">Read each question carefully before choosing your answer</div>
-      <div class="intro-tip" id="tip2">Flag questions you are unsure about and come back later</div>
+      <div class="intro-tip" id="tip1">Read each question carefully — you cannot go back once you continue</div>
+      <div class="intro-tip" id="tip2">Choose your answer before pressing Next</div>
       <div class="intro-tip" id="tip3">The exam submits automatically when the timer reaches zero</div>
     </div>
 
@@ -367,6 +412,7 @@
     </div>
     <div class="exam-timer" id="examTimer">60:00</div>
     <div class="exam-progress">Q <span id="currentQNum">1</span> / <span id="totalQNum">—</span></div>
+    <button id="themeBtn" class="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
   </div>
 
   <!-- Question nav -->
@@ -385,7 +431,6 @@
 
   <!-- Bottom bar -->
   <div class="exam-bottombar">
-    <button class="btn-nav" id="btnPrev" onclick="navigate(-1)">← Prev</button>
     <button class="btn-flag" id="btnFlag" onclick="toggleFlag()">⚑ Flag</button>
     <button class="btn-nav" id="btnNext" onclick="navigate(1)">Next →</button>
     <button class="btn-submit" id="btnSubmit" onclick="openSubmitModal()">Submit ✓</button>
@@ -567,7 +612,8 @@
       dot.className = 'q-dot';
       dot.id = `dot-${i}`;
       dot.textContent = i + 1;
-      dot.onclick = () => navigate(i - currentIndex);
+      // Forward-only exam: dots are a progress indicator, not navigation.
+      dot.disabled = true;
       return dot;
     });
     dots.forEach(d => nav.insertBefore(d, nav.querySelector('.q-nav-legend')));
@@ -599,8 +645,7 @@
     flagBtn.className = flagged.has(idx) ? 'btn-flag flagged' : 'btn-flag';
     flagBtn.textContent = flagged.has(idx) ? '⚑ Flagged' : '⚐ Flag';
 
-    // Prev/Next buttons
-    document.getElementById('btnPrev').disabled = idx === 0;
+    // Next button (last question becomes Submit)
     document.getElementById('btnNext').textContent =
       idx === questions.length - 1 ? 'Submit ✓' : 'Next →';
     document.getElementById('btnNext').onclick =
@@ -625,6 +670,24 @@
           <button class="audio-play-btn" onclick="toggleAudio()">▶</button>
           <audio id="audioPlayer" src="${q.audio_url}" onended="document.querySelector('.audio-play-btn').textContent='▶'"></audio>
           <span style="font-size:12px;color:var(--sub);">Click to play audio</span>
+        </div>`;
+    }
+
+    // Image (treated like audio — its own media block)
+    if (q.image_url) {
+      content += `
+        <div class="image-wrap">
+          <img src="${q.image_url}" alt="${(q.image_caption||'Question image').replace(/"/g,'&quot;')}" onclick="openLightbox('${q.image_url}')">
+          ${q.image_caption ? `<span class="image-caption">${q.image_caption}</span>` : ''}
+        </div>`;
+    }
+
+    // Reading passage / paragraph
+    if (q.passage_text) {
+      content += `
+        <div class="passage-wrap">
+          <div class="passage-label">${q.passage_label || 'Passage'}</div>
+          <div class="passage-text">${q.passage_text}</div>
         </div>`;
     }
 
@@ -687,8 +750,10 @@
     return text.trim() ? text.trim().split(/\s+/).length : 0;
   }
 
-  // ─── NAVIGATION ───────────────────────────────────────────────
+  // ─── NAVIGATION (forward-only) ────────────────────────────────
   function navigate(delta) {
+    // Once you move on, there's no going back.
+    if (delta < 0) return;
     const next = currentIndex + delta;
     if (next < 0 || next >= questions.length) return;
     renderQuestion(next);
@@ -709,6 +774,15 @@
     if (!audio) return;
     if (audio.paused) { audio.play(); btn.textContent = '⏸'; }
     else { audio.pause(); btn.textContent = '▶'; }
+  }
+
+  // ─── IMAGE LIGHTBOX ──────────────────────────────────────────
+  function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('imgLightbox').classList.add('open');
+  }
+  function closeLightbox() {
+    document.getElementById('imgLightbox').classList.remove('open');
   }
 
   // ─── SUBMIT MODAL ─────────────────────────────────────────────
@@ -796,8 +870,13 @@
     const btn = document.getElementById('themeBtn');
     if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
   }
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    localStorage.setItem('sp_theme', next);
+  }
   function initTheme() {
-    // 1. Check localStorage preference
     const saved = localStorage.getItem('sp_theme');
     if (saved) { applyTheme(saved); return; }
     // 2. Fall back to OS preference
@@ -819,5 +898,10 @@
 
   init();
 </script>
+<!-- Image Lightbox -->
+<div class="img-lightbox" id="imgLightbox" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
 </body>
 </html>
