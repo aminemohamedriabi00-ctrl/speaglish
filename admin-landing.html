@@ -8,20 +8,22 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #080B18; --card: #0E1120; --card2: #131626;
-      --border: #1C2240; --gold: #F0A500; --gold2: #FFD166;
-      --teal: #00C9A7; --red: #FF5757; --blue: #4169FF;
-      --text: #EEF2FF; --sub: #8896B8; --muted: #3D4A6A;
-      --nav-bg: rgba(8,11,24,.92);
+      --bg:#0A1F2B; --card:#0F2B38; --card2:#143542;
+      --border:#1E4452; --gold:#FFC93C; --gold2:#FFD96B;
+      --teal:#19C3B2; --red:#FF6B6B; --blue:#2DB6C9;
+      --text:#EAF6F8; --sub:#92B3BC; --muted:#4E6A75;
+      --primary:#19C3B2; --accent:#FF7E5F;
+      --nav-bg:rgba(10,31,43,.92);
       --ff: 'Barlow',sans-serif; --fd: 'Syne',sans-serif;
       --sidebar: 230px;
     }
     [data-theme="light"] {
-      --bg: #F4F6FB; --card: #FFFFFF; --card2: #EDF0F7;
-      --border: #D4DAE8; --gold: #D4900A; --gold2: #B87A00;
-      --teal: #009982; --red: #D93636; --blue: #2952E3;
-      --text: #0D1120; --sub: #4A5578; --muted: #9AA3BA;
-      --nav-bg: rgba(244,246,251,.92);
+      --bg:#F3F7F8; --card:#FFFFFF; --card2:#EAF3F4;
+      --border:#D6E4E7; --gold:#E0A000; --gold2:#C98A00;
+      --teal:#0E9F90; --red:#E54B4B; --blue:#1597AB;
+      --text:#0C2730; --sub:#4C6670; --muted:#9BB1B7;
+      --primary:#0E9F90; --accent:#E5663F;
+      --nav-bg:rgba(243,247,248,.92);
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
     body{background:var(--bg);color:var(--text);font-family:var(--ff);display:flex;min-height:100vh;overflow-x:hidden;}
@@ -130,6 +132,34 @@
       font-size:10px;background:rgba(240,165,0,.15);
       color:var(--gold);padding:2px 8px;border-radius:10px;font-family:var(--ff);font-weight:600;
     }
+
+    /* ── ACCESS (categories & bundles) ───────── */
+    .access-tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+    .access-tab{
+      background:none;border:none;border-bottom:2px solid transparent;
+      color:var(--sub);font-family:var(--ff);font-size:13px;font-weight:600;
+      padding:9px 14px;cursor:pointer;transition:all .2s;margin-bottom:-1px;
+    }
+    .access-tab:hover{color:var(--text);}
+    .access-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+    .access-pane{display:none;}
+    .access-pane.active{display:block;}
+
+    .cat-row{
+      background:var(--card);border:1px solid var(--border);border-left:4px solid var(--primary);
+      border-radius:12px;padding:16px;margin-bottom:12px;
+    }
+    .cat-row-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+    .cat-color-dot{width:22px;height:22px;border-radius:6px;flex-shrink:0;border:1px solid var(--border);}
+    .cat-row-title{font-family:var(--fd);font-weight:700;font-size:14px;flex:1;}
+    .cat-del{background:none;border:1px solid var(--border);color:var(--red);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;transition:all .2s;}
+    .cat-del:hover{border-color:var(--red);background:rgba(255,107,107,.08);}
+    .field-row-4{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end;}
+    .vis-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);cursor:pointer;user-select:none;}
+    .cat-check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px;}
+    .cat-check{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--sub);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;}
+    .cat-check input{width:auto;}
+    @media(max-width:640px){.field-row-4{grid-template-columns:1fr;}}
 
     /* ── FORM FIELDS ─────────────────────────── */
     .field{margin-bottom:16px;}
@@ -332,6 +362,7 @@
     <div class="nav-label">Marketing</div>
     <div class="nav-item" onclick="showSection('promos', this)"><span class="icon">📢</span> Promotions</div>
     <div class="nav-item" onclick="showSection('pricing', this)"><span class="icon">💰</span> Pricing</div>
+    <div class="nav-item" onclick="showSection('access', this)"><span class="icon">🗂️</span> Categories & Access</div>
     <div class="nav-item" onclick="showSection('stats', this)"><span class="icon">📊</span> Stats & Trust</div>
     <div class="nav-item" onclick="showSection('testimonials', this)"><span class="icon">💬</span> Testimonials</div>
     <div class="nav-item" onclick="showSection('faq', this)"><span class="icon">❓</span> FAQ</div>
@@ -597,6 +628,46 @@
         <div class="card-title">Featured Exams <span class="badge">Per Market</span></div>
         <p style="font-size:13px;color:var(--sub);margin-bottom:14px;">Choose which exams to highlight on the landing page</p>
         <div id="examCheckboxes"></div>
+      </div>
+    </div>
+
+    <!-- ── CATEGORIES & ACCESS ───────────────── -->
+    <div class="section-panel" id="sec-access">
+      <div class="panel-title">🗂️ Categories & Access</div>
+      <div class="panel-desc">Create categories, set per-market prices, build bundles, and configure all-access. Prices shown here appear on the student payment page. Editing follows the market tab at the top (<span id="accessMarketLabel">Algeria</span>).</div>
+
+      <div class="access-tabs">
+        <button class="access-tab active" id="atab-cats"    onclick="showAccessTab('cats')">Categories</button>
+        <button class="access-tab"        id="atab-bundles" onclick="showAccessTab('bundles')">Bundles</button>
+        <button class="access-tab"        id="atab-all"     onclick="showAccessTab('all')">All-Access</button>
+      </div>
+
+      <!-- Categories -->
+      <div class="access-pane active" id="apane-cats">
+        <div id="catList"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addCategory()">+ Add category</button>
+      </div>
+
+      <!-- Bundles -->
+      <div class="access-pane" id="apane-bundles">
+        <div class="hint" style="margin-bottom:12px;">A bundle unlocks several categories together at one price. Pick the categories to include and set a discounted price.</div>
+        <div id="bundleList"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addBundle()">+ Add bundle</button>
+      </div>
+
+      <!-- All-Access -->
+      <div class="access-pane" id="apane-all">
+        <div class="card">
+          <div class="card-title">🌐 All-Access <span class="badge" id="allCurrencyBadge">DZD</span></div>
+          <p style="font-size:13px;color:var(--sub);margin-bottom:14px;">One price that unlocks every exam in this market.</p>
+          <label class="switch-row" style="margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="all_access_active"> <span>Offer all-access on the payment page</span>
+          </label>
+          <div class="field-row-3">
+            <div class="field"><label>Price</label><input type="number" id="all_access_price" placeholder="9000"></div>
+            <div class="field"><label>Access days</label><input type="number" id="all_access_days" placeholder="30"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -998,6 +1069,17 @@
     // Pricing — load both markets
     loadPricing();
 
+    // All-access (per market)
+    setCheck('all_access_active', cfg.all_access_active);
+    setVal('all_access_price', cfg.all_access_price);
+    setVal('all_access_days', cfg.all_access_days || 30);
+    const accCur = cfg.currency || (market === 'tr' ? 'TRY' : 'DZD');
+    const curBadge = document.getElementById('allCurrencyBadge'); if (curBadge) curBadge.textContent = accCur;
+    const accLabel = document.getElementById('accessMarketLabel'); if (accLabel) accLabel.textContent = market === 'tr' ? 'Turkey' : 'Algeria';
+
+    // Categories & bundles (own tables)
+    loadCategoriesAndBundles();
+
     // Stats
     setVal('stats_students', cfg.stats_students || '12,400+');
     setVal('stats_passrate',  cfg.stats_passrate  || '94%');
@@ -1326,6 +1408,10 @@
       price_3months:        parseInt(getVal(`${market}_price_3months`)) || null,
       price_6months:        parseInt(getVal(`${market}_price_6months`)) || null,
       featured_exams:       featuredExams,
+      // All-access (current market)
+      all_access_active:    getCheck('all_access_active'),
+      all_access_price:     parseInt(getVal('all_access_price')) || null,
+      all_access_days:      parseInt(getVal('all_access_days')) || 30,
       // Stats
       stats_students:       getVal('stats_students'),
       stats_passrate:       getVal('stats_passrate'),
@@ -1403,6 +1489,10 @@
     // Save current market
     const { error } = await sb.from('landing_config').update(updateData).eq('market', market);
 
+    // Save categories & bundles (own tables)
+    try { await saveCategoriesAndBundles(); }
+    catch(e) { toast('Categories save error: ' + e.message, 'error'); }
+
     btn.textContent = '💾 Save All'; btn.disabled = false;
 
     if (error) {
@@ -1414,6 +1504,226 @@
   }
 
   // ─── MARKET SWITCH ────────────────────────────────────────────
+  // ─── CATEGORIES & BUNDLES ─────────────────────────────────────
+  let cats    = [];   // categories for current market
+  let bundles = [];   // bundles for current market
+  let dbExams = [];   // exams in current market (for assignment + bundle preview)
+  const CAT_PALETTE = ['#19C3B2','#FF7E5F','#2DB6C9','#FFC93C','#9B6DFF','#FF6B6B','#3DD68C','#4169FF'];
+
+  function showAccessTab(tab) {
+    ['cats','bundles','all'].forEach(k => {
+      document.getElementById('atab-'+k).classList.toggle('active', k===tab);
+      document.getElementById('apane-'+k).classList.toggle('active', k===tab);
+    });
+  }
+
+  async function loadCategoriesAndBundles() {
+    const markets = [market, 'both'];
+    // Categories
+    try {
+      const { data: c } = await sb.from('categories')
+        .select('*').in('market', markets).order('sort_order');
+      cats = c || [];
+    } catch(e) { cats = []; }
+    // Bundles
+    try {
+      const { data: b } = await sb.from('category_bundles')
+        .select('*').in('market', markets).order('created_at');
+      bundles = b || [];
+    } catch(e) { bundles = []; }
+    // Exams (to assign to categories)
+    try {
+      const { data: ex } = await sb.from('exams')
+        .select('id,title,type,category_id,market')
+        .in('market', markets).eq('is_active', true).order('type');
+      dbExams = ex || [];
+    } catch(e) { dbExams = []; }
+
+    renderCats();
+    renderBundles();
+  }
+
+  function renderCats() {
+    const wrap = document.getElementById('catList');
+    const currency = cfg.currency || (market === 'tr' ? 'TRY' : 'DZD');
+    if (!cats.length) {
+      wrap.innerHTML = `<div class="hint" style="margin-bottom:12px;">No categories yet. Add one to start grouping exams.</div>`;
+      return;
+    }
+    wrap.innerHTML = cats.map((c, i) => {
+      const examsHere = dbExams.filter(e => e.category_id === c.id);
+      const checkboxes = dbExams.map(e => `
+        <label class="cat-check">
+          <input type="checkbox" ${e.category_id === c.id ? 'checked' : ''}
+            onchange="assignExam('${e.id}', '${c.id}', this.checked)">
+          ${e.title || e.type}
+        </label>`).join('');
+      return `
+        <div class="cat-row" style="border-left-color:${c.color||'#19C3B2'};">
+          <div class="cat-row-head">
+            <span class="cat-color-dot" style="background:${c.color||'#19C3B2'};"></span>
+            <span class="cat-row-title">${c.name || 'Untitled category'}</span>
+            <label class="vis-pill"><input type="checkbox" style="width:auto;" ${c.is_visible!==false?'checked':''} onchange="catField(${i},'is_visible',this.checked)"> Visible</label>
+            <button class="cat-del" onclick="deleteCategory(${i})">Delete</button>
+          </div>
+          <div class="field-row-4">
+            <div class="field"><label>Name</label><input type="text" value="${(c.name||'').replace(/"/g,'&quot;')}" oninput="catField(${i},'name',this.value)"></div>
+            <div class="field"><label>Price (${currency})</label><input type="number" value="${c.price??''}" oninput="catField(${i},'price',this.value)"></div>
+            <div class="field"><label>Access days</label><input type="number" value="${c.access_days??30}" oninput="catField(${i},'access_days',this.value)"></div>
+            <div class="field"><label>Color</label><input type="color" value="${c.color||'#19C3B2'}" style="height:40px;padding:3px;" oninput="catField(${i},'color',this.value)"></div>
+          </div>
+          <label style="margin-top:6px;">Exams in this category (${examsHere.length})</label>
+          <div class="cat-check-grid">${checkboxes || '<span class="hint">No exams in this market yet.</span>'}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function catField(i, field, val) {
+    if (field === 'price' || field === 'access_days') val = val === '' ? null : parseInt(val);
+    cats[i][field] = val;
+    cats[i]._dirty = true;
+    if (field === 'color') renderCats(); // refresh dot/border
+  }
+
+  function addCategory() {
+    cats.push({
+      _new: true, _dirty: true,
+      name: 'New category',
+      color: CAT_PALETTE[cats.length % CAT_PALETTE.length],
+      market: market,
+      is_visible: true,
+      price: null,
+      currency: cfg.currency || (market === 'tr' ? 'TRY' : 'DZD'),
+      access_days: 30,
+      sort_order: cats.length,
+    });
+    renderCats();
+  }
+
+  async function deleteCategory(i) {
+    const c = cats[i];
+    if (!confirm('Delete this category? Exams will be unassigned but not deleted.')) return;
+    if (c.id) { await sb.from('categories').delete().eq('id', c.id); }
+    cats.splice(i, 1);
+    renderCats();
+    toast('Category deleted', 'success');
+  }
+
+  // Assign/unassign an exam to a category (writes immediately)
+  async function assignExam(examId, catId, checked) {
+    const newCat = checked ? catId : null;
+    const { error } = await sb.from('exams').update({ category_id: newCat }).eq('id', examId);
+    if (error) { toast('Error: ' + error.message, 'error'); return; }
+    const ex = dbExams.find(e => e.id === examId); if (ex) ex.category_id = newCat;
+    renderCats();
+  }
+
+  // ── Bundles ──
+  function renderBundles() {
+    const wrap = document.getElementById('bundleList');
+    const currency = cfg.currency || (market === 'tr' ? 'TRY' : 'DZD');
+    if (!bundles.length) {
+      wrap.innerHTML = `<div class="hint" style="margin-bottom:12px;">No bundles yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = bundles.map((b, i) => {
+      const ids = b.category_ids || [];
+      const checkboxes = cats.map(c => `
+        <label class="cat-check">
+          <input type="checkbox" ${ids.includes(c.id) ? 'checked' : ''} ${c.id ? '' : 'disabled'}
+            onchange="bundleToggleCat(${i}, '${c.id}', this.checked)">
+          <span class="cat-color-dot" style="width:12px;height:12px;background:${c.color||'#19C3B2'};"></span>
+          ${c.name || 'Untitled'}${c.id ? '' : ' (save first)'}
+        </label>`).join('');
+      return `
+        <div class="cat-row" style="border-left-color:var(--accent);">
+          <div class="cat-row-head">
+            <span class="cat-row-title">${b.name || 'Untitled bundle'}</span>
+            <label class="vis-pill"><input type="checkbox" style="width:auto;" ${b.is_visible!==false?'checked':''} onchange="bundleField(${i},'is_visible',this.checked)"> Visible</label>
+            <button class="cat-del" onclick="deleteBundle(${i})">Delete</button>
+          </div>
+          <div class="field-row-3">
+            <div class="field"><label>Bundle name</label><input type="text" value="${(b.name||'').replace(/"/g,'&quot;')}" oninput="bundleField(${i},'name',this.value)"></div>
+            <div class="field"><label>Price (${currency})</label><input type="number" value="${b.price??''}" oninput="bundleField(${i},'price',this.value)"></div>
+            <div class="field"><label>Badge (optional)</label><input type="text" value="${(b.badge||'').replace(/"/g,'&quot;')}" placeholder="Best value" oninput="bundleField(${i},'badge',this.value)"></div>
+          </div>
+          <label style="margin-top:6px;">Categories included</label>
+          <div class="cat-check-grid">${checkboxes || '<span class="hint">Create categories first.</span>'}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function bundleField(i, field, val) {
+    if (field === 'price') val = val === '' ? null : parseInt(val);
+    bundles[i][field] = val;
+    bundles[i]._dirty = true;
+  }
+  function bundleToggleCat(i, catId, checked) {
+    const ids = new Set(bundles[i].category_ids || []);
+    if (checked) ids.add(catId); else ids.delete(catId);
+    bundles[i].category_ids = [...ids];
+    bundles[i]._dirty = true;
+  }
+  function addBundle() {
+    bundles.push({
+      _new: true, _dirty: true,
+      name: 'New bundle', market: market, category_ids: [],
+      price: null, currency: cfg.currency || (market === 'tr' ? 'TRY' : 'DZD'),
+      access_days: 30, is_visible: true, badge: '',
+    });
+    renderBundles();
+  }
+  async function deleteBundle(i) {
+    const b = bundles[i];
+    if (!confirm('Delete this bundle?')) return;
+    if (b.id) { await sb.from('category_bundles').delete().eq('id', b.id); }
+    bundles.splice(i, 1);
+    renderBundles();
+    toast('Bundle deleted', 'success');
+  }
+
+  // Save categories + bundles (called from saveAll)
+  async function saveCategoriesAndBundles() {
+    const currency = cfg.currency || (market === 'tr' ? 'TRY' : 'DZD');
+    // Categories
+    for (const c of cats) {
+      if (!c._dirty && !c._new) continue;
+      const payload = {
+        name: c.name, color: c.color, market: c.market || market,
+        is_visible: c.is_visible !== false, price: c.price ?? null,
+        currency, access_days: c.access_days || 30, sort_order: c.sort_order || 0,
+        updated_at: new Date().toISOString(),
+      };
+      if (c.id) {
+        await sb.from('categories').update(payload).eq('id', c.id);
+      } else {
+        const { data } = await sb.from('categories').insert(payload).select().single();
+        if (data) { c.id = data.id; c._new = false; }
+      }
+      c._dirty = false;
+    }
+    // Bundles
+    for (const b of bundles) {
+      if (!b._dirty && !b._new) continue;
+      const payload = {
+        name: b.name, market: b.market || market,
+        category_ids: b.category_ids || [], price: b.price ?? null,
+        currency, access_days: b.access_days || 30,
+        is_visible: b.is_visible !== false, badge: b.badge || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (b.id) {
+        await sb.from('category_bundles').update(payload).eq('id', b.id);
+      } else {
+        const { data } = await sb.from('category_bundles').insert(payload).select().single();
+        if (data) { b.id = data.id; b._new = false; }
+      }
+      b._dirty = false;
+    }
+    // Re-render so new IDs enable bundle checkboxes
+    renderCats(); renderBundles();
+  }
+
   async function switchMarket(m) {
     market = m;
     document.getElementById('tabDz').classList.toggle('active', m==='dz');
