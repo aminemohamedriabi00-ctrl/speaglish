@@ -421,7 +421,7 @@
     ] = await Promise.all([
       sb.from('profiles').select('*', {count:'exact',head:true}).eq('role','student'),
       sb.from('profiles').select('*', {count:'exact',head:true}).eq('role','student').eq('subscription_status','active'),
-      sb.from('subscriptions').select('*', {count:'exact',head:true}).eq('status','pending'),
+      sb.from('exam_access').select('*', {count:'exact',head:true}).eq('status','pending'),
       sb.from('exam_attempts').select('*', {count:'exact',head:true}),
     ]);
 
@@ -453,69 +453,54 @@
   }
 
   // ─── PENDING ACTIVATIONS ──────────────────────────────────────
+  // Build a short-lived signed URL so private receipts are viewable.
+  async function signedReceipt(path, fallbackUrl) {
+    if (!path) return fallbackUrl || null;
+    try {
+      const { data } = await sb.storage.from('landing-assets').createSignedUrl(path, 3600);
+      return data?.signedUrl || fallbackUrl || null;
+    } catch (e) { return fallbackUrl || null; }
+  }
+
   async function loadPending() {
-    // Fetch pending subscriptions rows
-    const { data: subs } = await sb
-      .from('subscriptions')
+    // Pending purchases now live in exam_access (category purchases)
+    const { data: rows } = await sb
+      .from('exam_access')
       .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
-    // Also fetch profiles with subscription_status='pending' that have no subscriptions row
-    const { data: pendingProfiles } = await sb
-      .from('profiles')
-      .select('*')
-      .eq('role', 'student')
-      .eq('subscription_status', 'pending');
-
     const el = document.getElementById('pendingList');
-
-    // Build unified list — subscriptions rows take priority, then orphaned profiles
-    const subStudentIds = new Set((subs || []).map(s => s.student_id));
-    const orphans = (pendingProfiles || []).filter(p => !subStudentIds.has(p.id));
-
     const colors = ['#FF7F50','#6495ED','#DDA0DD','#98FB98','#FFB347'];
     let html = '';
 
-    // Render subscription rows
-    for (const s of (subs || [])) {
-      // Fetch profile separately to avoid broken join
+    for (const s of (rows || [])) {
       const { data: prof } = await sb.from('profiles').select('full_name, market').eq('id', s.student_id).single();
       const name   = prof?.full_name || 'Unknown';
-      const market = prof?.market || 'dz';
+      const market = prof?.market || s.market || 'dz';
       const date   = new Date(s.created_at).toLocaleDateString();
       const color  = colors[name.charCodeAt(0) % colors.length];
+
+      // Category name for display
+      let catName = '—';
+      if (s.category_id) {
+        const { data: cat } = await sb.from('categories').select('name').eq('id', s.category_id).single();
+        catName = cat?.name || 'Category';
+      }
+      const receipt = await signedReceipt(s.receipt_path, s.receipt_url);
+
       html += `
         <div class="table-row">
           <div class="row-avatar" style="background:${color};">${name.charAt(0).toUpperCase()}</div>
           <div class="row-info">
             <div class="row-name">${name}</div>
-            <div class="row-meta">${s.plan_type||'—'} · ${date} · ${market.toUpperCase()}</div>
+            <div class="row-meta">${catName} · ${s.plan_type||'—'} · ${date} · ${market.toUpperCase()}</div>
           </div>
-          ${s.receipt_url
-            ? `<a href="${s.receipt_url}" target="_blank" class="btn btn-ghost btn-sm">📎 Receipt</a>`
+          ${receipt
+            ? `<a href="${receipt}" target="_blank" class="btn btn-ghost btn-sm">📎 Receipt</a>`
             : '<span style="font-size:11px;color:var(--muted);">No receipt</span>'}
           <span class="amount-badge">${s.amount?.toLocaleString()||'—'} ${s.currency||''}</span>
           <button class="btn btn-success btn-sm" onclick="openActivation('${s.id}')">Activate</button>
-        </div>`;
-    }
-
-    // Render orphaned profiles (pending status but no subscriptions row)
-    for (const p of orphans) {
-      const name   = p.full_name || 'Unknown';
-      const market = p.market || 'dz';
-      const date   = new Date(p.created_at).toLocaleDateString();
-      const color  = colors[name.charCodeAt(0) % colors.length];
-      html += `
-        <div class="table-row">
-          <div class="row-avatar" style="background:${color};">${name.charAt(0).toUpperCase()}</div>
-          <div class="row-info">
-            <div class="row-name">${name}</div>
-            <div class="row-meta">No payment record · ${date} · ${market.toUpperCase()}</div>
-          </div>
-          <span style="font-size:11px;color:var(--muted);">No receipt</span>
-          <span class="amount-badge" style="color:var(--muted);">—</span>
-          <button class="btn btn-success btn-sm" onclick="openActivationForProfile('${p.id}','${name}','${market}')">Activate</button>
         </div>`;
     }
 
@@ -591,20 +576,21 @@
   }
 
   // ─── ACTIVATION MODAL ─────────────────────────────────────────
-  async function openActivation(subId) {
-    const { data: sub } = await sb.from('subscriptions').select('*').eq('id', subId).single();
-    if (!sub) return;
-    const { data: prof } = await sb.from('profiles').select('full_name, market').eq('id', sub.student_id).single();
-    currentSub = { ...sub, _name: prof?.full_name || 'Unknown', _market: prof?.market || 'dz', _profileOnly: false };
-    _renderActivationModal(currentSub._name, currentSub._market, sub.plan_type, sub.amount, sub.currency, sub.receipt_url);
+  async function openActivation(accessId) {
+    const { data: row } = await sb.from('exam_access').select('*').eq('id', accessId).single();
+    if (!row) return;
+    const { data: prof } = await sb.from('profiles').select('full_name, market').eq('id', row.student_id).single();
+    let catName = '—';
+    if (row.category_id) {
+      const { data: cat } = await sb.from('categories').select('name').eq('id', row.category_id).single();
+      catName = cat?.name || 'Category';
+    }
+    const receipt = await signedReceipt(row.receipt_path, row.receipt_url);
+    currentSub = { ...row, _name: prof?.full_name || 'Unknown', _market: prof?.market || row.market || 'dz', _catName: catName };
+    _renderActivationModal(currentSub._name, currentSub._market, row.plan_type, row.amount, row.currency, receipt, catName);
   }
 
-  async function openActivationForProfile(profileId, name, market) {
-    currentSub = { student_id: profileId, _name: name, _market: market, _profileOnly: true };
-    _renderActivationModal(name, market, '3months', null, null, null);
-  }
-
-  function _renderActivationModal(name, market, planType, amount, currency, receiptUrl) {
+  function _renderActivationModal(name, market, planType, amount, currency, receiptUrl, catName) {
     const days = { '1month':30, '3months':90, '6months':180 }[planType] || 90;
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + days);
@@ -612,6 +598,7 @@
     document.getElementById('activatePlan').value = planType || '3months';
     document.getElementById('modalInfo').innerHTML = `
       <div class="modal-info-row"><span class="modal-info-label">Student</span><span class="modal-info-value">${name}</span></div>
+      <div class="modal-info-row"><span class="modal-info-label">Category</span><span class="modal-info-value">${catName || '—'}</span></div>
       <div class="modal-info-row"><span class="modal-info-label">Plan</span><span class="modal-info-value">${planType||'—'}</span></div>
       <div class="modal-info-row"><span class="modal-info-label">Amount</span><span class="modal-info-value" style="color:var(--gold);">${amount ? amount.toLocaleString()+' '+(currency||'') : '—'}</span></div>
       <div class="modal-info-row"><span class="modal-info-label">Market</span><span class="modal-info-value">${market.toUpperCase()}</span></div>
@@ -643,32 +630,57 @@
     const now    = new Date().toISOString();
     const expiryISO = new Date(expiry).toISOString();
 
-    // Update student profile
-    await sb.from('profiles').update({
-      subscription_status: 'active',
-      subscription_start:  now,
-      subscription_end:    expiryISO,
-    }).eq('id', currentSub.student_id);
+    const btn = document.querySelector('#activationModal .btn-success');
+    if (btn) { btn.disabled = true; btn.textContent = 'Activating…'; }
 
-    // Update subscriptions row only if it exists (not profile-only case)
-    if (!currentSub._profileOnly && currentSub.id) {
-      await sb.from('subscriptions').update({
-        status:       'activated',
-        activated_at: now,
-        expires_at:   expiryISO,
-        plan_type:    plan,
-      }).eq('id', currentSub.id);
+    // 1) Mark the pending purchase as active (this is the category record)
+    await sb.from('exam_access').update({
+      status:     'active',
+      plan_type:  plan,
+      expires_at: expiryISO,
+      updated_at: now,
+    }).eq('id', currentSub.id);
+
+    // 2) Unlock every exam in the purchased category for the same period
+    if (currentSub.category_id) {
+      const { data: exams } = await sb.from('exams')
+        .select('id')
+        .eq('category_id', currentSub.category_id);
+
+      if (exams && exams.length) {
+        // Remove any prior active rows for these exams (avoid duplicates), then insert fresh
+        const examIds = exams.map(e => e.id);
+        await sb.from('exam_access')
+          .delete()
+          .eq('student_id', currentSub.student_id)
+          .eq('access_type', 'exam')
+          .eq('category_id', currentSub.category_id)
+          .in('exam_id', examIds);
+
+        const rows = examIds.map(id => ({
+          student_id:  currentSub.student_id,
+          exam_id:     id,
+          category_id: currentSub.category_id,
+          access_type: 'exam',
+          status:      'active',
+          plan_type:   plan,
+          expires_at:  expiryISO,
+          market:      currentSub._market,
+          created_at:  now,
+        }));
+        await sb.from('exam_access').insert(rows);
+      }
     }
 
+    if (btn) { btn.disabled = false; btn.textContent = 'Activate'; }
     closeModal();
-    toast('✅ Student activated successfully!', 'success');
+    toast('✅ Category unlocked for student!', 'success');
     await loadData();
   }
 
   async function rejectPayment() {
     if (!currentSub) return;
-    await sb.from('subscriptions').update({ status: 'rejected' }).eq('id', currentSub.id);
-    await sb.from('profiles').update({ subscription_status: 'trial' }).eq('id', currentSub.student_id);
+    await sb.from('exam_access').update({ status: 'rejected' }).eq('id', currentSub.id);
     closeModal();
     toast('Payment rejected.', 'error');
     await loadData();
