@@ -66,8 +66,11 @@
     /* ── EXAM GRID ───────────────────────────── */
     .exam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:20px;}
     .exam-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .2s;}
+    .exam-card.selected{border-color:var(--red);box-shadow:0 0 0 1px var(--red);}
     .exam-card:hover{border-color:var(--gold);}
     .exam-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .exam-select-checkbox{width:16px;height:16px;margin-right:auto;accent-color:var(--red);cursor:pointer;flex-shrink:0;}
+    .bulk-actions-bar{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--red);border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:13px;font-weight:600;}
     .exam-type-tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
     .exam-active-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;}
     .toggle-mini{width:32px;height:18px;background:var(--border);border-radius:18px;position:relative;transition:.3s;cursor:pointer;}
@@ -189,6 +192,11 @@
 
     <!-- ── VIEW 1: EXAMS LIST ──────────────── -->
     <div class="view active" id="viewList">
+      <div class="bulk-actions-bar" id="bulkActionsBar" style="display:none;">
+        <span id="bulkSelectedCount">0 selected</span>
+        <button class="btn btn-ghost btn-sm" onclick="clearExamSelection()">Clear</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkDeleteExams()">🗑 Delete Selected</button>
+      </div>
       <div class="exam-grid" id="examGrid">
         <div style="grid-column:1/-1;padding:40px;text-align:center;">
           <div class="spinner" style="margin:0 auto;"></div>
@@ -447,17 +455,23 @@
   let currentExam   = null;
   let previewData   = [];
   let editingExamId = null;
+  let selectedExams = new Set();
   const CF_BASE     = 'https://pub-ef4435a0984a475e980cfb9ed1680410.r2.dev';
 
-  // Turns a bare filename/path from Excel (e.g. "listening/audio_01.mp3")
-  // into a full public R2 URL. Leaves already-full URLs (http/https) untouched,
-  // so admins can also paste a complete URL directly if they prefer.
+  // Turns a bare filename/path from Excel (e.g. "listening/audio_01.mp3" or
+  // "T1_Listening_P1_Q1-10 (1).mp3") into a full public R2 URL, safely
+  // URL-encoding spaces/parentheses/special characters. Leaves already-full
+  // URLs (http/https) untouched, so admins can also paste a complete URL directly.
   function resolveMediaUrl(value) {
     if (!value) return null;
     const v = String(value).trim();
     if (!v) return null;
     if (/^https?:\/\//i.test(v)) return v;
-    return `${CF_BASE}/${v.replace(/^\/+/, '')}`;
+    const cleaned = v.replace(/^\/+/, '');
+    const encoded = cleaned.split('/')
+      .map(seg => encodeURIComponent(seg).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase()))
+      .join('/');
+    return `${CF_BASE}/${encoded}`;
   }
 
   // ─── AUTH ─────────────────────────────────────────────────────
@@ -601,8 +615,9 @@
       const mktFlag = e.market === 'tr' ? '🇹🇷' : e.market === 'both' ? '🌍' : '🇩🇿';
       const mktLabel = e.market === 'both' ? 'BOTH' : e.market?.toUpperCase();
       return `
-        <div class="exam-card">
+        <div class="exam-card ${selectedExams.has(e.id)?'selected':''}" id="card-${e.id}">
           <div class="exam-card-top">
+            <input type="checkbox" class="exam-select-checkbox" ${selectedExams.has(e.id)?'checked':''} onclick="toggleExamSelection('${e.id}')">
             <span class="exam-type-tag" style="background:${color}20;color:${color};border:1px solid ${color}30;">${e.type}</span>
             <div class="exam-active-toggle" onclick="toggleActive('${e.id}', ${!e.is_active})">
               <div class="toggle-mini ${e.is_active?'on':''}" id="toggle-${e.id}"></div>
@@ -620,6 +635,50 @@
           </div>
         </div>`;
     }).join('');
+  }
+
+  // ─── MULTI-SELECT & BULK DELETE ───────────────────────────────
+  function toggleExamSelection(id) {
+    if (selectedExams.has(id)) selectedExams.delete(id);
+    else selectedExams.add(id);
+    document.getElementById(`card-${id}`)?.classList.toggle('selected', selectedExams.has(id));
+    updateBulkBar();
+  }
+
+  function clearExamSelection() {
+    selectedExams.clear();
+    document.querySelectorAll('.exam-select-checkbox').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.exam-card').forEach(c => c.classList.remove('selected'));
+    updateBulkBar();
+  }
+
+  function updateBulkBar() {
+    const bar = document.getElementById('bulkActionsBar');
+    document.getElementById('bulkSelectedCount').textContent = `${selectedExams.size} selected`;
+    bar.style.display = selectedExams.size > 0 ? 'flex' : 'none';
+  }
+
+  async function bulkDeleteExams() {
+    if (!selectedExams.size) return;
+    const ids = [...selectedExams];
+    if (!confirm(`Delete ${ids.length} exam(s) and all their questions? This cannot be undone.`)) return;
+
+    const btn = document.querySelector('#bulkActionsBar .btn-danger');
+    if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+
+    const { error } = await sb.from('exams').delete().in('id', ids);
+
+    if (btn) { btn.disabled = false; btn.innerHTML = '🗑 Delete Selected'; }
+
+    if (error) {
+      toast('Failed to delete: ' + error.message, 'error');
+      return;
+    }
+
+    toast(`${ids.length} exam(s) deleted`, 'error');
+    selectedExams.clear();
+    updateBulkBar();
+    await loadExams();
   }
 
   // ─── TOGGLE ACTIVE ────────────────────────────────────────────
