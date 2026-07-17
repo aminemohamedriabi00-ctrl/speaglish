@@ -224,7 +224,7 @@
           <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(this)" style="display:none;">
           <div class="import-icon">📊</div>
           <div class="import-text">Click to upload Excel file</div>
-          <div class="import-hint">Columns: Question · Option A · Option B · Option C · Option D · Correct · Explanation · Audio · Category · Difficulty</div>
+          <div class="import-hint">Columns: Question · Option A · Option B · Option C · Option D · Correct · Explanation · Audio · Category · Difficulty<br>Audio/Image: filename with extension (e.g. "listening/audio_01.mp3") matching the file you uploaded to R2, or a full URL</div>
         </label>
 
         <!-- Preview -->
@@ -413,7 +413,7 @@
     </div>
     <div>
       <label>Audio File Name (optional)</label>
-      <input type="text" id="qAudio" placeholder="audio_01" style="margin-bottom:0;">
+      <input type="text" id="qAudio" placeholder="listening/audio_01.mp3" style="margin-bottom:0;">
     </div>
     <div>
       <label>Image URL (optional)</label>
@@ -447,7 +447,18 @@
   let currentExam   = null;
   let previewData   = [];
   let editingExamId = null;
-  const CF_BASE     = 'https://pub-xxxx.r2.dev'; // Update with your R2 public URL
+  const CF_BASE     = 'https://pub-ef4435a0984a475e980cfb9ed1680410.r2.dev';
+
+  // Turns a bare filename/path from Excel (e.g. "listening/audio_01.mp3")
+  // into a full public R2 URL. Leaves already-full URLs (http/https) untouched,
+  // so admins can also paste a complete URL directly if they prefer.
+  function resolveMediaUrl(value) {
+    if (!value) return null;
+    const v = String(value).trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    return `${CF_BASE}/${v.replace(/^\/+/, '')}`;
+  }
 
   // ─── AUTH ─────────────────────────────────────────────────────
   async function checkAuth() {
@@ -772,8 +783,8 @@
           option_d:       get('optiond','option d','d','answer d'),
           correct_answer: get('correct','correctanswer','answer','correct answer').toUpperCase(),
           explanation:    get('explanation','explain','why','reason'),
-          audio_url:      get('audio','audiofile','audio file') || null,
-          image_url:      get('image','imageurl','image url','imagefile','image file') || null,
+          audio_url:      resolveMediaUrl(get('audio','audiofile','audio file')),
+          image_url:      resolveMediaUrl(get('image','imageurl','image url','imagefile','image file')),
           image_caption:  get('imagecaption','image caption','caption') || null,
           passage_label:  get('passagelabel','passage label') || null,
           passage_text:   get('passage','passagetext','passage text','paragraph','reading','reading passage') || null,
@@ -892,8 +903,8 @@
       skill:          document.getElementById('qSkill').value,
       topic:          document.getElementById('qTopic').value,
       difficulty:     document.getElementById('qDifficulty').value,
-      audio_url:      document.getElementById('qAudio').value.trim() || null,
-      image_url:      document.getElementById('qImage').value.trim() || null,
+      audio_url:      resolveMediaUrl(document.getElementById('qAudio').value),
+      image_url:      resolveMediaUrl(document.getElementById('qImage').value),
       image_caption:  document.getElementById('qImageCaption').value.trim() || null,
       passage_label:  document.getElementById('qPassageLabel').value.trim() || null,
       passage_text:   document.getElementById('qPassage').value.trim() || null,
@@ -929,7 +940,7 @@
       ['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct', 'Explanation', 'Audio', 'Image', 'Image Caption', 'Passage Label', 'Passage', 'Category', 'Difficulty'],
       ['The author implies that technology...', 'Has replaced teachers', 'Has both benefits and risks', 'Is harmful', 'Has no effect', 'B', 'The author uses balanced language suggesting both sides.', '', '', '', '', '', 'Implied Meaning', 'medium'],
       ['Choose the synonym of "reluctant":', 'Eager', 'Unwilling', 'Excited', 'Determined', 'B', '"Reluctant" means unwilling or hesitant.', '', '', '', '', '', 'Vocabulary', 'easy'],
-      ['[LISTENING] You will hear a conversation...', 'Train', 'Bus', 'Taxi', 'Metro', 'C', 'The man says "I\'ll take a cab."', 'audio_01', '', '', '', '', 'Listening', 'medium'],
+      ['[LISTENING] You will hear a conversation...', 'Train', 'Bus', 'Taxi', 'Metro', 'C', 'The man says "I\'ll take a cab."', 'listening/audio_01.mp3', '', '', '', '', 'Listening', 'medium'],
       ['According to the passage, the main cause was...', 'Drought', 'War', 'Trade', 'Disease', 'A', 'The passage states the harvest failed due to drought.', '', '', '', 'Reading Passage', 'In the late summer of that year, the rains never came. Fields that had fed the region for generations turned to dust...', 'Reading', 'medium'],
       ['What does the diagram show?', 'A food chain', 'A water cycle', 'A circuit', 'A map', 'B', 'The arrows show evaporation and precipitation.', '', 'https://example.com/water-cycle.png', 'Figure 1', '', '', 'Reading', 'easy'],
     ];
@@ -1033,8 +1044,8 @@
         option_d:      get(r,'option_d','optiond','d','answer d'),
         correct_answer:get(r,'correct','correct_answer','correctanswer','answer').toUpperCase(),
         explanation:   get(r,'explanation','explain','why'),
-        audio_url:     get(r,'audio','audiofile','audio file') || null,
-        image_url:     get(r,'image','imageurl','image url','imagefile','image file') || null,
+        audio_url:     resolveMediaUrl(get(r,'audio','audiofile','audio file')),
+        image_url:     resolveMediaUrl(get(r,'image','imageurl','image url','imagefile','image file')),
         image_caption: get(r,'imagecaption','image caption','caption') || null,
         passage_label: get(r,'passagelabel','passage label') || null,
         passage_text:  get(r,'passage','passagetext','passage text','paragraph','reading','reading passage') || null,
