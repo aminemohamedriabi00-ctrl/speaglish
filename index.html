@@ -645,7 +645,8 @@
     /* ── RESPONSIVE ────────────────────────── */
     @media (max-width: 768px) {
       nav { padding: 12px 16px; }
-      .lang-toggle { display: none; }
+      .lang-toggle { padding: 2px; gap: 2px; }
+      .lang-btn { padding: 4px 8px; font-size: 11px; }
       section { padding: 56px 16px; }
       .hero { min-height: 80vh; }
       .hero h1 { letter-spacing: -1px; }
@@ -808,25 +809,43 @@
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2dnYnpncnVjb3B2eGtnenJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMyMDAsImV4cCI6MjA5NTgyOTIwMH0.Z1wosmmuipQS-KjWnKJRhOoXXgYzvEMy13Uah011Vw0';
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // ─── EXAM DATA ────────────────────────────────────────────────
-  const EXAMS = {
-    dz: [
-      { title:'TCF — Compréhension Écrite', type:'TCF',   skill:'Lecture',    dur:60,  count:45, color:'#4169FF', free:true  },
-      { title:'TCF — Compréhension Orale',  type:'TCF',   skill:'Écoute',     dur:40,  count:39, color:'#00C9A7', free:false },
-      { title:'TEF — Compréhension Écrite', type:'TEF',   skill:'Lecture',    dur:60,  count:50, color:'#9B6DFF', free:false },
-      { title:'IELTS Academic — Reading',   type:'IELTS', skill:'Reading',    dur:60,  count:40, color:'#F0A500', free:false },
-      { title:'DELF B2 — Compréhension',    type:'DELF',  skill:'Lecture',    dur:60,  count:35, color:'#FF5757', free:false },
-      { title:'IELTS — Writing Task 2',     type:'IELTS', skill:'Écriture',   dur:40,  count:1,  color:'#F0A500', free:false },
-    ],
-    tr: [
-      { title:'YDS — Yabancı Dil Sınavı',  type:'YDS',      skill:'İngilizce', dur:180, count:80, color:'#4169FF', free:true  },
-      { title:'YÖKDİL — Academic English', type:'YÖKDİL',   skill:'İngilizce', dur:180, count:80, color:'#00C9A7', free:false },
-      { title:'e-YDS — Online Format',     type:'e-YDS',    skill:'İngilizce', dur:180, count:80, color:'#9B6DFF', free:false },
-      { title:'IELTS Academic — Reading',  type:'IELTS',    skill:'Reading',   dur:60,  count:40, color:'#F0A500', free:false },
-      { title:'TOEFL iBT — Reading',       type:'TOEFL',    skill:'Reading',   dur:54,  count:30, color:'#FF5757', free:false },
-      { title:'TOEIC — Reading & Listening',type:'TOEIC',   skill:'Mixed',     dur:120, count:100,color:'#F0A500', free:false },
-    ]
+  // ─── EXAM TYPE COLORS (theme-aware) ────────────────────────────
+  // Matches --blue/--teal/--gold/--red/--purple exactly per theme,
+  // so exam badges stay consistent whether the page is in dark or light mode.
+  const TYPE_COLORS = {
+    dark:  { TCF:'#4169FF', TEF:'#9B6DFF', IELTS:'#F0A500', DELF:'#FF5757', DALF:'#FF5757',
+             YDS:'#4169FF', 'YÖKDİL':'#00C9A7', 'e-YDS':'#9B6DFF', TOEFL:'#FF5757', TOEIC:'#F0A500' },
+    light: { TCF:'#2952E3', TEF:'#7B4FE0', IELTS:'#D4900A', DELF:'#D93636', DALF:'#D93636',
+             YDS:'#2952E3', 'YÖKDİL':'#009982', 'e-YDS':'#7B4FE0', TOEFL:'#D93636', TOEIC:'#D4900A' },
   };
+  function examColor(type) {
+    const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    return TYPE_COLORS[theme][type] || TYPE_COLORS[theme].TCF;
+  }
+
+  // ─── LIVE EXAMS (from Supabase, replaces old hardcoded demo data) ──
+  // Reads question_count directly off the exams row (see SQL below) rather
+  // than querying `questions` — that table is intentionally RLS-restricted
+  // to enrolled students now, so anonymous landing-page visitors can't read
+  // it, but exams.question_count stays public for marketing display.
+  async function loadLiveExams(m) {
+    const { data: exams } = await sb.from('exams')
+      .select('*')
+      .eq('is_active', true)
+      .in('market', [m, 'both'])
+      .order('created_at', { ascending: false });
+
+    if (!exams || !exams.length) return [];
+
+    return exams.map(e => ({
+      title: e.title,
+      type:  e.type,
+      skill: e.skill || '',
+      dur:   e.duration_minutes || 60,
+      count: e.question_count || 0,
+      free:  !!e.is_free,
+    }));
+  }
 
   // ─── TRANSLATIONS (4 languages) ──────────────────────────────
   const T = {
@@ -920,7 +939,7 @@
     tr: {
       dir: 'ltr',
       badge: 'Sınav Hazırlık Platformu',
-      title: 'YDS ve IELTS\'e<br><span class="gold">güvenle hazırlan</span>',
+      title: 'Sınavına<br><span class="gold">güvenle hazırlan</span>',
       sub: 'Tam simülasyon, anında AI geri bildirimi ve maksimum puan için kişiselleştirilmiş öneriler.',
       cta: 'Ücretsiz Başla →',
       cta2: 'Sınavlara Bak',
@@ -972,6 +991,7 @@
   let market = 'dz';   // auto-detected, drives prices & exam types
   let lang   = 'fr';   // user-chosen, drives text language
   let globalConfig = null;
+  let liveExams = [];  // fetched from Supabase per market, see loadLiveExams()
 
   // ─── MARKET DETECTION ────────────────────────────────────────
   async function detectMarket() {
@@ -1114,21 +1134,25 @@
       if (el) el.textContent = l;
     });
 
-    // Exams grid
+    // Exams grid — now sourced from the live `exams` table (loadLiveExams),
+    // not hardcoded demo data
     const exams = cfg?.featured_exams?.length
-      ? EXAMS[m].filter(e => cfg.featured_exams.includes(e.type))
-      : EXAMS[m];
+      ? liveExams.filter(e => cfg.featured_exams.includes(e.type))
+      : liveExams;
 
     document.getElementById('examsTag').textContent   = t.examsTag;
     document.getElementById('examsTitle').textContent = t.examsTitle;
     document.getElementById('examsSub').textContent   = t.examsSub;
     document.getElementById('statExamCount').textContent = exams.length;
 
-    document.getElementById('examsGrid').innerHTML = exams.map(e => `
-      <div class="exam-card" style="--accent:${e.color};" onclick="location.href='register.html'">
+    document.getElementById('examsGrid').innerHTML = exams.length
+      ? exams.map(e => {
+          const color = examColor(e.type);
+          return `
+      <div class="exam-card" style="--accent:${color};" onclick="location.href='register.html'">
         <div class="exam-card-top">
           <span class="exam-type-tag"
-            style="background:${e.color}20;color:${e.color};border:1px solid ${e.color}30;">
+            style="background:${color}20;color:${color};border:1px solid ${color}30;">
             ${e.type}
           </span>
           ${e.free
@@ -1139,10 +1163,14 @@
         <div class="exam-meta">${e.skill} · ${e.dur} min · ${e.count} Q</div>
         <div class="exam-bar">
           <div class="exam-bar-fill"
-            style="width:${Math.min(100,e.count/80*100)}%;background:${e.color};"></div>
+            style="width:${Math.min(100,e.count/80*100)}%;background:${color};"></div>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+        }).join('')
+      : `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);">
+           <div style="font-size:36px;margin-bottom:12px;">📝</div>
+           ${t.examsTag} — coming soon
+         </div>`;
 
     // Steps
     document.getElementById('stepsTitle').textContent = t.stepsTitle;
@@ -1285,6 +1313,7 @@
     const next = current === 'dark' ? 'light' : 'dark';
     localStorage.setItem('sp_theme', next);
     applyTheme(next);
+    render(market, lang, globalConfig); // refresh theme-dependent colors (exam badges, etc.)
   }
 
   // ─── INIT ─────────────────────────────────────────────────────
@@ -1306,6 +1335,13 @@
       globalConfig = data;
     } catch(e) {
       console.warn('Using default config:', e.message);
+    }
+
+    try {
+      liveExams = await loadLiveExams(market);
+    } catch(e) {
+      console.warn('Failed to load live exams:', e.message);
+      liveExams = [];
     }
 
     render(market, lang, globalConfig);
