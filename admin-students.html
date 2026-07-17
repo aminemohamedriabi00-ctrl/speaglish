@@ -128,6 +128,11 @@
 
     .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;}
 
+    .cat-access-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;cursor:pointer;}
+    .cat-access-row:last-child{border-bottom:none;}
+    .cat-access-row input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:var(--gold);flex-shrink:0;}
+    .cat-access-expiry{margin-left:auto;font-size:11px;color:var(--muted);}
+
     /* ── TOAST ───────────────────────────────── */
     .toast-wrap{position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;}
     .toast{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;min-width:200px;animation:slideIn .3s ease;}
@@ -252,6 +257,12 @@
       <input type="date" id="editExpiry">
     </div>
 
+    <div class="section-label">Category Access</div>
+    <div id="categoryAccessList" style="margin-bottom:8px;">Loading...</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+      <button class="btn btn-primary btn-sm" id="saveCategoryAccessBtn" onclick="saveCategoryAccess()">Update Category Access</button>
+    </div>
+
     <div class="section-label">Exam History</div>
     <div id="examHistory">
       <div style="font-size:13px;color:var(--muted);">Loading...</div>
@@ -275,6 +286,7 @@
   let filteredStudents = [];
   let currentFilter = 'all';
   let currentStudent = null;
+  let allCategories = [];
 
   const COLORS = ['#FF7F50','#6495ED','#DDA0DD','#98FB98','#FFB347','#87CEEB','#F0A500','#9B6DFF'];
   const avatarColor = name => COLORS[name.charCodeAt(0) % COLORS.length];
@@ -428,6 +440,42 @@
     document.getElementById('editExpiry').value =
       s.subscription_end ? s.subscription_end.split('T')[0] : '';
 
+    // Load current category access from exam_access
+    // (a category counts as "active" if the student has at least one
+    // non-expired active exam_access row tied to an exam in that category)
+    const { data: accessRows } = await sb.from('exam_access')
+      .select('category_id, status, expires_at')
+      .eq('student_id', id)
+      .eq('access_type', 'exam');
+
+    const activeCategories = new Set();
+    const categoryExpiry = {};
+    (accessRows || []).forEach(r => {
+      const notExpired = !r.expires_at || new Date(r.expires_at) > new Date();
+      if (r.status === 'active' && notExpired && r.category_id) {
+        activeCategories.add(r.category_id);
+        categoryExpiry[r.category_id] = r.expires_at;
+      }
+    });
+
+    const catListEl = document.getElementById('categoryAccessList');
+    if (!allCategories.length) {
+      catListEl.innerHTML = `<div style="font-size:13px;color:var(--muted);">No categories found</div>`;
+    } else {
+      catListEl.innerHTML = allCategories.map(c => {
+        const has = activeCategories.has(c.id);
+        const expiryLabel = has && categoryExpiry[c.id]
+          ? `until ${new Date(categoryExpiry[c.id]).toLocaleDateString()}`
+          : (has ? 'no expiry' : '');
+        return `
+          <label class="cat-access-row">
+            <input type="checkbox" class="cat-access-checkbox" data-category-id="${c.id}" ${has ? 'checked' : ''}>
+            ${c.name}
+            ${expiryLabel ? `<span class="cat-access-expiry">${expiryLabel}</span>` : ''}
+          </label>`;
+      }).join('');
+    }
+
     // Load exam attempts
     const { data: attempts } = await sb.from('exam_attempts')
       .select('*').eq('student_id', id).order('completed_at',{ascending:false}).limit(10);
@@ -472,6 +520,68 @@
     toast('✅ Student updated successfully', 'success');
     closeModal();
     await loadStudents();
+  }
+
+  // ─── SAVE CATEGORY ACCESS ─────────────────────────────────────
+  // Uses the "Subscription Expires" date field above as the expiry for
+  // any newly-granted category. Unchecking a category expires all its
+  // active exam_access rows for that student immediately.
+  async function saveCategoryAccess() {
+    if (!currentStudent) return;
+    const expiryInput = document.getElementById('editExpiry').value;
+    const expiryISO = expiryInput ? new Date(expiryInput).toISOString() : null;
+    const now = new Date().toISOString();
+    const checkboxes = document.querySelectorAll('.cat-access-checkbox');
+
+    const btn = document.getElementById('saveCategoryAccessBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
+
+    for (const cb of checkboxes) {
+      const categoryId = cb.dataset.categoryId;
+
+      if (cb.checked) {
+        // Grant: unlock every exam in this category for this student
+        const { data: exams } = await sb.from('exams')
+          .select('id')
+          .eq('category_id', categoryId);
+
+        if (exams && exams.length) {
+          const examIds = exams.map(e => e.id);
+
+          // Clear any stale rows for these exact exams first to avoid duplicates
+          await sb.from('exam_access')
+            .delete()
+            .eq('student_id', currentStudent.id)
+            .eq('access_type', 'exam')
+            .eq('category_id', categoryId)
+            .in('exam_id', examIds);
+
+          const rows = examIds.map(examId => ({
+            student_id:  currentStudent.id,
+            exam_id:     examId,
+            category_id: categoryId,
+            access_type: 'exam',
+            status:      'active',
+            expires_at:  expiryISO,
+            market:      currentStudent.market || 'dz',
+            created_at:  now,
+          }));
+          await sb.from('exam_access').insert(rows);
+        }
+      } else {
+        // Revoke: expire any active rows for this category
+        await sb.from('exam_access')
+          .update({ status: 'expired', updated_at: now })
+          .eq('student_id', currentStudent.id)
+          .eq('access_type', 'exam')
+          .eq('category_id', categoryId)
+          .eq('status', 'active');
+      }
+    }
+
+    if (btn) { btn.disabled = false; btn.textContent = 'Update Category Access'; }
+    toast('✅ Category access updated', 'success');
+    await openStudent(currentStudent.id); // refresh the checklist and expiry labels
   }
 
   // ─── RESET TO TRIAL ───────────────────────────────────────────
@@ -533,6 +643,8 @@
         img.src = cfg.logo_url;
       }
     } catch(e) {}
+    const { data: cats } = await sb.from('categories').select('id,name').order('name');
+    allCategories = cats || [];
     await loadStudents();
     document.getElementById('loaderOverlay').classList.add('out');
   }
