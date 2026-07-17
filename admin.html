@@ -540,8 +540,35 @@
             <div class="row-meta">${s.market?.toUpperCase()||'DZ'} · ${date}</div>
           </div>
           <span class="status-pill ${pillMap[status]||'pill-trial'}">${status}</span>
+          <button class="btn btn-danger btn-sm" onclick="revokeStudentAccess('${s.id}')">Revoke Access</button>
         </div>`;
     }).join('');
+  }
+
+  // ─── REVOKE ACCESS ────────────────────────────────────────────
+  // Revokes all active exam access for a student (per-category access
+  // now lives in exam_access, so this is what actually cuts them off).
+  // Pass a categoryId to revoke just one category instead of everything.
+  async function revokeStudentAccess(studentId, categoryId = null) {
+    if (!confirm('Revoke this student\'s exam access? They will lose access immediately.')) return;
+
+    let query = sb.from('exam_access')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('student_id', studentId)
+      .eq('access_type', 'exam')
+      .eq('status', 'active');
+
+    if (categoryId) query = query.eq('category_id', categoryId);
+
+    const { error } = await query;
+
+    if (error) {
+      toast('Failed to revoke access: ' + error.message, 'error');
+      return;
+    }
+
+    toast('Access revoked.', 'success');
+    await loadRecentStudents();
   }
 
   // ─── RECENT ATTEMPTS ──────────────────────────────────────────
