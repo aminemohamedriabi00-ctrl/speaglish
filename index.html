@@ -695,12 +695,6 @@
     <div class="hero-bg" id="heroBg"></div>
     <div class="hero-overlay" id="heroOverlay"></div>
     <div class="hero-content">
-      <div class="hero-badge">
-        <span class="badge-dot"></span>
-        <span id="badgeText">Exam Preparation Platform</span>
-      </div>
-      <h1 id="heroTitle">Prepare for your exam<br><span class="gold">with confidence</span></h1>
-      <p id="heroSubtitle">Full exam simulations, instant AI feedback, and personalized recommendations to maximize your score.</p>
       <div class="hero-actions">
         <a href="register.html" class="btn btn-primary btn-lg" id="heroCta">Start Free Trial →</a>
         <a href="#exams" class="btn btn-ghost btn-lg" id="heroSecondary">View Exams</a>
@@ -1125,9 +1119,6 @@
     }
 
     // Hero content
-    document.getElementById('badgeText').textContent = cfg?.hero_badge || t.badge;
-    document.getElementById('heroTitle').innerHTML   = cfg?.hero_title || t.title;
-    document.getElementById('heroSubtitle').textContent = cfg?.hero_subtitle || t.sub;
     document.getElementById('heroCta').textContent  = cfg?.cta_text || t.cta;
     document.getElementById('heroSecondary').textContent = t.cta2;
     document.getElementById('navCta').textContent   = t.navCta;
