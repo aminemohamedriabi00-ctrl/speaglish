@@ -682,7 +682,7 @@
         <button class="lang-btn" id="btnAr" onclick="switchLang('ar')">AR</button>
         <button class="lang-btn" id="btnFr" onclick="switchLang('fr')">FR</button>
         <button class="lang-btn" id="btnEn" onclick="switchLang('en')">EN</button>
-        <button class="lang-btn" id="btnTr" onclick="switchLang('tr')">TR</button>
+        <button class="lang-btn" id="btnTr" onclick="switchLang('tr')" style="display:none;">TR</button><!-- hidden while TR market is disabled -->
       </div>
       <a href="login.html" class="btn btn-ghost" id="navSignIn">Sign in</a>
       <a href="register.html" class="btn btn-primary" id="navCta">Start Free</a>
@@ -994,7 +994,13 @@
   let liveExams = [];  // fetched from Supabase per market, see loadLiveExams()
 
   // ─── MARKET DETECTION ────────────────────────────────────────
+  // TURKEY MARKET TEMPORARILY DISABLED (2026-07) — forcing 'dz' for everyone.
+  // The original IP/URL/localStorage detection logic is kept below, commented
+  // out, so Turkey can be re-enabled later by restoring it.
   async function detectMarket() {
+    return 'dz';
+
+    /* ── ORIGINAL DETECTION LOGIC (disabled) ──────────────────────
     // 1. URL param overrides everything
     const param = new URLSearchParams(window.location.search).get('market');
     if (param === 'dz' || param === 'tr') {
@@ -1029,15 +1035,18 @@
         const code = await service();
         if (code === 'TR') { localStorage.setItem('sp_market', 'tr'); return 'tr'; }
         if (code === 'DZ') { localStorage.setItem('sp_market', 'dz'); return 'dz'; }
-      } catch(e) { /* try next */ }
+      } catch(e) { // try next
+      }
     }
     return 'dz'; // final fallback
+    ── END ORIGINAL DETECTION LOGIC ── */
   }
 
   // ─── LANGUAGE DETECTION ───────────────────────────────────────
   function detectLang(m) {
     const saved = localStorage.getItem('sp_lang');
-    if (['ar','fr','en','tr'].includes(saved)) return saved;
+    // 'tr' excluded from valid saved values while Turkey market is disabled
+    if (['ar','fr','en'].includes(saved)) return saved;
     // Smart default based on market
     return m === 'tr' ? 'tr' : 'fr';
   }
