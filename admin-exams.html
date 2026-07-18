@@ -456,44 +456,11 @@
   let previewData   = [];
   let editingExamId = null;
   let selectedExams = new Set();
-  const CF_BASE     = 'https://pub-ef4435a0984a475e980cfb9ed1680410.r2.dev';
-
-  // Turns a bare filename/path from Excel (e.g. "listening/audio_01.mp3" or
-  // "T1_Listening_P1_Q1-10 (1).mp3") into a full public R2 URL, safely
-  // URL-encoding spaces/parentheses/special characters. Leaves already-full
-  // URLs (http/https) untouched, so admins can also paste a complete URL directly.
-  function resolveMediaUrl(value) {
-    if (!value) return null;
-    const v = String(value).trim();
-    if (!v) return null;
-    if (/^https?:\/\//i.test(v)) return v;
-    const cleaned = v.replace(/^\/+/, '');
-    const encoded = cleaned.split('/')
-      .map(seg => encodeURIComponent(seg).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase()))
-      .join('/');
-    return `${CF_BASE}/${encoded}`;
-  }
-
-  // ─── AUTH ─────────────────────────────────────────────────────
-  async function checkAuth() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) { window.location.href = 'login.html'; return false; }
-    const { data: p } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
-    if (!p || p.role !== 'admin') { window.location.href = 'dashboard.html'; return false; }
-    return true;
-  }
-
-  // ─── LOAD EXAMS ───────────────────────────────────────────────
-  async function loadExams() {
-    const { data: exams } = await sb.from('exams').select('*').order('created_at', {ascending:false});
-    const grid = document.getElementById('examGrid');
-    if (!exams || !exams.length) {
-      grid.innerHTML = `<div style="grid-column:1/-1;"><div class="empty"><div class="empty-icon">📝</div>No exams yet — create your first exam</div></div>`;
-      return;
-    }
-
 
   // ─── TOPIC MAP ────────────────────────────────────────────────
+  // Global scope (was previously nested inside loadExams() by mistake,
+  // which made updateTopicDropdown() throw "not defined" and silently
+  // broke the "Add Question" modal — fixed here).
   const TOPIC_MAP = {
     Reading: [
       'Main idea','Supporting details','Inference','Author\'s purpose',
@@ -593,16 +560,52 @@
       topics.map(tp => `<option value="${tp}">${tp}</option>`).join('');
   }
 
-    const colors = {
-      TCF:'#4169FF',TEF:'#9B6DFF',IELTS:'#F0A500',YDS:'#4169FF',
-      'YÖKDİL':'#00C9A7','e-YDS':'#00C9A7',TOEFL:'#FF5757',TOEIC:'#F0A500',
-      DELF:'#FF7F50',DALF:'#FF5733',
-      'Cambridge B2':'#2196F3','Cambridge C1':'#1565C0',
-      CAPM:'#8B5CF6',PMP:'#7C3AED',PRINCE2:'#6D28D9',
-      'Scrum Master':'#059669','Six Sigma':'#DC2626',
-      CISSP:'#B45309','AWS Cloud':'#D97706','Google Cloud':'#0EA5E9',
-      Custom:'#64748B',
-    };
+  // Exam-type -> color, used for exam-card badges in the list view
+  const colors = {
+    TCF:'#4169FF',TEF:'#9B6DFF',IELTS:'#F0A500',YDS:'#4169FF',
+    'YÖKDİL':'#00C9A7','e-YDS':'#00C9A7',TOEFL:'#FF5757',TOEIC:'#F0A500',
+    DELF:'#FF7F50',DALF:'#FF5733',
+    'Cambridge B2':'#2196F3','Cambridge C1':'#1565C0',
+    CAPM:'#8B5CF6',PMP:'#7C3AED',PRINCE2:'#6D28D9',
+    'Scrum Master':'#059669','Six Sigma':'#DC2626',
+    CISSP:'#B45309','AWS Cloud':'#D97706','Google Cloud':'#0EA5E9',
+    Custom:'#64748B',
+  };
+  const CF_BASE     = 'https://pub-ef4435a0984a475e980cfb9ed1680410.r2.dev';
+
+  // Turns a bare filename/path from Excel (e.g. "listening/audio_01.mp3" or
+  // "T1_Listening_P1_Q1-10 (1).mp3") into a full public R2 URL, safely
+  // URL-encoding spaces/parentheses/special characters. Leaves already-full
+  // URLs (http/https) untouched, so admins can also paste a complete URL directly.
+  function resolveMediaUrl(value) {
+    if (!value) return null;
+    const v = String(value).trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    const cleaned = v.replace(/^\/+/, '');
+    const encoded = cleaned.split('/')
+      .map(seg => encodeURIComponent(seg).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase()))
+      .join('/');
+    return `${CF_BASE}/${encoded}`;
+  }
+
+  // ─── AUTH ─────────────────────────────────────────────────────
+  async function checkAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'login.html'; return false; }
+    const { data: p } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+    if (!p || p.role !== 'admin') { window.location.href = 'dashboard.html'; return false; }
+    return true;
+  }
+
+  // ─── LOAD EXAMS ───────────────────────────────────────────────
+  async function loadExams() {
+    const { data: exams } = await sb.from('exams').select('*').order('created_at', {ascending:false});
+    const grid = document.getElementById('examGrid');
+    if (!exams || !exams.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;"><div class="empty"><div class="empty-icon">📝</div>No exams yet — create your first exam</div></div>`;
+      return;
+    }
 
     // Get question counts
     const { data: qCounts } = await sb.from('questions').select('exam_id');
@@ -726,7 +729,7 @@
         <div class="q-num">${i+1}</div>
         <div class="q-text" title="${q.question_text}">${q.question_text.substring(0,100)}${q.question_text.length>100?'...':''}</div>
         <span class="q-cat">${q.skill ? q.skill + (q.topic ? ' → ' + q.topic : '') : (q.category||'—')}</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:4px;">${q.correct_answer||''}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px;">${q.type === 'writing' ? '✍️ Writing' : (q.correct_answer||'')}</span>
         <button class="btn btn-danger btn-sm" style="margin-left:8px;" onclick="deleteQuestion('${q.id}')">🗑</button>
       </div>`).join('');
   }
@@ -746,7 +749,13 @@
   function openCreateExam() {
     editingExamId = null;
     document.getElementById('examModalTitle').textContent = 'New Exam';
-    document.getElementById('examTitle').value = '';
+    document.getElementById('examTitle').value      = '';
+    document.getElementById('examType').selectedIndex = 0;
+    document.getElementById('examMarket').value     = 'dz';
+    document.getElementById('examSkill').value      = 'reading';
+    document.getElementById('examDuration').value   = 60;
+    document.getElementById('examDifficulty').value = 'B1-B2';
+    document.getElementById('examFree').value       = 'false';
     document.getElementById('examModal').classList.add('open');
   }
 
@@ -777,15 +786,17 @@
       duration_minutes: parseInt(document.getElementById('examDuration').value) || 60,
       difficulty_level: document.getElementById('examDifficulty').value,
       is_free:          document.getElementById('examFree').value === 'true',
-      is_active:        true,
     };
 
     if (!data.title) { toast('Please enter an exam title', 'error'); return; }
 
     if (editingExamId) {
+      // Do NOT touch is_active here — editing details shouldn't silently
+      // reactivate an exam the admin had deliberately turned off.
       await sb.from('exams').update(data).eq('id', editingExamId);
       toast('Exam updated ✅', 'success');
     } else {
+      data.is_active = true; // new exams start active
       await sb.from('exams').insert(data);
       toast('Exam created ✅', 'success');
     }
@@ -834,7 +845,7 @@
         };
         return {
           order_index:    i,
-          type:           'mcq',
+          type:           (get('type','questiontype','question type') || 'mcq').toLowerCase(),
           question_text:  get('question','question text','q','text'),
           option_a:       get('optiona','option a','a','answer a'),
           option_b:       get('optionb','option b','b','answer b'),
@@ -865,7 +876,7 @@
       tbl.innerHTML = `
         <thead>
           <tr>
-            <th>#</th><th>Question</th><th>A</th><th>B</th>
+            <th>#</th><th>Type</th><th>Question</th><th>A</th><th>B</th>
             <th>C</th><th>D</th><th>Correct</th><th>Category</th>
           </tr>
         </thead>
@@ -873,15 +884,16 @@
           ${previewData.slice(0,10).map((q,i) => `
             <tr>
               <td>${i+1}</td>
+              <td>${q.type === 'writing' ? '<span style="color:var(--purple);font-weight:700;">✍️ Writing</span>' : 'MCQ'}</td>
               <td>${q.question_text.substring(0,60)}${q.question_text.length>60?'...':''}</td>
               <td>${q.option_a.substring(0,30)}</td>
               <td>${q.option_b.substring(0,30)}</td>
               <td>${q.option_c.substring(0,30)}</td>
               <td>${q.option_d.substring(0,30)}</td>
-              <td><span class="correct-badge">${q.correct_answer}</span></td>
+              <td>${q.correct_answer ? `<span class="correct-badge">${q.correct_answer}</span>` : '—'}</td>
               <td>${q.category}</td>
             </tr>`).join('')}
-          ${previewData.length>10?`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:8px;">...and ${previewData.length-10} more questions</td></tr>`:''}
+          ${previewData.length>10?`<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:8px;">...and ${previewData.length-10} more questions</td></tr>`:''}
         </tbody>`;
 
       input.value = '';
@@ -946,9 +958,9 @@
   async function saveQuestion() {
     if (!currentExam) return;
     const type = document.getElementById('qType').value;
+
     const q = {
       exam_id:        currentExam.id,
-      order_index:    999,
       type:           type,
       question_text:  document.getElementById('qText').value.trim(),
       option_a:       document.getElementById('qA').value.trim(),
@@ -970,8 +982,21 @@
     };
 
     if (!q.question_text) { toast('Question text is required', 'error'); return; }
+    if (type === 'mcq') {
+      if (!q.option_a || !q.option_b) { toast('At least options A and B are required for MCQ questions', 'error'); return; }
+      if (!['A','B','C','D'].includes(q.correct_answer)) { toast('Select the correct answer', 'error'); return; }
+    }
 
-    await sb.from('questions').insert(q);
+    // Append after existing questions rather than hardcoding an order_index —
+    // otherwise every manually-added question ties and sorts unpredictably
+    const { count } = await sb.from('questions')
+      .select('id', { count: 'exact', head: true })
+      .eq('exam_id', currentExam.id);
+    q.order_index = count || 0;
+
+    const { error } = await sb.from('questions').insert(q);
+    if (error) { toast('Failed to save question: ' + error.message, 'error'); return; }
+
     closeQuestionModal();
     toast('Question added ✅', 'success');
     await loadQuestions();
@@ -996,16 +1021,17 @@
   // ─── DOWNLOAD TEMPLATE ────────────────────────────────────────
   function downloadTemplate() {
     const data = [
-      ['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct', 'Explanation', 'Audio', 'Image', 'Image Caption', 'Passage Label', 'Passage', 'Category', 'Difficulty'],
-      ['The author implies that technology...', 'Has replaced teachers', 'Has both benefits and risks', 'Is harmful', 'Has no effect', 'B', 'The author uses balanced language suggesting both sides.', '', '', '', '', '', 'Implied Meaning', 'medium'],
-      ['Choose the synonym of "reluctant":', 'Eager', 'Unwilling', 'Excited', 'Determined', 'B', '"Reluctant" means unwilling or hesitant.', '', '', '', '', '', 'Vocabulary', 'easy'],
-      ['[LISTENING] You will hear a conversation...', 'Train', 'Bus', 'Taxi', 'Metro', 'C', 'The man says "I\'ll take a cab."', 'listening/audio_01.mp3', '', '', '', '', 'Listening', 'medium'],
-      ['According to the passage, the main cause was...', 'Drought', 'War', 'Trade', 'Disease', 'A', 'The passage states the harvest failed due to drought.', '', '', '', 'Reading Passage', 'In the late summer of that year, the rains never came. Fields that had fed the region for generations turned to dust...', 'Reading', 'medium'],
-      ['What does the diagram show?', 'A food chain', 'A water cycle', 'A circuit', 'A map', 'B', 'The arrows show evaporation and precipitation.', '', 'https://example.com/water-cycle.png', 'Figure 1', '', '', 'Reading', 'easy'],
+      ['Type', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct', 'Explanation', 'Audio', 'Image', 'Image Caption', 'Passage Label', 'Passage', 'Category', 'Difficulty'],
+      ['mcq', 'The author implies that technology...', 'Has replaced teachers', 'Has both benefits and risks', 'Is harmful', 'Has no effect', 'B', 'The author uses balanced language suggesting both sides.', '', '', '', '', '', 'Implied Meaning', 'medium'],
+      ['mcq', 'Choose the synonym of "reluctant":', 'Eager', 'Unwilling', 'Excited', 'Determined', 'B', '"Reluctant" means unwilling or hesitant.', '', '', '', '', '', 'Vocabulary', 'easy'],
+      ['mcq', '[LISTENING] You will hear a conversation...', 'Train', 'Bus', 'Taxi', 'Metro', 'C', 'The man says "I\'ll take a cab."', 'listening/audio_01.mp3', '', '', '', '', 'Listening', 'medium'],
+      ['mcq', 'According to the passage, the main cause was...', 'Drought', 'War', 'Trade', 'Disease', 'A', 'The passage states the harvest failed due to drought.', '', '', '', 'Reading Passage', 'In the late summer of that year, the rains never came. Fields that had fed the region for generations turned to dust...', 'Reading', 'medium'],
+      ['mcq', 'What does the diagram show?', 'A food chain', 'A water cycle', 'A circuit', 'A map', 'B', 'The arrows show evaporation and precipitation.', '', 'https://example.com/water-cycle.png', 'Figure 1', '', '', 'Reading', 'easy'],
+      ['writing', 'Write an essay (200-250 words) on the following topic: Should university education be free for everyone?', '', '', '', '', '', '', '', '', '', '', '', 'Writing', 'medium'],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = Array(14).fill({wch:22});
+    ws['!cols'] = Array(15).fill({wch:22});
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Questions');
     XLSX.writeFile(wb, 'speaglish_exam_template.xlsx');
@@ -1028,12 +1054,13 @@
 
     // Sheet 2: Questions
     const qSheet = XLSX.utils.aoa_to_sheet([
-      ['exam_title','question','option_a','option_b','option_c','option_d','correct','explanation','audio','image','image_caption','passage_label','passage','skill','topic','difficulty'],
-      ['TCF Compréhension Écrite','The author implies that technology...','Has replaced teachers','Has both benefits and risks','Is harmful','Has no effect','B','Balanced language = both sides.','','','','','','Reading','Inference','medium'],
-      ['TCF Compréhension Écrite','According to the passage, the cause was...','Drought','War','Trade','Disease','A','The passage names drought.','','','','Reading Passage','In the late summer of that year, the rains never came...','Reading','Detail','medium'],
-      ['YDS Grammar Practice','Choose the correct form: She ___ here for 5 years.','has lived','is living','lived','will live','A','Present Perfect for duration up to now.','','','','','','Grammar','Present Perfect','easy'],
+      ['exam_title','type','question','option_a','option_b','option_c','option_d','correct','explanation','audio','image','image_caption','passage_label','passage','skill','topic','difficulty'],
+      ['TCF Compréhension Écrite','mcq','The author implies that technology...','Has replaced teachers','Has both benefits and risks','Is harmful','Has no effect','B','Balanced language = both sides.','','','','','','Reading','Inference','medium'],
+      ['TCF Compréhension Écrite','mcq','According to the passage, the cause was...','Drought','War','Trade','Disease','A','The passage names drought.','','','','Reading Passage','In the late summer of that year, the rains never came...','Reading','Detail','medium'],
+      ['YDS Grammar Practice','mcq','Choose the correct form: She ___ here for 5 years.','has lived','is living','lived','will live','A','Present Perfect for duration up to now.','','','','','','Grammar','Present Perfect','easy'],
+      ['TCF Compréhension Écrite','writing','Rédigez un texte argumentatif (200-250 mots) sur le sujet suivant : Le télétravail devrait-il devenir la norme ?','','','','','','','','','','','','Writing','Argumentation','medium'],
     ]);
-    qSheet['!cols'] = Array(16).fill({wch:22});
+    qSheet['!cols'] = Array(17).fill({wch:22});
     XLSX.utils.book_append_sheet(wb, qSheet, 'Questions');
 
     XLSX.writeFile(wb, 'speaglish_bulk_exam_template.xlsx');
@@ -1095,7 +1122,7 @@
       bulkQuestions = qRows.map((r, i) => ({
         _exam_title:   get(r,'exam_title','examtitle','exam','for_exam','forexam'),
         order_index:   i,
-        type:          'mcq',
+        type:          (get(r,'type','questiontype','question type') || 'mcq').toLowerCase(),
         question_text: get(r,'question','question_text','questiontext','q','text'),
         option_a:      get(r,'option_a','optiona','a','answer a'),
         option_b:      get(r,'option_b','optionb','b','answer b'),
@@ -1135,6 +1162,7 @@
       document.getElementById('bulkQTable').innerHTML = `
         <thead><tr style="background:var(--card2);">
           <th style="padding:8px;text-align:left;">Exam</th>
+          <th style="padding:8px;text-align:left;">Type</th>
           <th style="padding:8px;text-align:left;">Question</th>
           <th style="padding:8px;text-align:left;">Correct</th>
           <th style="padding:8px;text-align:left;">Skill → Topic</th>
@@ -1142,11 +1170,12 @@
         <tbody>
           ${sampleQs.map(q => `<tr style="border-top:1px solid var(--border);">
             <td style="padding:8px;color:var(--muted);">${q._exam_title.substring(0,20)}</td>
+            <td style="padding:8px;">${q.type === 'writing' ? '<span style="color:var(--purple);font-weight:700;">✍️ Writing</span>' : 'MCQ'}</td>
             <td style="padding:8px;">${q.question_text.substring(0,50)}${q.question_text.length>50?'...':''}</td>
-            <td style="padding:8px;"><span style="background:rgba(0,201,167,.1);color:var(--teal);padding:2px 8px;border-radius:4px;font-weight:700;">${q.correct_answer}</span></td>
+            <td style="padding:8px;">${q.correct_answer ? `<span style="background:rgba(0,201,167,.1);color:var(--teal);padding:2px 8px;border-radius:4px;font-weight:700;">${q.correct_answer}</span>` : '—'}</td>
             <td style="padding:8px;color:var(--sub);">${q.skill}${q.topic?' → '+q.topic:''}</td>
           </tr>`).join('')}
-          ${bulkQuestions.length>5 ? `<tr><td colspan="4" style="padding:8px;text-align:center;color:var(--muted);">...and ${bulkQuestions.length-5} more questions</td></tr>` : ''}
+          ${bulkQuestions.length>5 ? `<tr><td colspan="5" style="padding:8px;text-align:center;color:var(--muted);">...and ${bulkQuestions.length-5} more questions</td></tr>` : ''}
         </tbody>`;
 
       document.getElementById('bulkPreview').style.display = 'block';
