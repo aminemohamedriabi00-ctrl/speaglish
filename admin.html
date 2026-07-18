@@ -350,6 +350,26 @@
       </div>
     </div>
 
+    <!-- AI Writing Correction Settings -->
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="panel-header">
+        <div class="panel-title">🤖 AI Writing Correction</div>
+      </div>
+      <div style="padding:16px;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+          <label style="font-size:13px;font-weight:600;color:var(--sub);">Active model:</label>
+          <select id="aiProvider" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-family:inherit;font-size:13px;">
+            <option value="gemini">Gemini 2.0 Flash (free)</option>
+            <option value="claude">Claude Haiku (paid, higher quality)</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="saveAiProvider()">Save</button>
+          <span id="aiProviderStatus" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:10px;">API Keys</div>
+        <div id="aiKeysList" style="display:flex;flex-direction:column;gap:10px;">Loading…</div>
+      </div>
+    </div>
+
     <!-- Recent Exam Attempts -->
     <div class="panel">
       <div class="panel-header">
@@ -540,35 +560,8 @@
             <div class="row-meta">${s.market?.toUpperCase()||'DZ'} · ${date}</div>
           </div>
           <span class="status-pill ${pillMap[status]||'pill-trial'}">${status}</span>
-          <button class="btn btn-danger btn-sm" onclick="revokeStudentAccess('${s.id}')">Revoke Access</button>
         </div>`;
     }).join('');
-  }
-
-  // ─── REVOKE ACCESS ────────────────────────────────────────────
-  // Revokes all active exam access for a student (per-category access
-  // now lives in exam_access, so this is what actually cuts them off).
-  // Pass a categoryId to revoke just one category instead of everything.
-  async function revokeStudentAccess(studentId, categoryId = null) {
-    if (!confirm('Revoke this student\'s exam access? They will lose access immediately.')) return;
-
-    let query = sb.from('exam_access')
-      .update({ status: 'expired', updated_at: new Date().toISOString() })
-      .eq('student_id', studentId)
-      .eq('access_type', 'exam')
-      .eq('status', 'active');
-
-    if (categoryId) query = query.eq('category_id', categoryId);
-
-    const { error } = await query;
-
-    if (error) {
-      toast('Failed to revoke access: ' + error.message, 'error');
-      return;
-    }
-
-    toast('Access revoked.', 'success');
-    await loadRecentStudents();
   }
 
   // ─── RECENT ATTEMPTS ──────────────────────────────────────────
@@ -763,8 +756,75 @@
         img.src = cfg.logo_url;
       }
     } catch(e) {}
+    try {
+      const { data: aiCfg } = await sb.from('ai_settings').select('active_provider').eq('id', 1).single();
+      if (aiCfg?.active_provider) document.getElementById('aiProvider').value = aiCfg.active_provider;
+    } catch(e) {}
+    await loadAiKeys();
     await loadData();
     document.getElementById('loaderOverlay').classList.add('out');
+  }
+
+  async function saveAiProvider() {
+    const provider = document.getElementById('aiProvider').value;
+    const statusEl = document.getElementById('aiProviderStatus');
+    statusEl.textContent = 'Saving…';
+    const { error } = await sb.from('ai_settings')
+      .update({ active_provider: provider, updated_at: new Date().toISOString() })
+      .eq('id', 1);
+    statusEl.textContent = error ? ('Failed: ' + error.message) : '✅ Saved — takes effect on next submission';
+    setTimeout(() => { statusEl.textContent = ''; }, 4000);
+  }
+
+  // ─── AI PROVIDER KEYS ─────────────────────────────────────────
+  // Keys are never re-displayed in full after saving — only the last 4
+  // characters are shown, as a basic screen-hygiene measure. The Edge
+  // Function reads the real value directly from the database.
+  async function loadAiKeys() {
+    const el = document.getElementById('aiKeysList');
+    const { data: rows, error } = await sb.from('ai_provider_keys')
+      .select('provider, label, api_key, updated_at')
+      .order('provider');
+
+    if (error || !rows) {
+      el.innerHTML = `<div style="font-size:13px;color:var(--muted);">Failed to load keys.</div>`;
+      return;
+    }
+
+    el.innerHTML = rows.map(r => {
+      const has = !!r.api_key;
+      const masked = has ? `•••• ${r.api_key.slice(-4)}` : 'Not set';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px;background:var(--card2);border-radius:8px;">
+          <div style="min-width:220px;">
+            <div style="font-size:13px;font-weight:600;">${r.label || r.provider}</div>
+            <div style="font-size:11px;color:var(--muted);">
+              ${has ? `<span style="color:var(--teal, #00C9A7);">✅ Configured</span> · ${masked}` : '<span style="color:var(--red,#FF5757);">Not configured</span>'}
+            </div>
+          </div>
+          <input type="password" id="key-${r.provider}" placeholder="${has ? 'Enter new key to replace…' : 'Paste API key…'}"
+            style="flex:1;min-width:200px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:inherit;font-size:12px;">
+          <button class="btn btn-ghost btn-sm" onclick="saveAiKey('${r.provider}')">Save</button>
+        </div>`;
+    }).join('');
+  }
+
+  async function saveAiKey(provider) {
+    const input = document.getElementById(`key-${provider}`);
+    const value = input.value.trim();
+    if (!value) { toast('Enter a key first', 'error'); return; }
+
+    const { error } = await sb.from('ai_provider_keys')
+      .update({ api_key: value, updated_at: new Date().toISOString() })
+      .eq('provider', provider);
+
+    if (error) {
+      toast('Failed to save key: ' + error.message, 'error');
+      return;
+    }
+    input.value = '';
+    toast('✅ Key saved', 'success');
+    await loadAiKeys();
   }
 
   init();
